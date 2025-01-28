@@ -4,7 +4,7 @@
   "main": "app.js",
   "type": "module",
   "scripts": {
-    "start": "nodemon app.js"
+    "start": "tsx watch app.ts"
   },
   "keywords": [],
   "author": "",
@@ -14,6 +14,6 @@
     "express": "^4.21.2"
   },
   "devDependencies": {
-    "nodemon": "^3.1.9"
+    "tsx": "^4.19.2"
   }
 }
