@@ -1,5 +1,5 @@
 export default function AdminPage() {
     return (<div>
-        Add new
+        Add Component
     </div>)
 }
