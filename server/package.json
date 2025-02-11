@@ -4,7 +4,8 @@
   "main": "app.ts",
   "type": "module",
   "scripts": {
-    "start": "tsx watch src/app.ts"
+    "dev": "tsx watch src/app.ts",
+    "start": "tsx src/app.ts"
   },
   "keywords": [],
   "author": "",
