@@ -17,5 +17,5 @@ All contributions are welcome!
 ## Feeback
 Any questions or suggestions?
 
-You are welcome to discuss it on [discussions](https://github.com/hectormosq/plenify/discussions) tab.
+You are welcome to discuss it [here](https://github.com/hectormosq/plenify/discussions).
 
