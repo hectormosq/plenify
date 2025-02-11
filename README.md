@@ -1,4 +1,4 @@
-# Plenify
+# plenify
 
 plenify is *The App* for personal financial planning.
 
