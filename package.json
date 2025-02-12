@@ -7,8 +7,17 @@
     "server",
     "client"
   ],
+  "engines": {
+    "node": ">=18.18.0"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "concurrently -n \"client,server\" -c \"magenta,cyan\" \"npm run dev:client\" \"npm run dev:server\"",
+    "dev:client": "cd client && npm i && npm run dev",
+    "dev:server": "cd server && npm i && npm run dev",
+    "start": "concurrently -n \"client,server\" -c \"bgMagenta,bgCyan\" \"npm run start:client\" \"npm run start:server\"",
+    "start:client": "cd client && npm i && npm run start",
+    "start:server": "cd server && npm i && npm run start"
   },
   "repository": {
     "type": "git",
@@ -21,5 +30,8 @@
     "url": "https://github.com/hectormosq/plenify/issues"
   },
   "homepage": "https://github.com/hectormosq/plenify#readme",
-  "description": ""
+  "description": "",
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
 }
