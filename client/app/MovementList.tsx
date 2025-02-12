@@ -4,13 +4,7 @@ export default function MovementList() {
   const [movementList, setMovementList] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:3200/")
-      .then((response) => {
-        return response.json();
-      })
-      .then((response) => {
-        setMovementList(response.data);
-      });
+    setMovementList([]);
   }, []);
 
   if (movementList.length > 0) {
