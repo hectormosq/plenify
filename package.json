@@ -11,8 +11,13 @@
     "node": ">=18.18.0"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "concurrently -n \"client,server\" -c \"magenta,cyan\" \"npm run dev:client\" \"npm run dev:server\"",
+    "test": "concurrently -n \"client\" -c \"bgMagenta\" \"npm run test:client\" ",
+    "test:server": "cd server && npm test",
+    "test:client": "cd client && npm test",
+    "lint": "concurrently -n \"client,server\" -c \"bgMagenta\" \"npm run lint:client\" ",
+    "lint:server": "cd server && npm run lint",
+    "lint:client": "cd client && npm run lint",
+    "dev": "concurrently -n \"client,server\" -c \"bgMagenta,cyan\" \"npm run dev:client\" \"npm run dev:server\"",
     "dev:client": "cd client && npm i && npm run dev",
     "dev:server": "cd server && npm i && npm run dev",
     "start": "concurrently -n \"client,server\" -c \"bgMagenta,bgCyan\" \"npm run start:client\" \"npm run start:server\"",
