@@ -1,0 +1,32 @@
+name: CI/CD Pipeline
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Run tests
+        run: npm run test:client
+
+      - name: Code Coverage Summary Report
+        uses: MishaKav/jest-coverage-comment@main
+        with:
+          coverage-summary-path: ./client/coverage/coverage-summary.json

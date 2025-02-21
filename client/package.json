@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "npm run build && next start",
     "lint": "next lint",
-    "test": "jest",
+    "test": "jest --coverage --coverageReporters json-summary",
     "test:watch": "jest --watch"
   },
   "dependencies": {
