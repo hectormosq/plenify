@@ -17,7 +17,7 @@
     "lint": "concurrently -n \"client,server\" -c \"bgMagenta\" \"npm run lint:client\" ",
     "lint:server": "cd server && npm run lint",
     "lint:client": "cd client && npm run lint",
-    "dev": "concurrently -n \"client,server\" -c \"bgMagenta,cyan\" \"npm run dev:client\" \"npm run dev:server\"",
+    "dev": "npm i && concurrently -n \"client,server\" -c \"bgMagenta,cyan\" \"npm run dev:client\" \"npm run dev:server\"",
     "dev:client": "cd client && npm i && npm run dev",
     "dev:server": "cd server && npm i && npm run dev",
     "start": "concurrently -n \"client,server\" -c \"bgMagenta,bgCyan\" \"npm run start:client\" \"npm run start:server\"",
