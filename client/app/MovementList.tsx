@@ -1,4 +1,9 @@
 import { useEffect, useState } from "react";
+import styled from "@emotion/styled";
+
+const EmptyList = styled.div`
+  color: red;
+`;    
 
 export default function MovementList() {
   const [movementList, setMovementList] = useState([]);
@@ -12,6 +17,10 @@ export default function MovementList() {
       return <div key={movement}>{movement}</div>;
     });
   } else {
-    return <div>No items in list</div>;
+    return (
+      <>
+        <EmptyList>No items in list</EmptyList>
+      </>
+  );
   }
 }
