@@ -1,6 +1,7 @@
 import express from "express";
 import bodyParser from "body-parser";
 import accountRoutes from "./routes/admin.js";
+import categoriesRoutes from "./routes/categories.js";
 
 const port = 3200;
 
@@ -19,6 +20,7 @@ app.use((req, res, next) => {
   next();
 });
 app.use(accountRoutes);
+app.use(categoriesRoutes);
 
 app.listen(port, () => {
   console.log(`Server running on ${port}`);

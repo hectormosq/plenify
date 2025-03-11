@@ -1,8 +1,10 @@
-import type { Metadata } from "next";
+"use client";
+
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "./components/header";
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import { actor, PlenifyContext } from "./context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,11 +15,6 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
-
-export const metadata: Metadata = {
-  title: "Plenify",
-  description: "plenify is *The App* for personal financial planning.",
-};
 
 export default function RootLayout({
   children,
@@ -30,7 +27,11 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Header></Header>
-        <main>{children}</main>
+        <main>
+          <PlenifyContext.Provider value={actor}>
+            {children}
+          </PlenifyContext.Provider>
+        </main>
         <SpeedInsights />
       </body>
     </html>
