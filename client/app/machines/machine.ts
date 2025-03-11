@@ -110,7 +110,7 @@ export const machine = setup({
     transaction: {
       invoke: {
         src: 'addTransaction',
-        input: ({ context }) => ({
+        input: () => ({
           transaction: {
             date: new Date(),
             description: `Test ${new Date().toLocaleDateString()}`,

@@ -2,7 +2,6 @@ import { useSelector } from '@xstate/react';
 import { useCallback } from 'react';
 import { usePlenifyContext } from '../context';
 import { Transaction } from '../models/transaction';
-import { WithCategories, WithDefaultControllerState, WithTransactions } from '../machines';
 import { Categories } from '../models/categories';
 
 export const usePlenifyState = () => {

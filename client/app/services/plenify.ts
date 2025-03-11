@@ -1,4 +1,4 @@
-import { createMergeableStore, createQueries, MergeableStore } from 'tinybase';
+import { createMergeableStore, MergeableStore } from 'tinybase';
 import { createIndexedDbPersister, IndexedDbPersister } from 'tinybase/persisters/persister-indexed-db';
 import { v4 } from 'uuid';
 import { Transaction } from '../models/transaction';
@@ -84,8 +84,8 @@ export default class PlenifyService {
     const transactions = this.persister.getStore().getTable(Tables.transactions);
     const transactionCategories = this.persister.getStore().getTable(Tables.transactionCategories);
 
-    const transactionCategoriesGrouped = Object.entries(transactionCategories)
-      .map(([_, transactionCat]) => transactionCat)
+    const transactionCategoriesGrouped = Object.values(transactionCategories)
+      .map((transactionCat) => transactionCat)
       .reduce((acc, curr) => {
         const transactionId = curr.transaction.toString();
         const categoryId = curr.category.toString();
