@@ -57,7 +57,7 @@ export default class PlenifyService {
   }
 
   addTransaction(transaction: Transaction) {
-    const { date, description, amount, currency = 'EUR', tags = [this.defaultCategoryId] } = transaction;
+    const { date, description, amount, currency = 'EUR', tags = [this.defaultCategoryId!] } = transaction;
     const transactionId = v4();
 
     this.persister.getStore().transaction(
@@ -68,10 +68,10 @@ export default class PlenifyService {
           amount,
          currency,
         });
-        for (const tag in tags) {
+        for (const tag of tags) {
           this.persister.getStore().setRow(Tables.transactionCategories, v4(), {
             transaction: transactionId,
-            category: tags[tag]!,
+            category: tag,
           });
         }
       },
