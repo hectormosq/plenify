@@ -25,3 +25,5 @@ app.use(categoriesRoutes);
 app.listen(port, () => {
   console.log(`Server running on ${port}`);
 });
+
+export default app;
