@@ -4,9 +4,7 @@ const nextConfig: NextConfig = {
   async rewrites() {
     const destinationUrl = process.env.NODE_ENV === "production"
         ? process.env.NEXT_PUBLIC_VERCEL_URL
-        : process.env.NEXT_PUBLIC_VERCEL_ENV === "preview"
-          ? process.env.NEXT_PUBLIC_VERCEL_URL?.replace("client", "api")
-          : process.env.NEXT_PUBLIC_API_URL;
+        : process.env.NEXT_PUBLIC_API_URL;
 
     return [
       // Rewrites all API requests to express server
