@@ -18,7 +18,7 @@
     "lint:server": "cd server && npm run lint",
     "lint:client": "cd client && npm run lint",
     "dev": "npm i && concurrently -n \"client,server\" -c \"bgMagenta,cyan\" \"npm run dev:client\" \"npm run dev:server\"",
-    "dev:client": "cd client && npm i && NEXT_PUBLIC_API_URL=http://localhost:3200 npm run dev",
+    "dev:client": "cd client && npm i && export NEXT_PUBLIC_API_URL=http://localhost:3200 && npm run dev",
     "dev:server": "cd server && npm i && npm run dev",
     "start": "concurrently -n \"client,server\" -c \"bgMagenta,bgCyan\" \"npm run start:client\" \"npm run start:server\"",
     "start:client": "cd client && npm i && npm run start",
