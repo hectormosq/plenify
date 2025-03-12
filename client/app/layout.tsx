@@ -21,6 +21,11 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
+  console.log(process.env.NEXT_PUBLIC_VERCEL_ENV)
+  console.log(process.env.NEXT_PUBLIC_VERCEL_URL)
+  console.log(process.env.NEXT_PUBLIC_API_URL)
+
   return (
     <html lang="en">
       <body
