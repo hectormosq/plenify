@@ -17,8 +17,11 @@
     "lint": "concurrently -n \"client,server\" -c \"bgMagenta\" \"npm run lint:client\" ",
     "lint:server": "cd server && npm run lint",
     "lint:client": "cd client && npm run lint",
-    "dev": "npm i && concurrently -n \"client,server\" -c \"bgMagenta,cyan\" \"npm run dev:client\" \"npm run dev:server\"",
-    "dev:client": "cd client && npm i && export NEXT_PUBLIC_API_URL=http://localhost:3200 && npm run dev",
+    "dev": "run-script-os",
+    "dev:macos": "npm i && concurrently -n \"client,server\" -c \"bgMagenta,cyan\" \"npm run dev:client:macos\" \"npm run dev:server\"",
+    "dev:windows": "npm i && concurrently -n \"client,server\" -c \"bgMagenta,cyan\" \"npm run dev:client:windows\" \"npm run dev:server\"",
+    "dev:client:macos": "cd client && npm i && export NEXT_PUBLIC_API_URL=http://localhost:3200 && npm run dev",
+    "dev:client:windows": "cd client && npm i && set NEXT_PUBLIC_API_URL=http://localhost:3200 && npm run dev",
     "dev:server": "cd server && npm i && npm run dev",
     "start": "concurrently -n \"client,server\" -c \"bgMagenta,bgCyan\" \"npm run start:client\" \"npm run start:server\"",
     "start:client": "cd client && npm i && npm run start",
@@ -37,6 +40,7 @@
   "homepage": "https://github.com/hectormosq/plenify#readme",
   "description": "",
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "run-script-os": "^1.1.6"
   }
 }
