@@ -25,8 +25,7 @@
     "dev:server": "cd server && npm i && npm run dev",
     "start": "concurrently -n \"client,server\" -c \"bgMagenta,bgCyan\" \"npm run start:client\" \"npm run start:server\"",
     "start:client": "cd client && npm i && npm run start",
-    "start:server": "cd server && npm i && npm run start",
-    "build": "cd client && npm build"
+    "start:server": "cd server && npm i && npm run start"
   },
   "repository": {
     "type": "git",
