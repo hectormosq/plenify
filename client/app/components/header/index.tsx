@@ -7,7 +7,10 @@ export default function Header() {
       <nav className={classes.nav}>
         <ul >
           <li>
-            <Link href="/">Main</Link>
+            <Link href="/dashboard">Main</Link>
+          </li>
+          <li>
+            <Link href="/list">Transaction List</Link>
           </li>
           <li>
             <Link href="/admin">Add</Link>
