@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   async redirects() {
     return [
-      // Redirects all API requests to express server
+      // Sets main page to be dashboard
       {
         source: "/",
         destination: "/dashboard",
