@@ -1,4 +1,5 @@
 "use client";
+import classes from "./dashboard.module.css";
 
 import { usePlenifyState } from "../hooks/usePlenifyState";
 import Loader from "../components/loader";
@@ -20,7 +21,10 @@ export default function DashboardPage() {
             <p>Pie</p>
           </div>
           <div>
-            <p>Recent Transactions</p>
+            <div className={classes.transactionsHeader}>
+              <div>Recent Transactions</div>
+              <div>See All</div>
+            </div>
             <TransactionList transactionList={transactions} />
           </div>
         </div>
