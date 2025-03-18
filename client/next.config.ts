@@ -1,6 +1,16 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      // Sets main page to be dashboard
+      {
+        source: "/",
+        destination: "/dashboard",
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     const destinationUrl = process.env.NODE_ENV === "production"
         ? process.env.NEXT_PUBLIC_VERCEL_URL
