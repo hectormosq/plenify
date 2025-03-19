@@ -9,7 +9,7 @@ export const usePlenifyState = () => {
 
   const transactions = useSelector(actor, (state) =>
     state.matches('loaded')
-      ? state.context.transactions
+      ? state.context.transactions as Transaction[]
       : [] as Transaction[]
   );
 

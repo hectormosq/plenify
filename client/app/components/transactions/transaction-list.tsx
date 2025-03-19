@@ -4,7 +4,7 @@ import CategoryTag from "../categories/category";
 import classes from "./transaction-list.module.css";
 
 export default function TransactionList(props: {
-  transactionList: Transaction[] | undefined;
+  transactionList: Transaction[];
 }) {
   const { transactionList } = props;
 

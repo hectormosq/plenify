@@ -7,6 +7,7 @@ import TransactionList from "../components/transactions/transaction-list";
 
 export default function DashboardPage() {
   const { loading, transactions } = usePlenifyState();
+  const recentTransactions = transactions.slice(0, 5);
 
   return (
     <>
@@ -25,7 +26,7 @@ export default function DashboardPage() {
               <div>Recent Transactions</div>
               <div>See All</div>
             </div>
-            <TransactionList transactionList={transactions} />
+            <TransactionList transactionList={recentTransactions} />
           </div>
         </div>
       )}
