@@ -15,10 +15,12 @@ export default function TransactionList(props: {
           <div key={transaction.id} className={classes.row}>
             <div className={classes.descriptionContainer}>
               <div>{transaction.description}</div>
-              {transaction.tags &&
-                transaction.tags.map((tag: string) => {
-                  return CategoryTag({ id: transaction.id!, tag });
-                })}
+              <div className={classes.categories}>
+                {transaction.tags &&
+                  transaction.tags.map((tag: string) => {
+                    return CategoryTag({ id: transaction.id!, tag });
+                  })}
+              </div>
             </div>
             <div>{moment(transaction.date).fromNow()}</div>
             <div>{`${transaction.amount} ${transaction.currency}`}</div>

@@ -8,6 +8,7 @@ type hashItem = {
 type hashByCategory = Record<string, hashItem>;
 type Series = { label: string; value: number; color: string; amount: number };
 
+import { lighten } from "@mui/material";
 import { Categories } from "../models/categories";
 import { Transaction } from "../models/transaction";
 
@@ -23,8 +24,17 @@ export default class ChartService {
     this._categories = categories;
   }
 
-  format() {
-    console.log(this._categories);
+  createSeries() {
+    const hashByCategory = this._groupTransactionsByCategory();
+    this._series = Array(this._deepness).fill([]);
+    this._createSeriesFromHash(hashByCategory);
+  }
+
+  getSeries(index: number) {
+    return this._series[index] || [];
+  }
+
+  private _groupTransactionsByCategory(): hashByCategory {
     let hashByCategory: hashByCategory = {};
 
     this._transactions.forEach((t) => {
@@ -35,14 +45,7 @@ export default class ChartService {
       this._total += t.amount;
       hashByCategory = this._setHashList(tags, t.amount, hashByCategory);
     });
-    console.log(hashByCategory);
-    console.log("Grand Total", this._total);
-    console.log(this._deepness);
-
-    this._series = Array(this._deepness || 0).fill([]);
-    this._createSeries(hashByCategory);
-    return this._series;
-    // return hashByCategory;
+    return hashByCategory;
   }
 
   private _setHashList(
@@ -68,7 +71,7 @@ export default class ChartService {
     return hashByCategory;
   }
 
-  private _createSeries(
+  private _createSeriesFromHash(
     hashByCategory: hashByCategory,
     parentCategory?: hashItem,
     index = 0
@@ -78,22 +81,23 @@ export default class ChartService {
     if (Object.keys(hashByCategory).length > 0) {
       Object.keys(hashByCategory).forEach((key) => {
         currentTotal += hashByCategory[key].amount;
+        const percentageValue = Math.round(
+          ((hashByCategory[key].amount * 100) / this._total) * 100
+        ) / 100
         series.push({
           label: this._categories[key].name || key,
-          value:
-            Math.round(
-              ((hashByCategory[key].amount * 100) / this._total) * 100
-            ) / 100,
+          value: percentageValue,
           amount: Math.round(hashByCategory[key].amount * 100) / 100,
-          color: index && parentCategory ? this._shadeColor(this._categories[parentCategory.categoryKey].color, 95) : this._categories[key].color,
+          color: index && parentCategory ? this._buildSubGroupColor(this._categories[parentCategory.categoryKey].color, percentageValue) : this._categories[key].color,
         });
 
         if (this._deepness > index + 1) {
-          this._createSeries(
+          this._createSeriesFromHash(
             hashByCategory[key].children,
             hashByCategory[key],
             index + 1
           );
+
         }
       });
     }
@@ -104,31 +108,19 @@ export default class ChartService {
           label: "Others",
           value: Math.round(((rest * 100) / this._total) * 100) / 100,
           amount: Math.round(rest * 100) / 100,
-          color: index ? this._shadeColor(this._categories[parentCategory.categoryKey].color, 95) : "#ccc",
+          color: index ? this._buildSubGroupColor(this._categories[parentCategory.categoryKey].color, series.length) : "#ccc",
         });
       }
-      console.log("index");
     }
 
-    if (this._series[index]) {
+    if (series.length > 0) {
       this._series[index] = this._series[index].concat(series);
     }
-    // return series
   }
 
-  private _shadeColor(color: string, percent: number): string {
-    let R = parseInt(color.substring(1, 3), 16);
-    let G = parseInt(color.substring(3, 5), 16);
-    let B = parseInt(color.substring(5, 7), 16);
-
-    R = Math.min(255, Math.max(0, Math.round(R + (R * percent) / 100)));
-    G = Math.min(255, Math.max(0, Math.round(G + (G * percent) / 100)));
-    B = Math.min(255, Math.max(0, Math.round(B + (B * percent) / 100)));
-
-    const RR = R.toString(16).padStart(2, "0");
-    const GG = G.toString(16).padStart(2, "0");
-    const BB = B.toString(16).padStart(2, "0");
-    console.log(`Returning: #${RR}${GG}${BB}`);
-    return `#${RR}${GG}${BB}`;
+  private _buildSubGroupColor(color: string, percent: number): string {
+    const factor = percent / 10;
+    return lighten(color, factor).toString();
   }
+
 }
