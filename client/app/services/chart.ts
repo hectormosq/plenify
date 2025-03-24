@@ -6,11 +6,12 @@ type hashItem = {
   parent?: hashItem;
 };
 type hashByCategory = Record<string, hashItem>;
-type Series = { label: string; value: number; color: string; amount: number };
+
 
 import { lighten } from "@mui/material";
 import { Categories } from "../models/categories";
 import { Transaction } from "../models/transaction";
+import { Series } from "../models/chart";
 
 export default class ChartService {
   _transactions: Transaction[];
