@@ -67,7 +67,6 @@ export default function DashboardPage() {
               />
             </Tabs>
 
-
             <TabPanel value={activeTab} index={0}>
               <>
                 {series && series.length > 0 ? (
@@ -79,6 +78,7 @@ export default function DashboardPage() {
                         paddingAngle: 1.5,
                         cornerRadius: 2,
                         data: series[0],
+                        cx: 150,
                       },
                       {
                         innerRadius: 120,
@@ -86,9 +86,10 @@ export default function DashboardPage() {
                         paddingAngle: 1.25,
                         cornerRadius: 2,
                         data: series[1],
+                        cx: 150,
                       },
                     ]}
-                    width={400}
+                    width={315}
                     height={300}
                     slotProps={{
                       legend: { hidden: true },
@@ -106,7 +107,9 @@ export default function DashboardPage() {
           <div>
             <div className={classes.transactionsHeader}>
               <div>Recent Transactions</div>
-              <div><Link href="/transaction-list">See All</Link></div>
+              <div>
+                <Link href="/transaction-list">See All</Link>
+              </div>
             </div>
             <TransactionList transactionList={recentTransactions} />
           </div>
