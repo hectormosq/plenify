@@ -42,5 +42,9 @@
   "devDependencies": {
     "concurrently": "^9.1.2",
     "run-script-os": "^1.1.6"
+  },
+  "dependencies": {
+    "@mui/material": "^6.4.8",
+    "@mui/x-charts": "^7.28.0"
   }
 }

@@ -1,0 +1,1 @@
+export type Series = { label: string; value: number; color: string; amount: number };

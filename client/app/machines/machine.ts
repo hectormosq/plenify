@@ -114,7 +114,7 @@ export const machine = setup({
           transaction: {
             date: new Date(),
             description: `Test ${new Date().toLocaleDateString()}`,
-            amount: new Date().getTime(),
+            amount: Math.floor(Math.random() * 501), // Random amount between 0 and 500
           }
         }),
         onDone: {
