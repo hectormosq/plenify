@@ -4,7 +4,7 @@ import { Series } from "../models/chart";
 import { PieChart } from "@mui/x-charts";
 import ChartService from "../services/chart";
 import { usePlenifyState } from "../hooks/usePlenifyState";
-import StyledTabs from "./Tabs";
+import TabsContainer from "./Tabs";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -35,7 +35,7 @@ export default function FinanceOverviewTabs() {
 
   return (
     <>
-      <StyledTabs
+      <TabsContainer
         value={activeTab}
         onChange={(_: unknown, newValue: number) => {
           setActiveTab(newValue);
@@ -49,7 +49,7 @@ export default function FinanceOverviewTabs() {
           label="Incomes"
           {...tabProps(1)}
         />
-      </StyledTabs>
+      </TabsContainer>
 
       <TabPanel value={activeTab} index={0}>
         {multiLevelPieChart(series)}

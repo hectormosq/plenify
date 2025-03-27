@@ -1,7 +1,7 @@
 import styled from "@emotion/styled"
 import { Tabs } from "@mui/material";
 
-const StyledTabs = styled(Tabs)`
+const TabsContainer = styled(Tabs)`
     & .MuiTabs-indicator {
         background-color: var(--gradientmaincolor); // Customize the indicator color
     }
@@ -15,4 +15,4 @@ const StyledTabs = styled(Tabs)`
     }
 `;
 
-export default StyledTabs;
+export default TabsContainer;
