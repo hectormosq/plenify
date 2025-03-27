@@ -120,7 +120,7 @@ export default class ChartService {
   }
 
   private _buildSubGroupColor(color: string, percent: number): string {
-    const factor = percent / 10;
+    const factor = percent / 100;
     return lighten(color, factor).toString();
   }
 
