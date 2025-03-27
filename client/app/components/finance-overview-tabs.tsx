@@ -3,7 +3,7 @@ import { Series } from "../models/chart";
 import { PieChart } from "@mui/x-charts";
 import ChartService from "../services/chart";
 import { usePlenifyState } from "../hooks/usePlenifyState";
-import TabsContainer from "./Tabs";
+import TabsContainer from "./Tabs/Tabs";
 
 interface TabPanelProps {
   children?: React.ReactNode;

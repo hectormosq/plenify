@@ -1,9 +1,6 @@
 import styled from "@emotion/styled";
-import {
-  Tab,
-  Tabs,
-  TabsProps,
-} from "@mui/material";
+import { Tab, Tabs, TabsProps } from "@mui/material";
+import { TabsContainerProps } from "./Tabs.model";
 
 const StyledTabs = styled(Tabs)`
   & .MuiTabs-indicator {
@@ -26,7 +23,7 @@ const tabProps = (index: number) => {
   };
 };
 
-const TabsContainer = function (props: TabsProps & { tabs: string[] }) {
+const TabsContainer = function (props: TabsContainerProps) {
   const { tabs, ...rest } = props;
   return (
     <StyledTabs {...rest}>
@@ -38,4 +35,3 @@ const TabsContainer = function (props: TabsProps & { tabs: string[] }) {
 };
 
 export default TabsContainer;
-
