@@ -1,4 +1,3 @@
-import { Tab } from "@mui/material";
 import { useState } from "react";
 import { Series } from "../models/chart";
 import { PieChart } from "@mui/x-charts";
@@ -15,17 +14,10 @@ interface TabPanelProps {
 export default function FinanceOverviewTabs() {
   const [activeTab, setActiveTab] = useState(0);
   const { transactions, categories } = usePlenifyState();
-  
+
   const pieChart = new ChartService(transactions, categories!);
   pieChart.createSeries();
   const series = [pieChart.getSeries(0), pieChart.getSeries(1)];
-
-  const tabProps = (index: number) => {
-    return {
-      id: `action-tab-${index}`,
-      "aria-controls": `action-tabpanel-${index}`,
-    };
-  };
 
   function TabPanel(props: TabPanelProps) {
     const { children, value, index } = props;
@@ -37,19 +29,11 @@ export default function FinanceOverviewTabs() {
     <>
       <TabsContainer
         value={activeTab}
-        onChange={(_: unknown, newValue: number) => {
-          setActiveTab(newValue);
+        tabs={["Expenses", "Incomes"]}
+        onChange={(_: unknown, newActiveTab: number) => {
+          setActiveTab(newActiveTab);
         }}
-      >
-        <Tab
-          label="Expenses"
-          {...tabProps(0)}
-        />
-        <Tab
-          label="Incomes"
-          {...tabProps(1)}
-        />
-      </TabsContainer>
+      />
 
       <TabPanel value={activeTab} index={0}>
         {multiLevelPieChart(series)}
@@ -60,9 +44,9 @@ export default function FinanceOverviewTabs() {
     </>
   );
 }
-  const pieWidth = 25;
-  const pieRadius = 70;
-  const gap = 5;
+const pieWidth = 25;
+const pieRadius = 70;
+const gap = 5;
 
 function multiLevelPieChart(series: Series[][], depth?: number) {
   const calculatedSeries = [];
@@ -70,7 +54,7 @@ function multiLevelPieChart(series: Series[][], depth?: number) {
   const lastRadius = calculateRadius(maxDepth - 1);
   const cx = lastRadius.outerRadius;
 
-  for (let i=0; i < maxDepth; i++) {
+  for (let i = 0; i < maxDepth; i++) {
     const { innerRadius, outerRadius } = calculateRadius(i);
     const configSeries = {
       innerRadius,
@@ -79,7 +63,7 @@ function multiLevelPieChart(series: Series[][], depth?: number) {
       cornerRadius: 2,
       cx,
       data: series[i],
-    }
+    };
     calculatedSeries.push(configSeries);
   }
 
@@ -88,8 +72,8 @@ function multiLevelPieChart(series: Series[][], depth?: number) {
       {series && series.length > 0 ? (
         <PieChart
           series={calculatedSeries}
-          width={(cx+gap)*2}
-          height={(cx+gap)*2}
+          width={(cx + gap) * 2}
+          height={(cx + gap) * 2}
           slotProps={{
             legend: { hidden: true },
           }}
