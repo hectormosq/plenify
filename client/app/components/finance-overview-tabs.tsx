@@ -1,9 +1,10 @@
-import { Tab, Tabs } from "@mui/material";
+import { Tab } from "@mui/material";
 import { useState } from "react";
 import { Series } from "../models/chart";
 import { PieChart } from "@mui/x-charts";
 import ChartService from "../services/chart";
 import { usePlenifyState } from "../hooks/usePlenifyState";
+import StyledTabs from "./Tabs";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -34,24 +35,21 @@ export default function FinanceOverviewTabs() {
 
   return (
     <>
-      <Tabs
+      <StyledTabs
         value={activeTab}
-        sx={{ '& .MuiTabs-indicator': {'background-color': '#9ACD32'} }}
         onChange={(_: unknown, newValue: number) => {
           setActiveTab(newValue);
         }}
       >
         <Tab
-          style={{ color: activeTab === 0 ? "#9ACD32" : "#ddd6cb" }}
           label="Expenses"
           {...tabProps(0)}
         />
         <Tab
-          style={{ color: activeTab === 1 ? "#9ACD32" : "#ddd6cb" }}
           label="Incomes"
           {...tabProps(1)}
         />
-      </Tabs>
+      </StyledTabs>
 
       <TabPanel value={activeTab} index={0}>
         {multiLevelPieChart(series)}
