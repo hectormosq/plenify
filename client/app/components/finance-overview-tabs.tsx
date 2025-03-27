@@ -36,6 +36,7 @@ export default function FinanceOverviewTabs() {
     <>
       <Tabs
         value={activeTab}
+        sx={{ '& .MuiTabs-indicator': {'background-color': '#9ACD32'} }}
         onChange={(_: unknown, newValue: number) => {
           setActiveTab(newValue);
         }}
