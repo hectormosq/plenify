@@ -17,7 +17,7 @@ export default function TransactionList(props: {
               <div>{transaction.description}</div>
               {transaction.tags &&
                 transaction.tags.map((tag: string) => {
-                  return CategoryTag({ id: transaction.id!, tag });
+                  return <CategoryTag id={transaction.id!} tag={tag} />;
                 })}
             </div>
             <div>{moment(transaction.date).fromNow()}</div>
