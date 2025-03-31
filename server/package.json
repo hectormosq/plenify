@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "tsx watch src/app.ts",
     "start": "tsx src/app.ts",
-    "vercel-build": "echo 'vercel-build'"
+    "vercel-build": "echo 'vercel-build'",
+    "test": "jest --coverage --coverageReporters json-summary",
+    "test:watch": "jest --watch"
   },
   "keywords": [],
   "author": "",
