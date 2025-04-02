@@ -24,7 +24,7 @@ export default function DashboardPage() {
             <FinanceOverviewTabs />
           </div>
           <div className={classes.addSection}>
-            <button>Add</button>
+          <Link href="/admin/add">Add</Link>
           </div>
           <div className={classes.transactionsContainer}>
             <div className={classes.transactionsHeader}>

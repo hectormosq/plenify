@@ -13,7 +13,7 @@ export default function Header() {
             <Link href="/transaction-list">Transaction List</Link>
           </li>
           <li>
-            <Link href="/admin">Add</Link>
+            <Link href="/admin/add">Add</Link>
           </li>
         </ul>
       </nav>
