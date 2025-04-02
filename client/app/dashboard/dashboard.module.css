@@ -1,6 +1,29 @@
+.dashboardContainer {
+  display: flex;
+  padding: 1rem;
+  flex-direction: column;
+  gap: 0.5rem
+}
+
+.summaryContainer {
+  border: 1px solid red;
+}
+
 .transactionsHeader {
   display: flex;
   justify-content: space-between;
-  padding: 1rem;
   border-bottom: 1px solid #e0e0e0;
+}
+
+.overviewContainer{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.addSection {
+  display: flex;
+  justify-content: end;
 }

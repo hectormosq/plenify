@@ -4,7 +4,7 @@ import CategoryTag from "../categories/category";
 import classes from "./transaction-list.module.css";
 
 export default function TransactionList(props: {
-  transactionList: Transaction[] | undefined;
+  transactionList: Transaction[];
 }) {
   const { transactionList } = props;
 
@@ -15,10 +15,18 @@ export default function TransactionList(props: {
           <div key={transaction.id} className={classes.row}>
             <div className={classes.descriptionContainer}>
               <div>{transaction.description}</div>
-              {transaction.tags &&
-                transaction.tags.map((tag: string) => {
-                  return <CategoryTag id={transaction.id!} tag={tag} />;
-                })}
+              <div className={classes.categories}>
+                {transaction.tags &&
+                  transaction.tags.map((tag: string) => {
+                    return (
+                      <CategoryTag
+                        id={transaction.id!}
+                        tag={tag}
+                        key={transaction.id}
+                      />
+                    );
+                  })}
+              </div>
             </div>
             <div>{moment(transaction.date).fromNow()}</div>
             <div>{`${transaction.amount} ${transaction.currency}`}</div>

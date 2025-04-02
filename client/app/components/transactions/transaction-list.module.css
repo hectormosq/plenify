@@ -12,3 +12,8 @@
   flex-direction: column;
   flex: 1
 }
+
+.categories {
+  display: flex;
+  gap: 0.5rem;
+}
