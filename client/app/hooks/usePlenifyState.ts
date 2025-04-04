@@ -15,7 +15,7 @@ export const usePlenifyState = () => {
 
   const categories = useSelector(actor, (state) =>
     state.matches('loaded')
-      ? state.context.categories
+      ? state.context.categories as Categories
       : {} as Categories
   );
 

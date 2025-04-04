@@ -64,3 +64,8 @@
   color: #979797;
   cursor: not-allowed;
 }
+
+.chips {
+  display: flex;
+  gap: 0.5rem;
+}
