@@ -42,8 +42,7 @@ export default class PlenifyService {
   }
 
   async setup() {
-    console.log('setup');
-    const res = await fetch('api/v1/categories');
+    const res = await fetch('/api/v1/categories');
     if (res.ok) {
       const json = await res.json();
       const { categories, defaultCategory } = json.data;
