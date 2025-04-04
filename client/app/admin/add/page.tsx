@@ -17,7 +17,7 @@ import {
   styled,
 } from "@mui/material";
 import { useState } from "react";
-import CategoryTag from "@/app/components/categories/category";
+import CategoryTag from "@/app/components/categories/CategoryTag";
 
 interface PopperComponentProps {
   anchorEl?: unknown;
