@@ -2,7 +2,7 @@ import { assign, fromPromise, setup } from 'xstate';
 import { ControllerContext, ControllerEvent } from './types';
 import { DEFAULT_CONTEXT } from './defaults';
 import { plenifyService } from '../services';
-import { Transaction } from '../models/transaction';
+import { Transaction, TransactionType } from '../models/transaction';
 
 export const machine = setup({
   types: {
@@ -115,6 +115,8 @@ export const machine = setup({
             date: new Date(),
             description: `Test ${new Date().toLocaleDateString()}`,
             amount: Math.floor(Math.random() * 501), // Random amount between 0 and 500
+            transactionType: TransactionType.EXPENSE,
+            tags: []
           }
         }),
         onDone: {

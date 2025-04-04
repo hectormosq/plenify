@@ -5,10 +5,15 @@ import { useState } from "react";
 import CategorySelector from "@/app/components/categories/CategorySelector";
 import { usePlenifyState } from "@/app/hooks/usePlenifyState";
 import Loader from "@/app/components/loader";
+import { TransactionType } from "../../models/transaction";
+import TransactionTypeButtonSelector from "@/app/components/Buttons/TransactionTypeButton";
 
 export default function AdminPage() {
   const { loading } = usePlenifyState();
   const [categoryList, setCategoryList] = useState<string[]>([]);
+  const [transactionType, setTransactionType] = useState<TransactionType>(
+    TransactionType.EXPENSE
+  );
 
   return (
     <>
@@ -49,12 +54,19 @@ export default function AdminPage() {
                 />
               </p>
             </div>
-            <div className={classes.row}>
-              <div>
+            <div className={`${classes.row} `}>
+              <div className={classes.fullWidth}>
                 <label htmlFor="category_list">Categories</label>
                 <CategorySelector
                   selectedCategories={categoryList}
                   onSelectCategory={setCategoryList}
+                />
+              </div>
+              <div className={classes.fullWidth}>
+                <label htmlFor="transactionType">Transaction</label>
+                <TransactionTypeButtonSelector
+                  transactionType={transactionType}
+                  onTransactionChange={setTransactionType}
                 />
               </div>
             </div>

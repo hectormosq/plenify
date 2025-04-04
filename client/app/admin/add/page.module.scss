@@ -1,5 +1,9 @@
 @use "@styles/forms";
 
+.fullWidth {
+  width: 100%;
+}
+
 .row {
   display: flex;
   gap: 1rem;
