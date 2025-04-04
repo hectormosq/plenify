@@ -6,19 +6,25 @@ export default function TransactionTypeButtonSelector(props: {
   onTransactionChange: (type: TransactionType) => void;
 }) {
   const StyledToggleButton = styled(ToggleButton)(() => ({
-    ["&.Mui-selected"]: {
+    [`&.Mui-selected, &.Mui-selected:hover`]: {
       backgroundColor:
         props.transactionType === TransactionType.INCOME
           ? "var(--incomescolor)"
           : "var(--expensescolor)",
     },
   }));
+
+  const handleValueChange = (newType: TransactionType | undefined) => {
+    if (newType) {
+      props.onTransactionChange(newType);
+    }
+  };
   return (
     <ToggleButtonGroup
       id="transactionType"
       value={props.transactionType}
       exclusive
-      onChange={(_, newType) => props.onTransactionChange(newType)}
+      onChange={(_, newType) => handleValueChange(newType)}
     >
       <StyledToggleButton
         style={{ borderColor: "var(--incomescolor)" }}
