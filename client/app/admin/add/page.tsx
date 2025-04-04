@@ -32,6 +32,7 @@ export default function AdminPage() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const open = Boolean(anchorEl);
+  const maxCategories = 2;
 
   const handleSelectTag = (event: React.MouseEvent<HTMLElement>) => {
     setPendingValue(categoryList);
@@ -134,7 +135,7 @@ export default function AdminPage() {
                   />
                 ))}
               </div>
-              <Button disableRipple onClick={handleSelectTag}>
+              <Button disableRipple onClick={handleSelectTag} disabled={categoryList.length >= maxCategories}>
                 <TagIcon />
               </Button>
             </div>
@@ -152,7 +153,6 @@ export default function AdminPage() {
                     event: React.ChangeEvent<unknown>,
                     reason: AutocompleteCloseReason
                   ) => {
-                    console.log("onClose", event, reason);
                     if (reason === "escape") {
                       handleClose();
                     }
