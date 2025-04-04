@@ -20,9 +20,8 @@ export default function TransactionList(props: {
                   transaction.tags.map((tag: string) => {
                     return (
                       <CategoryTag
-                        id={transaction.id!}
-                        tag={tag}
-                        key={transaction.id}
+                        id={tag}
+                        key={transaction.id! +tag}
                       />
                     );
                   })}

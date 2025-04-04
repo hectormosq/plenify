@@ -1,21 +1,38 @@
 import { usePlenifyState } from "@/app/hooks/usePlenifyState";
+import { Chip, styled } from "@mui/material";
 
-export default function CategoryTag(props: { id: string; tag: string }) {
+export default function CategoryTag(props: {
+  id: string;
+  handleDeleteCategory?: (id: string) => void;
+}) {
   const { categories } = usePlenifyState();
-  const { id, tag } = props;
-  const categoryObj = categories && categories[tag];
+  const { id, handleDeleteCategory } = props;
+  const categoryObj = categories && categories[id];
+  const conditionalOnDelete = () => {
+    if (handleDeleteCategory) {
+      return {
+        onDelete: () => handleDeleteCategory(id),
+      };
+    }
+    return {};
+  };
   return (
-    <div
-      key={`${id}${tag}`}
-      style={{
-        background: categoryObj?.color,
-        display: "flex",
-        width: "fit-content",
-        padding: "1px 5px",
-        borderRadius: "10px",
-      }}
-    >
-      {categoryObj?.name}
-    </div>
+    <>
+      <StyledChip
+        label={categoryObj.name}
+        variant="outlined"
+        style={{
+          color: categoryObj.color,
+          borderColor: categoryObj.color,
+        }}
+        {...conditionalOnDelete()}
+      />
+    </>
   );
 }
+
+const StyledChip = styled(Chip)`
+  & .MuiChip-deleteIcon {
+    color: inherit;
+  }
+`;

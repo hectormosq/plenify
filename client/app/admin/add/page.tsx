@@ -11,14 +11,13 @@ import {
   AutocompleteCloseReason,
   Box,
   Button,
-  Chip,
   ClickAwayListener,
   InputBase,
   Popper,
   styled,
 } from "@mui/material";
 import { useState } from "react";
-import { Category } from "@/app/models/categories";
+import CategoryTag from "@/app/components/categories/category";
 
 interface PopperComponentProps {
   anchorEl?: unknown;
@@ -128,15 +127,10 @@ export default function AdminPage() {
             <div className={classes.row}>
               <div className={classes.chips}>
                 {categoryList.map((value) => (
-                  <Chip
+                  <CategoryTag
                     key={value}
-                    label={categories[value].name}
-                    variant="outlined"
-                    onDelete={() => handleDeleteCategory(value)}
-                    style={{
-                      color: categories[value].color,
-                      borderColor: categories[value].color,
-                    }}
+                    id={value}
+                    handleDeleteCategory={() => handleDeleteCategory(value)}
                   />
                 ))}
               </div>
