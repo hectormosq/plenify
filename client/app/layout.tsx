@@ -1,10 +1,10 @@
 "use client";
 
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
 import Header from "./components/header";
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { actor, PlenifyContext } from "./context";
+import "./styles/styles.scss";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

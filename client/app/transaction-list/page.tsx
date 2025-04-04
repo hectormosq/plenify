@@ -4,7 +4,6 @@ import Loader from "../components/loader";
 import TransactionList from "../components/transactions/transaction-list";
 import { usePlenifyState } from "../hooks/usePlenifyState";
 
-
 export default function TransactionListPage() {
   const { loading, transactions, addTransaction, reset } = usePlenifyState();
 

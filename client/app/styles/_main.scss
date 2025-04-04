@@ -1,0 +1,26 @@
+:root {
+    --background: #ffffff;
+    --foreground: #171717;
+    --border: #454952;
+    --maincolor: #32CD32;
+    --gradientmaincolor: #9ACD32;
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: #0a0a0a;
+      --foreground: #ededed;
+      --inputBackground: #1c2027;
+    }
+  }
+  
+  body {
+    color: var(--foreground);
+    background: var(--background);
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  
+  main {
+    padding: 20px;
+  }
+  

@@ -1,6 +1,6 @@
 "use client";
 
-import classes from "./page.module.css";
+import classes from "./page.module.scss";
 import { useState } from "react";
 import CategorySelector from "@/app/components/categories/CategorySelector";
 import { usePlenifyState } from "@/app/hooks/usePlenifyState";

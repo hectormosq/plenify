@@ -54,7 +54,7 @@ export default function CategorySelector({
 
   return (
     <>
-      <div className="form" style={{ display: "flex" }}>
+      <div style={{ display: "flex" }}>
         <div style={{ display: "flex", gap: "0.5rem" }}>
           {selectedCategories.map((value) => (
             <CategoryTag
@@ -114,6 +114,7 @@ export default function CategorySelector({
                     sx={{ width: 17, height: 17, mr: "5px", ml: "-2px" }}
                     style={{
                       visibility: selected ? "visible" : "hidden",
+                      color: 'var(--background)',
                     }}
                   />
                   <Box
@@ -146,6 +147,7 @@ export default function CategorySelector({
                     sx={{ opacity: 0.6, width: 18, height: 18 }}
                     style={{
                       visibility: selected ? "visible" : "hidden",
+                      color: 'var(--background)',
                     }}
                   />
                 </li>
@@ -187,50 +189,50 @@ export default function CategorySelector({
 }
 
 const StyledPopper = styled(Popper)(({ theme }) => ({
-  border: "1px solid #e1e4e8",
-  boxShadow: `0 8px 24px ${"rgba(149, 157, 165, 0.2)"}`,
-  color: "#24292e",
-  backgroundColor: "#fff",
-  borderRadius: 6,
-  width: 300,
-  zIndex: theme.zIndex.modal,
-  fontSize: 13,
-  ...theme.applyStyles("dark", {
-    border: "1px solid #30363d",
-    boxShadow: "0 8px 24px rgb(1, 4, 9)",
-    color: "#c9d1d9",
-    backgroundColor: "#1c2128",
-  }),
-}));
+    border: '1px solid var(--border)',
+    backgroundColor: 'var(--background)',
+    boxShadow: `0 8px 24px ${'rgba(149, 157, 165, 0.2)'}`,
+    color: '#24292e',
+    borderRadius: 6,
+    width: 300,
+    zIndex: theme.zIndex.modal,
+    fontSize: 13,
+    ...theme.applyStyles('dark', {
+      border: '1px solid #30363d',
+      boxShadow: '0 8px 24px rgb(1, 4, 9)',
+      color: '#c9d1d9',
+      backgroundColor: '#1c2128',
+    }),
+  }));
 
 const StyledInput = styled(InputBase)(({ theme }) => ({
-  padding: 10,
-  width: "100%",
-  borderBottom: "1px solid #eaecef",
-  ...theme.applyStyles("dark", {
-    borderBottom: "1px solid #30363d",
-  }),
-  "& input": {
-    borderRadius: 4,
-    padding: 8,
-    transition: theme.transitions.create(["border-color", "box-shadow"]),
-    fontSize: 14,
-    backgroundColor: "#fff",
-    border: "1px solid #30363d",
-    ...theme.applyStyles("dark", {
-      backgroundColor: "#0d1117",
-      border: "1px solid #eaecef",
+    padding: 10,
+    width: '100%',
+    borderBottom: '1px solid var(--foreground)',
+    ...theme.applyStyles('dark', {
+      borderBottom: '1px solid #30363d',
     }),
-    "&:focus": {
-      boxShadow: "0px 0px 0px 3px rgba(3, 102, 214, 0.3)",
-      borderColor: "#0366d6",
-      ...theme.applyStyles("dark", {
-        boxShadow: "0px 0px 0px 3px rgb(12, 45, 107)",
-        borderColor: "#388bfd",
+    '& input': {
+      borderRadius: 4,
+      padding: 8,
+      transition: theme.transitions.create(['border-color', 'box-shadow']),
+      color: 'var(--foreground)',
+      backgroundColor: 'var(--inputBackground)',
+      border: '1px solid #30363d',
+      ...theme.applyStyles('dark', {
+        backgroundColor: '#0d1117',
+        border: '1px solid #eaecef',
       }),
+      '&:focus': {
+        boxShadow: '0px 0px 0px 3px rgba(3, 102, 214, 0.3)',
+        borderColor: '#0366d6',
+        ...theme.applyStyles('dark', {
+          boxShadow: '0px 0px 0px 3px rgb(12, 45, 107)',
+          borderColor: '#388bfd',
+        }),
+      },
     },
-  },
-}));
+  }));
 
 const StyledAutocompletePopper = styled("div")(({ theme }) => ({
   [`& .${autocompleteClasses.paper}`]: {
@@ -241,24 +243,24 @@ const StyledAutocompletePopper = styled("div")(({ theme }) => ({
   },
   [`& .${autocompleteClasses.listbox}`]: {
     padding: 0,
-    backgroundColor: "#fff",
+    backgroundColor: 'var(--background)',
     ...theme.applyStyles("dark", {
       backgroundColor: "#1c2128",
     }),
     [`& .${autocompleteClasses.option}`]: {
       minHeight: "auto",
       alignItems: "flex-start",
-      padding: 8,
-      borderBottom: "1px solid #eaecef",
+      padding: "1rem",
+      borderBottom: "1px solid var(--border)",
       ...theme.applyStyles("dark", {
         borderBottom: "1px solid #30363d",
       }),
       '&[aria-selected="true"]': {
-        backgroundColor: "transparent",
+        backgroundColor: "var(--inputBackground)",
       },
       [`&.${autocompleteClasses.focused}, &.${autocompleteClasses.focused}[aria-selected="true"]`]:
         {
-          backgroundColor: theme.palette.action.hover,
+          backgroundColor: 'var(--foreground)',
         },
     },
   },
