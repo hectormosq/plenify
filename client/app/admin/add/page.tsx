@@ -65,7 +65,7 @@ export default function AdminPage() {
         <Loader />
       ) : (
         <div>
-          <form className={classes.form} action={handleSubmit}>
+          <form className={classes.form} onSubmit={handleSubmit}>
             <div className={classes.row}>
               <p>
                 <label htmlFor="amount">Amount</label>
