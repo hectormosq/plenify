@@ -77,7 +77,7 @@ export default function AdminPage() {
                   required
                   value={transactionAmount}
                   onChange={(e) => {
-                    setTransactionAmount(parseInt(e.target.value, 10));
+                    setTransactionAmount(parseFloat(e.target.value));
                   }}
                 />
               </p>
