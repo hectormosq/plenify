@@ -4,9 +4,8 @@ import Loader from "../components/loader";
 import TransactionList from "../components/transactions/transaction-list";
 import { usePlenifyState } from "../hooks/usePlenifyState";
 
-
 export default function TransactionListPage() {
-  const { loading, transactions, addTransaction, reset } = usePlenifyState();
+  const { loading, transactions, reset } = usePlenifyState();
 
   return (
     <>
@@ -22,7 +21,6 @@ export default function TransactionListPage() {
             background: "grey",
             margin: "10px 0",
           }}
-          onClick={addTransaction}
         >
           Add Transaction
         </button>
