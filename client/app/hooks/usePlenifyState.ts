@@ -26,9 +26,10 @@ export const usePlenifyState = () => {
   );
 
   const addTransaction = useCallback(
-    () => {
+    (transaction: Transaction) => {
       actor.send({
         type: 'ADD_TRANSACTION',
+        transaction
       });
     },
     [actor]

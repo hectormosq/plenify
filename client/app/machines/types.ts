@@ -32,10 +32,13 @@ export type ControllerTypeState =
 export type ControllerContext =
   ControllerTypeState['context'];
 
+export type TransactionEvent = {
+  type: 'ADD_TRANSACTION';
+  transaction: Transaction;
+};
+
 export type ControllerEvent =
-  | {
-      type: 'ADD_TRANSACTION';
-    }
+  | TransactionEvent
   | {
       type: 'RESET';
     };

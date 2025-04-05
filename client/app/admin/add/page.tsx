@@ -7,21 +7,65 @@ import { usePlenifyState } from "@/app/hooks/usePlenifyState";
 import Loader from "@/app/components/loader";
 import { TransactionType } from "../../models/transaction";
 import TransactionTypeButtonSelector from "@/app/components/Buttons/TransactionTypeButton";
+import { Dayjs } from "dayjs";
+import dayjs from "dayjs";
+import StyledDate from "@/app/components/Date/StyleDate";
 
 export default function AdminPage() {
-  const { loading } = usePlenifyState();
-  const [categoryList, setCategoryList] = useState<string[]>([]);
+  const defaultTransaction = {
+    transactionType: TransactionType.EXPENSE,
+    date: dayjs(),
+    description: "",
+    amount: 0,
+    currency: "EUR",
+    tags: [],
+  };
+  const { loading, addTransaction } = usePlenifyState();
+  const [categoryList, setCategoryList] = useState<string[]>(
+    defaultTransaction.tags
+  );
   const [transactionType, setTransactionType] = useState<TransactionType>(
-    TransactionType.EXPENSE
+    defaultTransaction.transactionType
+  );
+  const [transactionDate, setTransactionDate] = useState<Dayjs>(
+    defaultTransaction.date
+  );
+  const [transactionAmount, setTransactionAmount] = useState<number>(
+    defaultTransaction.amount
+  );
+  const [transactionDescription, setTransactionDescription] = useState<string>(
+    defaultTransaction.description
   );
 
+  // TODO Make this configurable
+  const transactionCurrency = "EUR";
+
+  const handleSubmit = () => {
+    addTransaction({
+      transactionType,
+      date: transactionDate.toDate(),
+      description: transactionDescription,
+      amount: transactionAmount,
+      currency: transactionCurrency,
+      tags: categoryList,
+    });
+    handleReset();
+  };
+
+  const handleReset = () => {
+    setTransactionAmount(defaultTransaction.amount);
+    setTransactionDescription(defaultTransaction.description);
+    setTransactionDate(defaultTransaction.date);
+    setCategoryList(defaultTransaction.tags);
+    setTransactionType(defaultTransaction.transactionType);
+  }  
   return (
     <>
       {loading ? (
         <Loader />
       ) : (
         <div>
-          <form className={classes.form}>
+          <form className={classes.form} action={handleSubmit}>
             <div className={classes.row}>
               <p>
                 <label htmlFor="amount">Amount</label>
@@ -31,17 +75,19 @@ export default function AdminPage() {
                   name="amount"
                   step="0.01"
                   required
+                  value={transactionAmount}
+                  onChange={(e) => {
+                    setTransactionAmount(parseInt(e.target.value, 10));
+                  }}
                 />
               </p>
-              <p>
+              <div>
                 <label htmlFor="operation_date">Date</label>
-                <input
-                  type="date"
-                  id="operation_date"
-                  name="operation_date"
-                  required
+                <StyledDate
+                  date={transactionDate}
+                  onSetDate={setTransactionDate}
                 />
-              </p>
+              </div>
             </div>
             <div className={classes.row}>
               <p>
@@ -51,6 +97,10 @@ export default function AdminPage() {
                   id="description"
                   name="description"
                   required
+                  value={transactionDescription}
+                  onChange={(e) => {
+                    setTransactionDescription(e.target.value);
+                  }}
                 />
               </p>
             </div>

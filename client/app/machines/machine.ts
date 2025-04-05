@@ -1,8 +1,8 @@
-import { assign, fromPromise, setup } from 'xstate';
-import { ControllerContext, ControllerEvent } from './types';
-import { DEFAULT_CONTEXT } from './defaults';
-import { plenifyService } from '../services';
-import { Transaction, TransactionType } from '../models/transaction';
+import { assign, fromPromise, setup } from "xstate";
+import { ControllerContext, ControllerEvent, TransactionEvent } from "./types";
+import { DEFAULT_CONTEXT } from "./defaults";
+import { plenifyService } from "../services";
+import { Transaction } from "../models/transaction";
 
 export const machine = setup({
   types: {
@@ -13,22 +13,22 @@ export const machine = setup({
   actors: {
     setup: fromPromise(
       async () => {
-        return plenifyService.setup();
+      return plenifyService.setup();
       }
     ),
     reset: fromPromise(
       async () => {
-        return plenifyService.reset();
+      return plenifyService.reset();
       }
     ),
     getCategories: fromPromise(
       async () => {
-        return plenifyService.getCategories();
+      return plenifyService.getCategories();
       }
     ),
     getTransactions: fromPromise(
       async () => {
-        return plenifyService.getTransactions();
+      return plenifyService.getTransactions();
       }
     ),
     addTransaction: fromPromise(
@@ -110,15 +110,18 @@ export const machine = setup({
     transaction: {
       invoke: {
         src: 'addTransaction',
-        input: () => ({
-          transaction: {
-            date: new Date(),
-            description: `Test ${new Date().toLocaleDateString()}`,
-            amount: Math.floor(Math.random() * 501), // Random amount between 0 and 500
-            transactionType: TransactionType.EXPENSE,
-            tags: []
-          }
-        }),
+        input: ({ event }) => {
+          const { transaction } = event as TransactionEvent;
+          return {
+            transaction: {
+              date: transaction.date,
+              description: transaction.description,
+              amount: transaction.amount, // Random amount between 0 and 500
+              transactionType: transaction.transactionType,
+              tags: transaction.tags,
+            },
+          };
+        },
         onDone: {
           target: '#plenify.initialized.transactions',
         }

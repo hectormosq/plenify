@@ -46,7 +46,6 @@ export default class PlenifyService {
     if (res.ok) {
       const json = await res.json();
       const { categories, defaultCategory } = json.data;
-
       this.defaultCategoryId = defaultCategory;
       this.categoryList = categories;
 
@@ -59,20 +58,9 @@ export default class PlenifyService {
   }
 
   addTransaction(transaction: Transaction) {
-    if (!transaction.tags || transaction.tags.length === 0) {
-      const categoryIds = Object.keys(this.categoryList);
-      const randomIndex = Math.floor(Math.random() * categoryIds.length);
-      transaction.tags = [categoryIds[randomIndex]];
-
-      if (Math.random() > 0.5 && categoryIds.length > 1) {
-      let secondRandomIndex;
-      do {
-        secondRandomIndex = Math.floor(Math.random() * categoryIds.length);
-      } while (secondRandomIndex === randomIndex);
-      transaction.tags.push(categoryIds[secondRandomIndex]);
-      }
-    }
-    const { date, description, amount, currency = 'EUR', tags = [this.defaultCategoryId!] } = transaction;
+    
+    const { date, description, amount, currency = 'EUR', tags } = transaction;
+    const categories = tags && tags.length ? tags : [this.defaultCategoryId!];
     const transactionId = v4();
 
     this.persister.getStore().transaction(
@@ -83,10 +71,10 @@ export default class PlenifyService {
           amount,
          currency,
         });
-        for (const tag of tags) {
+        for (const caetgory of categories) {
           this.persister.getStore().setRow(Tables.transactionCategories, v4(), {
             transaction: transactionId,
-            category: tag,
+            category: caetgory,
           });
         }
       },
