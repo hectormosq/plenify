@@ -19,6 +19,7 @@ const tablesSchema = {
     description: { type: 'string' },
     amount: { type: 'number' },
     currency: { type: 'string', default: 'EUR' },
+    transactionType: { type: 'string' },
   },
   [Tables.categories]: {
     name: { type: 'string' },
@@ -59,7 +60,7 @@ export default class PlenifyService {
 
   addTransaction(transaction: Transaction) {
     
-    const { date, description, amount, currency = 'EUR', tags } = transaction;
+    const { date, description, amount, transactionType, currency = 'EUR', tags } = transaction;
     const categories = tags && tags.length ? tags : [this.defaultCategoryId!];
     const transactionId = v4();
 
@@ -69,12 +70,13 @@ export default class PlenifyService {
           date: date.getTime(),
           description,
           amount,
-         currency,
+          currency,
+          transactionType
         });
-        for (const caetgory of categories) {
+        for (const category of categories) {
           this.persister.getStore().setRow(Tables.transactionCategories, v4(), {
             transaction: transactionId,
-            category: caetgory,
+            category: category,
           });
         }
       },
