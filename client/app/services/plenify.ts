@@ -1,7 +1,7 @@
 import { createMergeableStore, MergeableStore } from 'tinybase';
 import { createIndexedDbPersister, IndexedDbPersister } from 'tinybase/persisters/persister-indexed-db';
 import { v4 } from 'uuid';
-import { Transaction } from '../models/transaction';
+import { Transaction, TransactionType } from '../models/transaction';
 import { currency } from '../models/currencies';
 import { Categories } from '../models/categories';
 
@@ -105,6 +105,7 @@ export default class PlenifyService {
       amount: transaction.amount.valueOf() as number,
       currency: transaction.currency.toString() as currency,
       tags: transactionCategoriesGrouped[id],
+      transactionType: transaction.transactionType.valueOf() as TransactionType,
     }));
   }
 
