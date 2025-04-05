@@ -20,5 +20,7 @@ export default function StyledDate({
 }
 
 const StyledDateLocal = styled(DatePicker)(() => ({
-
+  [`.MuiSvgIcon-root`]: {
+    color: "var(--inputLabel)",
+  },
 }));

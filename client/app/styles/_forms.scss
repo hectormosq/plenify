@@ -1,6 +1,8 @@
 .form {
   display: flex;
+  flex: 1;
   flex-direction: column;
+  max-width: 75rem;
 }
 
 .form label {

@@ -1,5 +1,11 @@
 @use "@styles/forms";
 
+.container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
 .fullWidth {
   width: 100%;
 }

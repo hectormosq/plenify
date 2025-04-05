@@ -64,7 +64,7 @@ export default function AdminPage() {
       {loading ? (
         <Loader />
       ) : (
-        <div>
+        <div className={classes.container}> 
           <form className={classes.form} action={handleSubmit}>
             <div className={classes.row}>
               <p>
