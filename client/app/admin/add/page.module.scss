@@ -6,17 +6,9 @@
   width: 100%;
 }
 
-.fullWidth {
-  width: 100%;
-}
-
 .row {
   display: flex;
   gap: 1rem;
-}
-
-.row p {
-  width: 100%;
   margin-bottom: 1rem;
 }
 
@@ -25,7 +17,6 @@
 }
 
 .actions button {
-  margin-top: 2rem;
   border: 0;
   padding: 0.75rem 2rem;
   background: var(--maincolor);
@@ -50,6 +41,14 @@
   color: #979797;
   cursor: not-allowed;
 }
+
+@media only screen and (max-width: 600px) {
+  .actions button {
+    width: 100%;
+    margin-top: 1rem;
+  }
+}
+
 
 .chips {
   display: flex;

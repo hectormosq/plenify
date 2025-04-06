@@ -6,9 +6,13 @@ export default function TransactionTypeButtonSelector(props: {
   onTransactionChange: (type: TransactionType) => void;
 }) {
   const StyledToggleButton = styled(ToggleButton)(() => ({
+    [`&.MuiToggleButtonGroup-root`]: {
+      width: "100%",
+    },
     [`&.MuiButtonBase-root`]: {
       color: "var(--foreground)",
-       
+      fontFamily: "var(--fontFamily)",
+      width: "100%",
     },
     [`&.Mui-selected, &.Mui-selected:hover`]: {
       backgroundColor:
@@ -31,7 +35,7 @@ export default function TransactionTypeButtonSelector(props: {
       onChange={(_, newType) => handleValueChange(newType)}
     >
       <StyledToggleButton
-        style={{ borderColor: "var(--incomescolor)",  }}
+        style={{ borderColor: "var(--incomescolor)" }}
         value={TransactionType.INCOME}
         aria-label="income"
       >

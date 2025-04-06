@@ -4,22 +4,26 @@ import { Dayjs } from "dayjs";
 
 export default function StyledDate({
   date,
-  onSetDate,
+  onChangeDate,
 }: {
   date: Dayjs;
-  onSetDate: (date: Dayjs) => void;
+  onChangeDate: (date: Dayjs) => void;
 }) {
   return (
     <StyledDateLocal
+      className="datePicker"
       value={date}
       onChange={(e) => {
-        onSetDate(e as Dayjs);
+        onChangeDate(e as Dayjs);
       }}
     />
   );
 }
 
 const StyledDateLocal = styled(DatePicker)(() => ({
+  [`&.MuiFormControl-root`]: {
+    width: "100%",
+  },
   [`.MuiSvgIcon-root`]: {
     color: "var(--inputLabel)",
   },

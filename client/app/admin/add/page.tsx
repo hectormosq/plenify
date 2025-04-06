@@ -1,15 +1,14 @@
 "use client";
 
-import classes from "./page.module.scss";
 import { useState } from "react";
-import CategorySelector from "@/app/components/categories/CategorySelector";
 import { usePlenifyState } from "@/app/hooks/usePlenifyState";
-import Loader from "@/app/components/loader";
 import { TransactionType } from "../../models/transaction";
-import TransactionTypeButtonSelector from "@/app/components/Buttons/TransactionTypeButton";
-import { Dayjs } from "dayjs";
-import dayjs from "dayjs";
 import StyledDate from "@/app/components/Date/StyleDate";
+import CategorySelector from "@/app/components/categories/CategorySelector";
+import Loader from "@/app/components/loader";
+import TransactionTypeButtonSelector from "@/app/components/Buttons/TransactionTypeButton";
+import dayjs from "dayjs";
+import classes from "./page.module.scss";
 
 export default function AdminPage() {
   const defaultTransaction = {
@@ -21,53 +20,40 @@ export default function AdminPage() {
     tags: [],
   };
   const { loading, addTransaction } = usePlenifyState();
-  const [categoryList, setCategoryList] = useState<string[]>(
-    defaultTransaction.tags
-  );
-  const [transactionType, setTransactionType] = useState<TransactionType>(
-    defaultTransaction.transactionType
-  );
-  const [transactionDate, setTransactionDate] = useState<Dayjs>(
-    defaultTransaction.date
-  );
-  const [transactionAmount, setTransactionAmount] = useState<number>(
-    defaultTransaction.amount
-  );
-  const [transactionDescription, setTransactionDescription] = useState<string>(
-    defaultTransaction.description
-  );
+  const [transactionForm, setTransactionForm] = useState(defaultTransaction);
 
-  // TODO Make this configurable
-  const transactionCurrency = "EUR";
+  const handleChange = (inputIdentifier: string, newValue: unknown) => {
+    setTransactionForm((prevState) => {
+      return {
+        ...prevState,
+        [inputIdentifier]: newValue,
+      };
+    });
+  };
 
   const handleSubmit = () => {
     addTransaction({
-      transactionType,
-      date: transactionDate.toDate(),
-      description: transactionDescription,
-      amount: transactionAmount,
-      currency: transactionCurrency,
-      tags: categoryList,
+      transactionType: transactionForm.transactionType,
+      date: transactionForm.date.toDate(),
+      description: transactionForm.description,
+      amount: transactionForm.amount,
+      tags: transactionForm.tags,
     });
     handleReset();
   };
 
   const handleReset = () => {
-    setTransactionAmount(defaultTransaction.amount);
-    setTransactionDescription(defaultTransaction.description);
-    setTransactionDate(defaultTransaction.date);
-    setCategoryList(defaultTransaction.tags);
-    setTransactionType(defaultTransaction.transactionType);
-  }  
+    setTransactionForm(defaultTransaction);
+  };
   return (
     <>
       {loading ? (
         <Loader />
       ) : (
-        <div className={classes.container}> 
+        <div className={classes.container}>
           <form className={classes.form} action={handleSubmit}>
             <div className={classes.row}>
-              <p>
+              <div className={classes.form__item}>
                 <label htmlFor="amount">Amount</label>
                 <input
                   type="number"
@@ -75,54 +61,58 @@ export default function AdminPage() {
                   name="amount"
                   step="0.01"
                   required
-                  value={transactionAmount}
+                  value={transactionForm.amount}
                   onChange={(e) => {
-                    setTransactionAmount(parseFloat(e.target.value));
+                    handleChange("amount", parseFloat(e.target.value));
                   }}
                 />
-              </p>
-              <div>
-                <label htmlFor="operation_date">Date</label>
+              </div>
+              <div className={classes.form__item}>
+                <label>Date</label>
                 <StyledDate
-                  date={transactionDate}
-                  onSetDate={setTransactionDate}
+                  date={transactionForm.date}
+                  onChangeDate={(date) => handleChange("date", date)}
                 />
               </div>
             </div>
             <div className={classes.row}>
-              <p>
+              <div className={classes.form__item}>
                 <label htmlFor="concept">Description</label>
                 <input
                   type="text"
                   id="description"
                   name="description"
                   required
-                  value={transactionDescription}
+                  value={transactionForm.description}
                   onChange={(e) => {
-                    setTransactionDescription(e.target.value);
+                    handleChange("description", e.target.value);
                   }}
                 />
-              </p>
+              </div>
             </div>
-            <div className={`${classes.row} `}>
-              <div className={classes.fullWidth}>
-                <label htmlFor="category_list">Categories</label>
+            <div className={`${classes.row}`}>
+              <div className={classes.form__item}>
+                <label htmlFor="tags">Categories</label>
                 <CategorySelector
-                  selectedCategories={categoryList}
-                  onSelectCategory={setCategoryList}
+                  selectedCategories={transactionForm.tags}
+                  onSelectCategory={(categoryList) =>
+                    handleChange("tags", categoryList)
+                  }
                 />
               </div>
-              <div className={classes.fullWidth}>
+              <div className={classes.form__item}>
                 <label htmlFor="transactionType">Transaction</label>
                 <TransactionTypeButtonSelector
-                  transactionType={transactionType}
-                  onTransactionChange={setTransactionType}
+                  transactionType={transactionForm.transactionType}
+                  onTransactionChange={(transactionType) =>
+                    handleChange("transactionType", transactionType)
+                  }
                 />
               </div>
             </div>
-            <p className={classes.actions}>
+            <div className={classes.actions}>
               <button type="submit">Submit</button>
-            </p>
+            </div>
           </form>
         </div>
       )}
