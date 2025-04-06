@@ -15,6 +15,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import DoneIcon from "@mui/icons-material/Done";
 import { useState } from "react";
 import { usePlenifyState } from "@/app/hooks/usePlenifyState";
+import classes from "./CategorySelector.module.scss";
 
 interface PopperComponentProps {
   anchorEl?: unknown;
@@ -54,8 +55,8 @@ export default function CategorySelector({
 
   return (
     <>
-      <div style={{ display: "flex" }}>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
+      <div className={classes.categorySelector}>
+        <div className={classes.categorySelector__list}>
           {selectedCategories.map((value) => (
             <CategoryTag
               key={value}
