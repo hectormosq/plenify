@@ -1,4 +1,4 @@
-import { TransactionType } from "@/app/models/transaction";
+import { TransactionType } from "@app/models/transaction";
 import { styled, ToggleButton, ToggleButtonGroup } from "@mui/material";
 
 export default function TransactionTypeSelector(props: {

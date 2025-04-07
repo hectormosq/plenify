@@ -1,4 +1,4 @@
-import { Transaction } from "@/app/models/transaction";
+import { Transaction } from "@app/models/transaction";
 import moment from "moment";
 import CategoryTag from "../categories/CategoryTag";
 import classes from "./transaction-list.module.css";

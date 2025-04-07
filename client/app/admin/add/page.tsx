@@ -1,18 +1,18 @@
 "use client";
 
-import { usePlenifyState } from "@/app/hooks/usePlenifyState";
+import { usePlenifyState } from "@app/hooks/usePlenifyState";
 import { Transaction, TransactionType } from "../../models/transaction";
-import StyledDate from "@/app/components/date/StyledDate";
-import CategorySelector from "@/app/components/categories/CategorySelector";
-import Loader from "@/app/components/loader";
+import StyledDate from "@app/components/date/StyledDate";
+import CategorySelector from "@app/components/categories/CategorySelector";
+import Loader from "@app/components/loader";
 import classes from "./page.module.scss";
-import InputNumber from "@/app/components/inputs/InputNumber";
+import InputNumber from "@app/components/inputs/InputNumber";
 import { Button, TextField } from "@mui/material";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
-import { currency, DEFAULT_CURRENCY } from "@/app/models/currencies";
+import { currency, DEFAULT_CURRENCY } from "@app/models/currencies";
 import { useEffect } from "react";
 import { ErrorMessage } from "@hookform/error-message";
-import TransactionTypeSelector from "@/app/components/buttons/TransactionTypeSelector";
+import TransactionTypeSelector from "@app/components/buttons/TransactionTypeSelector";
 
 export default function AdminPage() {
   const { loading, addTransaction, categories } = usePlenifyState();

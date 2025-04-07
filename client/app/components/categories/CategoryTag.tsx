@@ -1,4 +1,4 @@
-import { usePlenifyState } from "@/app/hooks/usePlenifyState";
+import { usePlenifyState } from "@app/hooks/usePlenifyState";
 import { Chip, styled } from "@mui/material";
 
 export default function CategoryTag(props: {

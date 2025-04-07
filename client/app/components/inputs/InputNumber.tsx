@@ -1,6 +1,6 @@
 import { NumericFormat, OnValueChange } from "react-number-format";
 import { TextField } from "@mui/material";
-import { DEFAULT_CURRENCY } from "@/app/models/currencies";
+import { DEFAULT_CURRENCY } from "@app/models/currencies";
 
 export default function InputNumber({
   value,

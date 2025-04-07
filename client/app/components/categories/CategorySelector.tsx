@@ -14,7 +14,7 @@ import TagIcon from "@mui/icons-material/Tag";
 import CloseIcon from "@mui/icons-material/Close";
 import DoneIcon from "@mui/icons-material/Done";
 import { useState } from "react";
-import { usePlenifyState } from "@/app/hooks/usePlenifyState";
+import { usePlenifyState } from "@app/hooks/usePlenifyState";
 import classes from "./CategorySelector.module.scss";
 
 interface PopperComponentProps {
