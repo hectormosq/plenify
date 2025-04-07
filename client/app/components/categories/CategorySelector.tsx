@@ -26,9 +26,11 @@ interface PopperComponentProps {
 export default function CategorySelector({
   selectedCategories,
   onSelectCategory,
+  className
 }: {
   selectedCategories: string[];
   onSelectCategory: (category: string[]) => void;
+  className?: string;
 }) {
   const { categories } = usePlenifyState();
   const [pendingValue, setPendingValue] = useState<string[]>([]);
@@ -55,7 +57,7 @@ export default function CategorySelector({
 
   return (
     <>
-      <div className={classes.categorySelector}>
+      <div className={`${className} ${classes.categorySelector}`}>
         <div className={classes.categorySelector__list}>
           {selectedCategories.map((value) => (
             <CategoryTag

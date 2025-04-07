@@ -6,16 +6,19 @@ export default function InputNumber({
   value,
   onNumberChange,
   prefix = DEFAULT_CURRENCY,
+  className
 }: {
   value: number | null;
   onNumberChange: OnValueChange;
   prefix?: string;
+  className?: string;
 }) {
   return (
     <NumericFormat
+      className={className}
       value={value}
       onValueChange={onNumberChange}
-      prefix={prefix + ' '}
+      prefix={prefix + " "}
       customInput={TextField}
       decimalScale={2}
       fixedDecimalScale

@@ -10,6 +10,7 @@ import TransactionTypeSelector from "@/app/components/buttons/TransactionTypeBut
 import dayjs from "dayjs";
 import classes from "./page.module.scss";
 import InputNumber from "@/app/components/inputs/InputNumber";
+import { TextField } from "@mui/material";
 
 export default function AdminPage() {
   const defaultTransaction = {
@@ -57,6 +58,7 @@ export default function AdminPage() {
               <div className={classes.form__item}>
                 <label htmlFor="amount">Amount</label>
                 <InputNumber
+                  className={classes.form__input}
                   value={transactionForm.amount}
                   onNumberChange={(values) => {
                     handleChange("amount", values.floatValue);
@@ -74,10 +76,9 @@ export default function AdminPage() {
             <div className={classes.row}>
               <div className={classes.form__item}>
                 <label htmlFor="concept">Description</label>
-                <input
-                  type="text"
+                <TextField
                   id="description"
-                  name="description"
+                  className={classes.form__input}
                   required
                   value={transactionForm.description}
                   onChange={(e) => {
