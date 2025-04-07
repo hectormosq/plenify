@@ -8,13 +8,14 @@ import Loader from "@/app/components/loader";
 import TransactionTypeSelector from "@/app/components/buttons/TransactionTypeButton";
 import classes from "./page.module.scss";
 import InputNumber from "@/app/components/inputs/InputNumber";
-import { TextField } from "@mui/material";
+import { Button, TextField } from "@mui/material";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { currency, DEFAULT_CURRENCY } from "@/app/models/currencies";
 import { useEffect } from "react";
 import { ErrorMessage } from "@hookform/error-message";
 
 export default function AdminPage() {
+  const { loading, addTransaction, categories } = usePlenifyState();
   const { control, handleSubmit, reset, formState } = useForm({
     defaultValues: {
       transactionType: TransactionType.EXPENSE,
@@ -28,14 +29,11 @@ export default function AdminPage() {
 
   const REQUIRED_FIELD_ERROR = "Field is Required";
 
-
   useEffect(() => {
     if (formState.isSubmitSuccessful) {
       reset();
     }
   }, [formState, reset]);
-
-  const { loading, addTransaction } = usePlenifyState();
 
   const onSubmit: SubmitHandler<Transaction> = (data) => {
     addTransaction({
@@ -45,6 +43,30 @@ export default function AdminPage() {
       amount: data.amount,
       tags: data.tags,
     });
+  };
+
+  const generateFake = () => {
+    const categoryIds = Object.keys(categories);
+    const randomIndex = Math.floor(Math.random() * categoryIds.length);
+    const tags = [categoryIds[randomIndex]];
+
+    if (Math.random() > 0.5 && categoryIds.length > 1) {
+      let secondRandomIndex;
+      do {
+        secondRandomIndex = Math.floor(Math.random() * categoryIds.length);
+      } while (secondRandomIndex === randomIndex);
+      tags.push(categoryIds[secondRandomIndex]);
+    }
+    const date = new Date();
+    const fakeTransaction: Transaction = {
+      transactionType:
+        Math.random() > 0.5 ? TransactionType.EXPENSE : TransactionType.INCOME,
+      date: date,
+      description: "Fake Transaction " + date.toISOString(),
+      amount: Math.floor(Math.random() * 501), // Random amount between 0 and 500
+      tags: tags,
+    };
+    addTransaction(fakeTransaction);
   };
 
   return (
@@ -123,12 +145,20 @@ export default function AdminPage() {
                   rules={{ required: REQUIRED_FIELD_ERROR }}
                   render={({ field }) => <TransactionTypeSelector {...field} />}
                 />
-                <ErrorMessage errors={formState.errors} name="transactionType" />
+                <ErrorMessage
+                  errors={formState.errors}
+                  name="transactionType"
+                />
               </div>
             </div>
             <div className={classes.actions}>
-              <button type="submit">Submit</button>
+              <button className="button" type="submit">
+                Submit
+              </button>
             </div>
+            <Button onClick={generateFake} color="secondary" style={{ marginTop: "1rem" }}>
+              Generate Fake
+            </Button>
           </form>
         </div>
       )}

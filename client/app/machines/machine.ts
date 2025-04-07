@@ -116,7 +116,7 @@ export const machine = setup({
             transaction: {
               date: transaction.date,
               description: transaction.description,
-              amount: transaction.amount, // Random amount between 0 and 500
+              amount: transaction.amount,
               transactionType: transaction.transactionType,
               tags: transaction.tags,
             },

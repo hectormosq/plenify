@@ -21,15 +21,6 @@ export default function TransactionListPage() {
             background: "grey",
             margin: "10px 0",
           }}
-        >
-          Add Transaction
-        </button>
-        <button
-          style={{
-            padding: ".75rem 2rem",
-            background: "grey",
-            margin: "10px 0",
-          }}
           onClick={reset}
         >
           Delete data
