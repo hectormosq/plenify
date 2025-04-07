@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Series } from "../models/chart";
 import { PieChart } from "@mui/x-charts";
 import { usePlenifyState } from "../hooks/usePlenifyState";
-import { TabPanel, TabsContainer } from "@/app/components/tabs/TabModule";
+import { TabPanel, TabsContainer } from "@app/components/Tabs/Tabs";
 import ChartService from "../services/chart";
 
 interface FinanceOverviewTabsProps {

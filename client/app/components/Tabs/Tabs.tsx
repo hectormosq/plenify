@@ -1,6 +1,6 @@
 import styled from "@emotion/styled";
-import { TabPanelProps, TabsContainerProps } from "./Tabs.model";
 import { Tab, Tabs } from "@mui/material";
+import { TabPanelProps, TabsContainerProps } from "./Tabs.model";
 
 const StyledTabs = styled(Tabs)`
   & .MuiTabs-indicator {
