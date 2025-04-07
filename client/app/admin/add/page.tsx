@@ -2,7 +2,7 @@
 
 import { usePlenifyState } from "@/app/hooks/usePlenifyState";
 import { Transaction, TransactionType } from "../../models/transaction";
-import StyledDate from "@/app/components/date/StyleDate";
+import StyledDate from "@/app/components/date/StyledDate";
 import CategorySelector from "@/app/components/categories/CategorySelector";
 import Loader from "@/app/components/loader";
 import classes from "./page.module.scss";
