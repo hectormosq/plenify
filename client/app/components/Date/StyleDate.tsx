@@ -1,20 +1,21 @@
 import { styled } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { Dayjs } from "dayjs";
+import dayjs from "dayjs";
+
 
 export default function StyledDate({
   date,
   onChangeDate,
 }: {
-  date: Dayjs;
-  onChangeDate: (date: Dayjs) => void;
+  date: Date;
+  onChangeDate: (date: Date | undefined) => void;
 }) {
   return (
     <StyledDateLocal
       className="datePicker"
-      value={date}
+      value={dayjs(date)}
       onChange={(e) => {
-        onChangeDate(e as Dayjs);
+        onChangeDate(e?.toDate());
       }}
     />
   );

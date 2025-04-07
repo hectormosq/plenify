@@ -24,11 +24,11 @@ interface PopperComponentProps {
 }
 
 export default function CategorySelector({
-  selectedCategories,
+  value: selectedCategories,
   onSelectCategory,
   className
 }: {
-  selectedCategories: string[];
+  value: string[];
   onSelectCategory: (category: string[]) => void;
   className?: string;
 }) {

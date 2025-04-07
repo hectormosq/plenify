@@ -4,12 +4,12 @@ import { DEFAULT_CURRENCY } from "@/app/models/currencies";
 
 export default function InputNumber({
   value,
-  onNumberChange,
+  onValueChange: onNumberChange,
   prefix = DEFAULT_CURRENCY,
   className,
 }: {
   value: number | null;
-  onNumberChange: OnValueChange;
+  onValueChange: OnValueChange;
   prefix?: string;
   className?: string;
 }) {
@@ -19,7 +19,6 @@ export default function InputNumber({
         className={className}
         value={value ?? ""} // https://github.com/s-yadav/react-number-format/issues/727#issuecomment-1617157506
         onValueChange={(value, sourceInfo) => {
-          console.log(value, sourceInfo);
           onNumberChange(value, sourceInfo);
         }}
         prefix={prefix + " "}
