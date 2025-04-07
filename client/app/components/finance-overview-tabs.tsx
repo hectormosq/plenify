@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { Series } from "../models/chart";
 import { PieChart } from "@mui/x-charts";
-import ChartService from "../services/chart";
 import { usePlenifyState } from "../hooks/usePlenifyState";
 import { TabPanel, TabsContainer } from "./tabs/Tabs";
+import ChartService from "../services/chart";
 
 interface FinanceOverviewTabsProps {
   pieWidth: number;
@@ -94,4 +94,3 @@ export default function FinanceOverviewTabs({
     }
   }
 }
-
