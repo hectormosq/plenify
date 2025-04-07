@@ -25,11 +25,11 @@ interface PopperComponentProps {
 
 export default function CategorySelector({
   value: selectedCategories,
-  onSelectCategory,
+  onChange: onSelectCategory,
   className
 }: {
   value: string[];
-  onSelectCategory: (category: string[]) => void;
+  onChange: (category: string[]) => void;
   className?: string;
 }) {
   const { categories } = usePlenifyState();

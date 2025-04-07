@@ -2,8 +2,8 @@ import { TransactionType } from "@/app/models/transaction";
 import { styled, ToggleButton, ToggleButtonGroup } from "@mui/material";
 
 export default function TransactionTypeSelector(props: {
-  transactionType: TransactionType;
-  onTransactionChange: (type: TransactionType) => void;
+  value: TransactionType;
+  onChange: (type: TransactionType) => void;
 }) {
   const StyledToggleButton = styled(ToggleButton)(() => ({
     
@@ -14,7 +14,7 @@ export default function TransactionTypeSelector(props: {
     },
     [`&.Mui-selected, &.Mui-selected:hover`]: {
       backgroundColor:
-        props.transactionType === TransactionType.INCOME
+        props.value === TransactionType.INCOME
           ? "var(--incomescolor)"
           : "var(--expensescolor)",
     },
@@ -28,13 +28,13 @@ export default function TransactionTypeSelector(props: {
 
   const handleValueChange = (newType: TransactionType | undefined) => {
     if (newType) {
-      props.onTransactionChange(newType);
+      props.onChange(newType);
     }
   };
   return (
     <StyledToggleButtonGroup
       id="transactionType"
-      value={props.transactionType}
+      value={props.value}
       exclusive
       onChange={(_, newType) => handleValueChange(newType)}
     >

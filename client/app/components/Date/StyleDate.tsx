@@ -4,11 +4,11 @@ import dayjs from "dayjs";
 
 
 export default function StyledDate({
-  date,
-  onChangeDate,
+  value: date,
+  onChange: onChangeDate,
 }: {
-  date: Date;
-  onChangeDate: (date: Date | undefined) => void;
+  value: Date;
+  onChange: (date: Date | undefined) => void;
 }) {
   return (
     <StyledDateLocal

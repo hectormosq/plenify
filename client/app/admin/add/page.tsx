@@ -14,12 +14,7 @@ import { currency, DEFAULT_CURRENCY } from "@/app/models/currencies";
 import { useEffect } from "react";
 
 export default function AdminPage() {
-  const {
-    control,
-    handleSubmit,
-    reset,
-    formState,
-  } = useForm({
+  const { control, handleSubmit, reset, formState } = useForm({
     defaultValues: {
       transactionType: TransactionType.EXPENSE,
       date: new Date(),
@@ -65,7 +60,7 @@ export default function AdminPage() {
                     <InputNumber
                       className={classes.form__input}
                       {...field}
-                      onValueChange={(values) => {
+                      onChange={(values) => {
                         field.onChange(values.floatValue);
                       }}
                     />
@@ -77,13 +72,7 @@ export default function AdminPage() {
                 <Controller
                   name="date"
                   control={control}
-                  render={({ field }) => (
-                    <StyledDate
-                      {...field}
-                      date={field.value}
-                      onChangeDate={(date) => field.onChange(date)}
-                    />
-                  )}
+                  render={({ field }) => <StyledDate {...field} />}
                 />
               </div>
             </div>
@@ -95,8 +84,8 @@ export default function AdminPage() {
                   control={control}
                   render={({ field }) => (
                     <TextField
-                      {...field}
                       className={classes.form__input}
+                      {...field}
                       onChange={(e) => {
                         field.onChange(e.target.value);
                       }}
@@ -111,15 +100,7 @@ export default function AdminPage() {
                 <Controller
                   name="tags"
                   control={control}
-                  render={({ field }) => (
-                    <CategorySelector
-                      {...field}
-                      value={field.value}
-                      onSelectCategory={(categoryList) =>
-                        field.onChange(categoryList)
-                      }
-                    />
-                  )}
+                  render={({ field }) => <CategorySelector {...field} />}
                 />
               </div>
               <div className={classes.form__item}>
@@ -127,15 +108,7 @@ export default function AdminPage() {
                 <Controller
                   name="transactionType"
                   control={control}
-                  render={({ field }) => (
-                    <TransactionTypeSelector
-                      {...field}
-                      transactionType={field.value}
-                      onTransactionChange={(transactionType) =>
-                        field.onChange(transactionType)
-                      }
-                    />
-                  )}
+                  render={({ field }) => <TransactionTypeSelector {...field} />}
                 />
               </div>
             </div>

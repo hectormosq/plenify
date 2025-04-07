@@ -4,12 +4,12 @@ import { DEFAULT_CURRENCY } from "@/app/models/currencies";
 
 export default function InputNumber({
   value,
-  onValueChange: onNumberChange,
+  onChange: onNumberChange,
   prefix = DEFAULT_CURRENCY,
   className,
 }: {
   value: number | null;
-  onValueChange: OnValueChange;
+  onChange: OnValueChange;
   prefix?: string;
   className?: string;
 }) {
