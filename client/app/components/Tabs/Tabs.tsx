@@ -1,6 +1,6 @@
 import styled from "@emotion/styled";
-import { Tab, Tabs } from "@mui/material";
 import { TabPanelProps, TabsContainerProps } from "./Tabs.model";
+import { Tab, Tabs } from "@mui/material";
 
 const StyledTabs = styled(Tabs)`
   & .MuiTabs-indicator {
@@ -40,4 +40,4 @@ const TabPanel = function (props: TabPanelProps) {
   return <>{value === index && <div>{children}</div>}</>;
 }
 
-export {TabsContainer, TabPanel};
+export { TabsContainer, TabPanel };
