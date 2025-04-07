@@ -3,19 +3,20 @@
 import { useState } from "react";
 import { usePlenifyState } from "@/app/hooks/usePlenifyState";
 import { TransactionType } from "../../models/transaction";
-import StyledDate from "@/app/components/Date/StyleDate";
+import StyledDate from "@/app/components/date/StyleDate";
 import CategorySelector from "@/app/components/categories/CategorySelector";
 import Loader from "@/app/components/loader";
-import TransactionTypeButtonSelector from "@/app/components/Buttons/TransactionTypeButton";
+import TransactionTypeSelector from "@/app/components/buttons/TransactionTypeButton";
 import dayjs from "dayjs";
 import classes from "./page.module.scss";
+import InputNumber from "@/app/components/inputs/InputNumber";
 
 export default function AdminPage() {
   const defaultTransaction = {
     transactionType: TransactionType.EXPENSE,
     date: dayjs(),
     description: "",
-    amount: 0,
+    amount: null,
     currency: "EUR",
     tags: [],
   };
@@ -55,15 +56,10 @@ export default function AdminPage() {
             <div className={classes.row}>
               <div className={classes.form__item}>
                 <label htmlFor="amount">Amount</label>
-                <input
-                  type="number"
-                  id="amount"
-                  name="amount"
-                  step="0.01"
-                  required
+                <InputNumber
                   value={transactionForm.amount}
-                  onChange={(e) => {
-                    handleChange("amount", parseFloat(e.target.value));
+                  onNumberChange={(values) => {
+                    handleChange("amount", values.floatValue);
                   }}
                 />
               </div>
@@ -102,7 +98,7 @@ export default function AdminPage() {
               </div>
               <div className={classes.form__item}>
                 <label htmlFor="transactionType">Transaction</label>
-                <TransactionTypeButtonSelector
+                <TransactionTypeSelector
                   transactionType={transactionForm.transactionType}
                   onTransactionChange={(transactionType) =>
                     handleChange("transactionType", transactionType)
