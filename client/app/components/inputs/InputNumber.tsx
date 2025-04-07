@@ -6,7 +6,7 @@ export default function InputNumber({
   value,
   onNumberChange,
   prefix = DEFAULT_CURRENCY,
-  className
+  className,
 }: {
   value: number | null;
   onNumberChange: OnValueChange;
@@ -14,15 +14,20 @@ export default function InputNumber({
   className?: string;
 }) {
   return (
-    <NumericFormat
-      className={className}
-      value={value}
-      onValueChange={onNumberChange}
-      prefix={prefix + " "}
-      customInput={TextField}
-      decimalScale={2}
-      fixedDecimalScale
-      thousandSeparator
-    />
+    <>
+      <NumericFormat
+        className={className}
+        value={value ?? ""} // https://github.com/s-yadav/react-number-format/issues/727#issuecomment-1617157506
+        onValueChange={(value, sourceInfo) => {
+          console.log(value, sourceInfo);
+          onNumberChange(value, sourceInfo);
+        }}
+        prefix={prefix + " "}
+        customInput={TextField}
+        decimalScale={2}
+        fixedDecimalScale
+        thousandSeparator
+      />
+    </>
   );
 }
