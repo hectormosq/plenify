@@ -21,10 +21,10 @@ export default function AdminPage() {
       transactionType: TransactionType.EXPENSE,
       date: new Date(),
       description: "",
-      amount: null,
+      amount: 0,
       currency: DEFAULT_CURRENCY as currency,
       tags: [] as string[],
-    },
+    } 
   });
 
   const REQUIRED_FIELD_ERROR = "Field is Required";
@@ -82,7 +82,7 @@ export default function AdminPage() {
                 <Controller
                   name="amount"
                   control={control}
-                  rules={{ required: REQUIRED_FIELD_ERROR }}
+                  rules={{ required: REQUIRED_FIELD_ERROR, min: {value: 0.01, message: 'Must be greater than 0'} }}
                   render={({ field }) => (
                     <InputNumber
                       className={classes.form__input}
