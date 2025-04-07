@@ -12,6 +12,7 @@ import { TextField } from "@mui/material";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { currency, DEFAULT_CURRENCY } from "@/app/models/currencies";
 import { useEffect } from "react";
+import { ErrorMessage } from "@hookform/error-message";
 
 export default function AdminPage() {
   const { control, handleSubmit, reset, formState } = useForm({
@@ -24,6 +25,9 @@ export default function AdminPage() {
       tags: [] as string[],
     },
   });
+
+  const REQUIRED_FIELD_ERROR = "Field is Required";
+
 
   useEffect(() => {
     if (formState.isSubmitSuccessful) {
@@ -56,6 +60,7 @@ export default function AdminPage() {
                 <Controller
                   name="amount"
                   control={control}
+                  rules={{ required: REQUIRED_FIELD_ERROR }}
                   render={({ field }) => (
                     <InputNumber
                       className={classes.form__input}
@@ -66,14 +71,17 @@ export default function AdminPage() {
                     />
                   )}
                 />
+                <ErrorMessage errors={formState.errors} name="amount" />
               </div>
               <div className={classes.form__item}>
                 <label>Date</label>
                 <Controller
                   name="date"
                   control={control}
+                  rules={{ required: REQUIRED_FIELD_ERROR }}
                   render={({ field }) => <StyledDate {...field} />}
                 />
+                <ErrorMessage errors={formState.errors} name="date" />
               </div>
             </div>
             <div className={classes.row}>
@@ -82,6 +90,7 @@ export default function AdminPage() {
                 <Controller
                   name="description"
                   control={control}
+                  rules={{ required: REQUIRED_FIELD_ERROR }}
                   render={({ field }) => (
                     <TextField
                       className={classes.form__input}
@@ -92,6 +101,7 @@ export default function AdminPage() {
                     />
                   )}
                 />
+                <ErrorMessage errors={formState.errors} name="description" />
               </div>
             </div>
             <div className={`${classes.row}`}>
@@ -100,16 +110,20 @@ export default function AdminPage() {
                 <Controller
                   name="tags"
                   control={control}
+                  rules={{ required: REQUIRED_FIELD_ERROR }}
                   render={({ field }) => <CategorySelector {...field} />}
                 />
+                <ErrorMessage errors={formState.errors} name="tags" />
               </div>
               <div className={classes.form__item}>
                 <label htmlFor="transactionType">Transaction</label>
                 <Controller
                   name="transactionType"
                   control={control}
+                  rules={{ required: REQUIRED_FIELD_ERROR }}
                   render={({ field }) => <TransactionTypeSelector {...field} />}
                 />
+                <ErrorMessage errors={formState.errors} name="transactionType" />
               </div>
             </div>
             <div className={classes.actions}>
