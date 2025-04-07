@@ -23,13 +23,15 @@ export default function FinanceOverviewTabs({
   const [activeTab, setActiveTab] = useState(0);
   const { transactions, categories } = usePlenifyState();
 
-
   const pieChart = useMemo(() => {
     const chartService = new ChartService(transactions, categories!);
     chartService.createSeries();
     return chartService;
   }, [transactions, categories]);
-  const series = useMemo(() => [pieChart.getSeries(0), pieChart.getSeries(1)], [pieChart]);
+  const series = useMemo(
+    () => [pieChart.getSeries(0), pieChart.getSeries(1)],
+    [pieChart]
+  );
   return (
     <>
       <TabsContainer
@@ -92,3 +94,4 @@ export default function FinanceOverviewTabs({
     }
   }
 }
+
