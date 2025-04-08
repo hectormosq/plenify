@@ -11,5 +11,9 @@ export interface Transaction {
   description: string;
   amount: number;
   currency?: currency;
-  tags?: string[];
+  tags: string[];
+}
+
+export type TransactionDefaultForm = Omit<Transaction, 'amount'> & {
+  amount: number | null
 }

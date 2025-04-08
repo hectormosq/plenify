@@ -1,7 +1,11 @@
 "use client";
 
 import { usePlenifyState } from "@app/hooks/usePlenifyState";
-import { Transaction, TransactionType } from "../../models/transaction";
+import {
+  Transaction,
+  TransactionDefaultForm,
+  TransactionType,
+} from "../../models/transaction";
 import StyledDate from "@app/components/date/StyledDate";
 import CategorySelector from "@app/components/categories/CategorySelector";
 import Loader from "@app/components/loader";
@@ -21,10 +25,10 @@ export default function AdminPage() {
       transactionType: TransactionType.EXPENSE,
       date: new Date(),
       description: "",
-      amount: 0,
       currency: DEFAULT_CURRENCY as currency,
-      tags: [] as string[],
-    } 
+      amount: null,
+      tags: [],
+    } as TransactionDefaultForm,
   });
 
   const REQUIRED_FIELD_ERROR = "Field is Required";
@@ -75,14 +79,22 @@ export default function AdminPage() {
         <Loader />
       ) : (
         <div className={classes.container}>
-          <form className={classes.form} onSubmit={handleSubmit(onSubmit)}>
+          <form
+            className={classes.form}
+            onSubmit={handleSubmit((data) => {
+              onSubmit(data as Transaction);
+            })}
+          >
             <div className={classes.row}>
               <div className={classes.form__item}>
                 <label htmlFor="amount">Amount</label>
                 <Controller
                   name="amount"
                   control={control}
-                  rules={{ required: REQUIRED_FIELD_ERROR, min: {value: 0.01, message: 'Must be greater than 0'} }}
+                  rules={{
+                    required: REQUIRED_FIELD_ERROR,
+                    min: { value: 0.01, message: "Must be greater than 0" },
+                  }}
                   render={({ field }) => (
                     <InputNumber
                       className={classes.form__input}
