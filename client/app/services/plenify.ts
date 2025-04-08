@@ -1,7 +1,7 @@
 import { createMergeableStore, MergeableStore } from 'tinybase';
 import { createIndexedDbPersister, IndexedDbPersister } from 'tinybase/persisters/persister-indexed-db';
 import { v4 } from 'uuid';
-import { Transaction } from '../models/transaction';
+import { Transaction, TransactionType } from '../models/transaction';
 import { currency } from '../models/currencies';
 import { Categories } from '../models/categories';
 
@@ -19,6 +19,7 @@ const tablesSchema = {
     description: { type: 'string' },
     amount: { type: 'number' },
     currency: { type: 'string', default: 'EUR' },
+    transactionType: { type: 'string' },
   },
   [Tables.categories]: {
     name: { type: 'string' },
@@ -42,12 +43,10 @@ export default class PlenifyService {
   }
 
   async setup() {
-    console.log('setup');
-    const res = await fetch('api/v1/categories');
+    const res = await fetch('/api/v1/categories');
     if (res.ok) {
       const json = await res.json();
       const { categories, defaultCategory } = json.data;
-
       this.defaultCategoryId = defaultCategory;
       this.categoryList = categories;
 
@@ -60,20 +59,9 @@ export default class PlenifyService {
   }
 
   addTransaction(transaction: Transaction) {
-    if (!transaction.tags || transaction.tags.length === 0) {
-      const categoryIds = Object.keys(this.categoryList);
-      const randomIndex = Math.floor(Math.random() * categoryIds.length);
-      transaction.tags = [categoryIds[randomIndex]];
-
-      if (Math.random() > 0.5 && categoryIds.length > 1) {
-      let secondRandomIndex;
-      do {
-        secondRandomIndex = Math.floor(Math.random() * categoryIds.length);
-      } while (secondRandomIndex === randomIndex);
-      transaction.tags.push(categoryIds[secondRandomIndex]);
-      }
-    }
-    const { date, description, amount, currency = 'EUR', tags = [this.defaultCategoryId!] } = transaction;
+    
+    const { date, description, amount, transactionType, currency = 'EUR', tags } = transaction;
+    const categories = tags && tags.length ? tags : [this.defaultCategoryId!];
     const transactionId = v4();
 
     this.persister.getStore().transaction(
@@ -82,12 +70,13 @@ export default class PlenifyService {
           date: date.getTime(),
           description,
           amount,
-         currency,
+          currency,
+          transactionType
         });
-        for (const tag of tags) {
+        for (const category of categories) {
           this.persister.getStore().setRow(Tables.transactionCategories, v4(), {
             transaction: transactionId,
-            category: tag,
+            category: category,
           });
         }
       },
@@ -118,6 +107,7 @@ export default class PlenifyService {
       amount: transaction.amount.valueOf() as number,
       currency: transaction.currency.toString() as currency,
       tags: transactionCategoriesGrouped[id],
+      transactionType: transaction.transactionType.valueOf() as TransactionType,
     }));
   }
 

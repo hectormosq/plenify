@@ -1,6 +1,6 @@
-import { Transaction } from "@/app/models/transaction";
+import { Transaction } from "@app/models/transaction";
 import moment from "moment";
-import CategoryTag from "../categories/category";
+import CategoryTag from "../categories/CategoryTag";
 import classes from "./transaction-list.module.css";
 
 export default function TransactionList(props: {
@@ -20,9 +20,8 @@ export default function TransactionList(props: {
                   transaction.tags.map((tag: string) => {
                     return (
                       <CategoryTag
-                        id={transaction.id!}
-                        tag={tag}
-                        key={transaction.id}
+                        id={tag}
+                        key={transaction.id! +tag}
                       />
                     );
                   })}
