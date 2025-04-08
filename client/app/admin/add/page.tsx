@@ -105,7 +105,13 @@ export default function AdminPage() {
                     />
                   )}
                 />
-                <ErrorMessage errors={formState.errors} name="amount" />
+                <ErrorMessage
+                  errors={formState.errors}
+                  name="amount"
+                  render={(error) => (
+                    <div className="form__error">{error.message}</div>
+                  )}
+                />
               </div>
               <div className={classes.form__item}>
                 <label>Date</label>
@@ -115,7 +121,13 @@ export default function AdminPage() {
                   rules={{ required: REQUIRED_FIELD_ERROR }}
                   render={({ field }) => <StyledDate {...field} />}
                 />
-                <ErrorMessage errors={formState.errors} name="date" />
+                <ErrorMessage
+                  errors={formState.errors}
+                  name="date"
+                  render={(error) => (
+                    <div className="form__error">{error.message}</div>
+                  )}
+                />
               </div>
             </div>
             <div className={classes.row}>
@@ -135,7 +147,13 @@ export default function AdminPage() {
                     />
                   )}
                 />
-                <ErrorMessage errors={formState.errors} name="description" />
+                <ErrorMessage
+                  errors={formState.errors}
+                  name="description"
+                  render={(error) => (
+                    <div className="form__error">{error.message}</div>
+                  )}
+                />
               </div>
             </div>
             <div className={`${classes.row}`}>
@@ -147,7 +165,13 @@ export default function AdminPage() {
                   rules={{ required: REQUIRED_FIELD_ERROR }}
                   render={({ field }) => <CategorySelector {...field} />}
                 />
-                <ErrorMessage errors={formState.errors} name="tags" />
+                <ErrorMessage
+                  errors={formState.errors}
+                  name="tags"
+                  render={(error) => (
+                    <div className="form__error">{error.message}</div>
+                  )}
+                />
               </div>
               <div className={classes.form__item}>
                 <label htmlFor="transactionType">Transaction</label>
@@ -160,6 +184,9 @@ export default function AdminPage() {
                 <ErrorMessage
                   errors={formState.errors}
                   name="transactionType"
+                  render={(error) => (
+                    <div className="form__error">{error.message}</div>
+                  )}
                 />
               </div>
             </div>
