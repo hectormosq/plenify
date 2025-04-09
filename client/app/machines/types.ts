@@ -1,8 +1,8 @@
 import { Categories } from '../models/categories';
-import { Transaction } from '../models/transaction';
+import { Transaction, TransactionByType } from '../models/transaction';
 
 export interface WithDefaultControllerState {
-  transactions?: Transaction[];
+  transactions?: TransactionByType;
   categories?: Categories;
 }
 
@@ -11,7 +11,7 @@ export interface WithCategories {
 }
 
 export interface WithTransactions {
-  transactions: Transaction[];
+  transactions: TransactionByType;
 }
 
 export type DefaultContext = WithDefaultControllerState;

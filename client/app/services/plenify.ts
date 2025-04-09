@@ -1,33 +1,41 @@
-import { createMergeableStore, MergeableStore } from 'tinybase';
-import { createIndexedDbPersister, IndexedDbPersister } from 'tinybase/persisters/persister-indexed-db';
-import { v4 } from 'uuid';
-import { Transaction, TransactionType } from '../models/transaction';
-import { currency } from '../models/currencies';
-import { Categories } from '../models/categories';
+import { createMergeableStore, MergeableStore } from "tinybase";
+import {
+  createIndexedDbPersister,
+  IndexedDbPersister,
+} from "tinybase/persisters/persister-indexed-db";
+import { v4 } from "uuid";
+import {
+  Transaction,
+  TransactionByType,
+  TransactionType,
+  UtilsType,
+} from "../models/transaction";
+import { currency, DEFAULT_CURRENCY } from "../models/currencies";
+import { Categories } from "../models/categories";
 
-const STORE = 'plenify';
+const STORE = "plenify";
 
 enum Tables {
-  transactions = 'transactions',
-  categories = 'categories',
-  transactionCategories = 'transactionCategories',
+  transactions = "transactions",
+  categories = "categories",
+  transactionCategories = "transactionCategories",
 }
 
 const tablesSchema = {
   [Tables.transactions]: {
-    date: { type: 'number' },
-    description: { type: 'string' },
-    amount: { type: 'number' },
-    currency: { type: 'string', default: 'EUR' },
-    transactionType: { type: 'string' },
+    date: { type: "number" },
+    description: { type: "string" },
+    amount: { type: "number" },
+    currency: { type: "string", default: DEFAULT_CURRENCY },
+    transactionType: { type: "string" },
   },
   [Tables.categories]: {
-    name: { type: 'string' },
-    color: { type: 'string' },
+    name: { type: "string" },
+    color: { type: "string" },
   },
   [Tables.transactionCategories]: {
-    transaction: { type: 'string' },
-    category: { type: 'string' },
+    transaction: { type: "string" },
+    category: { type: "string" },
   },
 } as const;
 
@@ -43,51 +51,68 @@ export default class PlenifyService {
   }
 
   async setup() {
-    const res = await fetch('/api/v1/categories');
+    const res = await fetch("/api/v1/categories");
     if (res.ok) {
       const json = await res.json();
       const { categories, defaultCategory } = json.data;
       this.defaultCategoryId = defaultCategory;
       this.categoryList = categories;
 
-      await this.persister.startAutoLoad([{[Tables.categories]: { ...categories }}, {}]);
+      await this.persister.startAutoLoad([
+        { [Tables.categories]: { ...categories } },
+        {},
+      ]);
       await this.persister.startAutoSave();
     } else {
-
-      return Promise.reject(new Error(`There was a problem trying to load defaultCategories`))
+      return Promise.reject(
+        new Error(`There was a problem trying to load defaultCategories`)
+      );
     }
   }
 
   addTransaction(transaction: Transaction) {
-    
-    const { date, description, amount, transactionType, currency = 'EUR', tags } = transaction;
+    const {
+      date,
+      description,
+      amount,
+      transactionType,
+      currency = "EUR",
+      tags,
+    } = transaction;
     const categories = tags && tags.length ? tags : [this.defaultCategoryId!];
     const transactionId = v4();
 
-    this.persister.getStore().transaction(
-      () => {
-        this.store.setRow(Tables.transactions, transactionId, {
-          date: date.getTime(),
-          description,
-          amount,
-          currency,
-          transactionType
+    this.persister.getStore().transaction(() => {
+      this.store.setRow(Tables.transactions, transactionId, {
+        date: date.getTime(),
+        description,
+        amount,
+        currency,
+        transactionType,
+      });
+      for (const category of categories) {
+        this.persister.getStore().setRow(Tables.transactionCategories, v4(), {
+          transaction: transactionId,
+          category: category,
         });
-        for (const category of categories) {
-          this.persister.getStore().setRow(Tables.transactionCategories, v4(), {
-            transaction: transactionId,
-            category: category,
-          });
-        }
-      },
-    );
+      }
+    });
 
-    return {[transactionId]: transaction };
+    return { [transactionId]: transaction };
   }
 
-  getTransactions(): Transaction[] {
-    const transactions = this.persister.getStore().getTable(Tables.transactions);
-    const transactionCategories = this.persister.getStore().getTable(Tables.transactionCategories);
+  getTransactions(): TransactionByType {
+    const transactionByType: TransactionByType = {
+      [TransactionType.EXPENSE]: [] as Transaction[],
+      [TransactionType.INCOME]: [] as Transaction[],
+      [UtilsType.ALL]: [] as Transaction[],
+    };
+    const transactions = this.persister
+      .getStore()
+      .getTable(Tables.transactions);
+    const transactionCategories = this.persister
+      .getStore()
+      .getTable(Tables.transactionCategories);
 
     const transactionCategoriesGrouped = Object.values(transactionCategories)
       .map((transactionCat) => transactionCat)
@@ -96,30 +121,49 @@ export default class PlenifyService {
         const categoryId = curr.category.toString();
         return {
           ...acc,
-          [transactionId]: [...(acc[transactionId] ?? []), categoryId]
-        }
+          [transactionId]: [...(acc[transactionId] ?? []), categoryId],
+        };
       }, {} as Record<string, string[]>);
 
-    return Object.entries(transactions).map(([id, transaction]) => ({
-      id,
-      date: new Date(transaction.date.valueOf() as number),
-      description: transaction.description.toString(),
-      amount: transaction.amount.valueOf() as number,
-      currency: transaction.currency.toString() as currency,
-      tags: transactionCategoriesGrouped[id],
-      transactionType: transaction.transactionType.valueOf() as TransactionType,
-    }));
+    Object.entries(transactions).forEach(([id, transaction]) => {
+      const transactionType =
+        transaction.transactionType.valueOf() as TransactionType;
+      const currentTransaction = {
+        id,
+        date: new Date(transaction.date.valueOf() as number),
+        description: transaction.description.toString(),
+        amount: transaction.amount.valueOf() as number,
+        currency: transaction.currency.toString() as currency,
+        tags: transactionCategoriesGrouped[id],
+        transactionType,
+      };
+
+      transactionByType[transactionType].push(currentTransaction);
+      transactionByType[UtilsType.ALL].push(currentTransaction);
+    });
+
+    return transactionByType;
   }
 
   getCategories(): Categories {
-    const categoriesRows = this.persister.getStore().getTable(Tables.categories);
+    const categoriesRows = this.persister
+      .getStore()
+      .getTable(Tables.categories);
 
     const categories = Object.entries(categoriesRows)
-      .map(([id, category]) => ({ [id]: { name: category.name.toString(), color: category.color.toString()}}))
-      .reduce((acc, curr) => ({
-        ...acc,
-        ...curr,
-      }), {} as Categories);
+      .map(([id, category]) => ({
+        [id]: {
+          name: category.name.toString(),
+          color: category.color.toString(),
+        },
+      }))
+      .reduce(
+        (acc, curr) => ({
+          ...acc,
+          ...curr,
+        }),
+        {} as Categories
+      );
 
     return categories;
   }

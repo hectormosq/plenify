@@ -6,10 +6,11 @@ import Loader from "../components/loader";
 import TransactionList from "../components/transactions/transaction-list";
 import Link from "next/link";
 import FinanceOverviewTabs from "../components/finance-overview-tabs";
+import { UtilsType } from "../models/transaction";
 
 export default function DashboardPage() {
   const { loading, transactions } = usePlenifyState();
-  const recentTransactions = transactions.slice(0, 5);
+  const recentTransactions = transactions[UtilsType.ALL].slice(0, 5);
 
   return (
     <>

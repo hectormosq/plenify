@@ -2,7 +2,7 @@ import { assign, fromPromise, setup } from "xstate";
 import { ControllerContext, ControllerEvent, TransactionEvent } from "./types";
 import { DEFAULT_CONTEXT } from "./defaults";
 import { plenifyService } from "../services";
-import { Transaction } from "../models/transaction";
+import { Transaction, TransactionByType, TransactionType, UtilsType } from "../models/transaction";
 
 export const machine = setup({
   types: {
@@ -11,105 +11,103 @@ export const machine = setup({
     input: DEFAULT_CONTEXT,
   },
   actors: {
-    setup: fromPromise(
-      async () => {
+    setup: fromPromise(async () => {
       return plenifyService.setup();
-      }
-    ),
-    reset: fromPromise(
-      async () => {
+    }),
+    reset: fromPromise(async () => {
       return plenifyService.reset();
-      }
-    ),
-    getCategories: fromPromise(
-      async () => {
+    }),
+    getCategories: fromPromise(async () => {
       return plenifyService.getCategories();
-      }
-    ),
-    getTransactions: fromPromise(
-      async () => {
+    }),
+    getTransactions: fromPromise(async () => {
       return plenifyService.getTransactions();
-      }
-    ),
+    }),
     addTransaction: fromPromise(
-      async ({ input: { transaction } }: { input: { transaction: Transaction } }) => {
+      async ({
+        input: { transaction },
+      }: {
+        input: { transaction: Transaction };
+      }) => {
         return plenifyService.addTransaction(transaction);
       }
     ),
   },
 }).createMachine({
-  id: 'plenify',
-  initial: 'initializing',
+  id: "plenify",
+  initial: "initializing",
   context: ({ input }) => ({
     ...input,
   }),
   states: {
     initializing: {
       invoke: {
-        src: 'setup',
+        src: "setup",
         onDone: {
-          target: 'initialized',
-        }
+          target: "initialized",
+        },
       },
     },
     initialized: {
-      type: 'parallel',
+      type: "parallel",
       states: {
         transactions: {
-          initial: 'loading',
+          initial: "loading",
           states: {
             loading: {
               invoke: {
-                src: 'getTransactions',
+                src: "getTransactions",
                 onDone: {
-                  target: 'loaded',
+                  target: "loaded",
                   actions: assign({
                     transactions: ({ event }) => {
-                      return 'output' in event
-                        ? event.output
-                        : [];
-                    }
+                      return "output" in event
+                        ? event.output as TransactionByType
+                        : {
+                            [TransactionType.EXPENSE]: [] as Transaction[],
+                            [TransactionType.INCOME]: [] as Transaction[],
+                            [UtilsType.ALL]: [] as Transaction[],
+                          };
+                    },
                   }),
                 },
-                onError: 'loaded',
-              }
-            },
-            loaded: {
-              type: 'final',
-            }
-          }
-        },
-        categories: {
-          initial: 'loading',
-          states: {
-            loading: {
-              invoke: {
-                src: 'getCategories',
-                onDone: {
-                  target: 'loaded',
-                  actions: assign({
-                    categories: ({ event }) => {
-                      return 'output' in event
-                        ? event.output
-                        : {};
-                    }
-                  }),
-                }
+                onError: "loaded",
               },
             },
             loaded: {
-              type: 'final',
-            }
-          }
+              type: "final",
+            },
+          },
+        },
+        categories: {
+          initial: "loading",
+          states: {
+            loading: {
+              invoke: {
+                src: "getCategories",
+                onDone: {
+                  target: "loaded",
+                  actions: assign({
+                    categories: ({ event }) => {
+                      return "output" in event ? event.output : {};
+                    },
+                  }),
+                },
+              },
+            },
+            loaded: {
+              type: "final",
+            },
+          },
         },
       },
       onDone: {
-        target: '#plenify.loaded'
-      }
+        target: "#plenify.loaded",
+      },
     },
     transaction: {
       invoke: {
-        src: 'addTransaction',
+        src: "addTransaction",
         input: ({ event }) => {
           const { transaction } = event as TransactionEvent;
           return {
@@ -123,26 +121,26 @@ export const machine = setup({
           };
         },
         onDone: {
-          target: '#plenify.initialized.transactions',
-        }
-      }
+          target: "#plenify.initialized.transactions",
+        },
+      },
     },
     loaded: {},
     reset: {
       invoke: {
-        src: 'reset',
+        src: "reset",
         onDone: {
-          target: '#plenify.initialized',
-        }
+          target: "#plenify.initialized",
+        },
       },
-    }
+    },
   },
   on: {
     ADD_TRANSACTION: {
-      target: '.transaction'
+      target: ".transaction",
     },
     RESET: {
-      target: '.reset'
-    }
-  }
+      target: ".reset",
+    },
+  },
 });
