@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { Series } from "../models/chart";
 import { PieChart } from "@mui/x-charts";
-import ChartService from "../services/chart";
 import { usePlenifyState } from "../hooks/usePlenifyState";
-import { TabsContainer, TabPanel } from "./Tabs/Tabs";
+import { TabPanel, TabsContainer } from "@app/components/Tabs/Tabs";
+import ChartService from "../services/chart";
 
 interface FinanceOverviewTabsProps {
   pieWidth: number;
@@ -23,13 +23,15 @@ export default function FinanceOverviewTabs({
   const [activeTab, setActiveTab] = useState(0);
   const { transactions, categories } = usePlenifyState();
 
-
   const pieChart = useMemo(() => {
     const chartService = new ChartService(transactions, categories!);
     chartService.createSeries();
     return chartService;
   }, [transactions, categories]);
-  const series = useMemo(() => [pieChart.getSeries(0), pieChart.getSeries(1)], [pieChart]);
+  const series = useMemo(
+    () => [pieChart.getSeries(0), pieChart.getSeries(1)],
+    [pieChart]
+  );
   return (
     <>
       <TabsContainer

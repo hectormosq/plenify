@@ -40,4 +40,4 @@ const TabPanel = function (props: TabPanelProps) {
   return <>{value === index && <div>{children}</div>}</>;
 }
 
-export {TabsContainer, TabPanel};
+export { TabsContainer, TabPanel };

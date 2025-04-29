@@ -1,0 +1,31 @@
+:root {
+  --fontFamily: Arial, Helvetica, sans-serif;
+  --background: #ffffff;
+  --foreground: #171717;
+  --border: #454952;
+  --maincolor: #32cd32;
+  --gradientmaincolor: #9acd32;
+  --expensescolor: #ff6347;
+  --incomescolor: #32cd32;
+  --inputLabel: #b3aea5;
+  --buttonRadius: 4px;
+  --errorColor: #ed4337;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+    --inputBackground: #1c2027;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--fontFamily);
+}
+
+main {
+  padding: 20px;
+}

@@ -4,9 +4,8 @@ import Loader from "../components/loader";
 import TransactionList from "../components/transactions/transaction-list";
 import { usePlenifyState } from "../hooks/usePlenifyState";
 
-
 export default function TransactionListPage() {
-  const { loading, transactions, addTransaction, reset } = usePlenifyState();
+  const { loading, transactions, reset } = usePlenifyState();
 
   return (
     <>
@@ -16,16 +15,6 @@ export default function TransactionListPage() {
         <TransactionList transactionList={transactions} />
       )}
       <div style={{ display: "flex", gap: "10px" }}>
-        <button
-          style={{
-            padding: ".75rem 2rem",
-            background: "grey",
-            margin: "10px 0",
-          }}
-          onClick={addTransaction}
-        >
-          Add Transaction
-        </button>
         <button
           style={{
             padding: ".75rem 2rem",
