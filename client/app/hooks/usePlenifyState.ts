@@ -1,15 +1,34 @@
 import { useSelector } from "@xstate/react";
 import { useCallback } from "react";
 import { usePlenifyContext } from "../context";
-import { Transaction, TransactionByType, TransactionType, UtilsType } from "../models/transaction";
+import {
+  Transaction,
+  TransactionByType,
+  TransactionType,
+  UtilsType,
+} from "../models/transaction";
 import { Categories } from "../models/categories";
+import { ActiveDateEvent } from "../machines";
+import dayjs from "dayjs";
 
 export const usePlenifyState = () => {
   const actor = usePlenifyContext();
 
+  const activeFromDate = useSelector(actor, (state) =>
+    state.matches("loaded")
+      ? state.context.activeFromDate
+      : dayjs().startOf("month")
+  );
+
+  const activeToDate = useSelector(actor, (state) =>
+    state.matches("loaded")
+      ? state.context.activeToDate
+      : dayjs().endOf("month")
+  );
+
   const transactions = useSelector(actor, (state) =>
     state.matches("loaded")
-      ? state.context.transactions as TransactionByType
+      ? (state.context.transactions as TransactionByType)
       : {
           [TransactionType.INCOME]: [] as Transaction[],
           [TransactionType.EXPENSE]: [] as Transaction[],
@@ -43,11 +62,24 @@ export const usePlenifyState = () => {
     });
   }, [actor]);
 
+  const setActiveDate = useCallback(
+    (activeDate: string) => {
+      actor.send({
+        type: "SET_ACTIVE_DATE",
+        activeDate: activeDate,
+      } as ActiveDateEvent);
+    },
+    [actor]
+  );
+
   return {
     loading,
     transactions,
+    activeFromDate,
+    activeToDate,
     categories,
     addTransaction,
     reset,
+    setActiveDate,
   };
 };

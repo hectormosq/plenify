@@ -1,9 +1,11 @@
-import { Categories } from '../models/categories';
-import { Transaction, TransactionByType } from '../models/transaction';
+import { Categories } from "../models/categories";
+import { Transaction, TransactionByType } from "../models/transaction";
 
 export interface WithDefaultControllerState {
   transactions?: TransactionByType;
   categories?: Categories;
+  activeFromDate?: string;
+  activeToDate?: string
 }
 
 export interface WithCategories {
@@ -18,27 +20,35 @@ export type DefaultContext = WithDefaultControllerState;
 
 export type ControllerTypeState =
   | {
-      value: 'initializing'
-        | 'initialized.transactions.loading'
-        | 'initialized.categories'
-        | 'transaction'
+      value:
+        | "initializing"
+        | "initialized.transactions.loading"
+        | "initialized.categories"
+        | "transaction";
       context: WithDefaultControllerState;
     }
   | {
-      value: 'loaded',
+      value: "loaded";
       context: WithDefaultControllerState & WithCategories & WithTransactions;
     };
 
-export type ControllerContext =
-  ControllerTypeState['context'];
+export type ControllerContext = ControllerTypeState["context"];
 
 export type TransactionEvent = {
-  type: 'ADD_TRANSACTION';
+  type: "ADD_TRANSACTION";
   transaction: Transaction;
 };
+
+export type ActiveDateEvent = { type: "SET_ACTIVE_DATE"; activeDate?: string };
+export function isActiveDateEvent(
+  event: ControllerEvent
+): event is ActiveDateEvent {
+  return event.type === "SET_ACTIVE_DATE";
+}
 
 export type ControllerEvent =
   | TransactionEvent
   | {
-      type: 'RESET';
-    };
+      type: "RESET";
+    }
+  | ActiveDateEvent;

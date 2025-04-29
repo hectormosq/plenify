@@ -1,8 +1,19 @@
 import { assign, fromPromise, setup } from "xstate";
-import { ControllerContext, ControllerEvent, TransactionEvent } from "./types";
+import {
+  ControllerContext,
+  ControllerEvent,
+  isActiveDateEvent,
+  TransactionEvent,
+} from "./types";
 import { DEFAULT_CONTEXT } from "./defaults";
 import { plenifyService } from "../services";
-import { Transaction, TransactionByType, TransactionType, UtilsType } from "../models/transaction";
+import {
+  Transaction,
+  TransactionByType,
+  TransactionType,
+  UtilsType,
+} from "../models/transaction";
+import dayjs from "dayjs";
 
 export const machine = setup({
   types: {
@@ -17,12 +28,22 @@ export const machine = setup({
     reset: fromPromise(async () => {
       return plenifyService.reset();
     }),
+    setActiveDates: fromPromise(
+      async ({ input }: { input: ControllerContext }) => {
+        return {
+          activeFromDate: input.activeFromDate,
+          activeToDate: input.activeToDate,
+        };
+      }
+    ),
     getCategories: fromPromise(async () => {
       return plenifyService.getCategories();
     }),
-    getTransactions: fromPromise(async () => {
-      return plenifyService.getTransactions();
-    }),
+    getTransactions: fromPromise(
+      async ({ input }: { input: { fromDate: string; toDate: string } }) => {
+        return plenifyService.getTransactions(input.fromDate, input.toDate);
+      }
+    ),
     addTransaction: fromPromise(
       async ({
         input: { transaction },
@@ -56,13 +77,54 @@ export const machine = setup({
           states: {
             loading: {
               invoke: {
+                src: "setActiveDates",
+                input: ({
+                  event,
+                }): { activeFromDate: string; activeToDate: string } => {
+
+                  if (isActiveDateEvent(event)) {
+                    return {
+                      activeFromDate: dayjs(event.activeDate)
+                        .startOf("month")
+                        .toISOString(),
+                      activeToDate: dayjs(event.activeDate)
+                        .endOf("month")
+                        .toISOString(),
+                    };
+                  }
+                  return {
+                    activeFromDate: dayjs().startOf("month").toISOString(),
+                    activeToDate: dayjs().endOf("month").toISOString(),
+                  };
+                },
+                onDone: {
+                  target: "loadTransactions",
+                  actions: assign({
+                    activeFromDate: ({ event }) => {
+                      return event.output.activeFromDate;
+                    },
+                    activeToDate: ({ event }) => {
+                      return event.output.activeToDate;
+                    },
+                  }),
+                },
+              },
+            },
+            loadTransactions: {
+              invoke: {
                 src: "getTransactions",
+                input: ({ context }) => {
+                  return {
+                    fromDate: context.activeFromDate,
+                    toDate: context.activeToDate,
+                  };
+                },
                 onDone: {
                   target: "loaded",
                   actions: assign({
                     transactions: ({ event }) => {
                       return "output" in event
-                        ? event.output as TransactionByType
+                        ? (event.output as TransactionByType)
                         : {
                             [TransactionType.EXPENSE]: [] as Transaction[],
                             [TransactionType.INCOME]: [] as Transaction[],
@@ -136,6 +198,9 @@ export const machine = setup({
     },
   },
   on: {
+    SET_ACTIVE_DATE: {
+      target: "#plenify.initialized.transactions",
+    },
     ADD_TRANSACTION: {
       target: ".transaction",
     },

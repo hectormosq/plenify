@@ -1,4 +1,4 @@
-import { createMergeableStore, MergeableStore } from "tinybase";
+import { createMergeableStore, createQueries, MergeableStore } from "tinybase";
 import {
   createIndexedDbPersister,
   IndexedDbPersister,
@@ -101,15 +101,42 @@ export default class PlenifyService {
     return { [transactionId]: transaction };
   }
 
-  getTransactions(): TransactionByType {
+  getTransactions(fromDate: string, toDate: string): TransactionByType {
+    const minDate = new Date(fromDate).getTime();
+    const maxDate = new Date(toDate).getTime();
     const transactionByType: TransactionByType = {
       [TransactionType.EXPENSE]: [] as Transaction[],
       [TransactionType.INCOME]: [] as Transaction[],
       [UtilsType.ALL]: [] as Transaction[],
     };
-    const transactions = this.persister
+    
+    const store = this.persister.getStore();
+
+    /*const transactions = this.persister
       .getStore()
-      .getTable(Tables.transactions);
+      .getTable(Tables.transactions);*/
+
+    const queries = createQueries(store);
+    queries.setQueryDefinition(
+      "transactionsByDateRange",
+      Tables.transactions,
+      ({ select, where }) => {
+        select("date");
+        select("description");
+        select("amount");
+        select("currency");
+        select("transactionType");
+        select("id");
+
+        where((getCell) => {
+          const dateCell = getCell('date');
+          return typeof dateCell === 'number' && (dateCell >= minDate &&  dateCell <= maxDate);
+        });
+      }
+    );
+    
+    const transactions = queries.getResultTable("transactionsByDateRange")
+
     const transactionCategories = this.persister
       .getStore()
       .getTable(Tables.transactionCategories);
