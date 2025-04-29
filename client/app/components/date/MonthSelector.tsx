@@ -1,8 +1,7 @@
-import { IconButton, styled } from "@mui/material";
+import { IconButton } from "@mui/material";
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
-  PickersCalendarHeader,
 } from "@mui/x-date-pickers";
 import dayjs, { Dayjs } from "dayjs";
 import classes from "./MonthSelector.module.scss";
