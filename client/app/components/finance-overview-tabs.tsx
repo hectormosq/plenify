@@ -23,15 +23,34 @@ export default function FinanceOverviewTabs({
   const [activeTab, setActiveTab] = useState(0);
   const { transactions, categories } = usePlenifyState();
 
-  const pieChart = useMemo(() => {
-    const chartService = new ChartService(transactions, categories!);
-    chartService.createSeries();
-    return chartService;
+  const incomesPieChart = useMemo(() => {
+    const incomesChartService = new ChartService(
+      transactions.INCOME,
+      categories
+    );
+    incomesChartService.createSeries();
+    return incomesChartService;
   }, [transactions, categories]);
-  const series = useMemo(
-    () => [pieChart.getSeries(0), pieChart.getSeries(1)],
-    [pieChart]
+
+  const incomeSeries = useMemo(
+    () => [incomesPieChart.getSeries(0), incomesPieChart.getSeries(1)],
+    [incomesPieChart]
   );
+
+  const expensesPieChart = useMemo(() => {
+    const expensesChartService = new ChartService(
+      transactions.EXPENSE,
+      categories
+    );
+    expensesChartService.createSeries();
+    return expensesChartService;
+  }, [transactions, categories]);
+
+  const expensesSeries = useMemo(
+    () => [expensesPieChart.getSeries(0), expensesPieChart.getSeries(1)],
+    [expensesPieChart]
+  );
+
   return (
     <>
       <TabsContainer
@@ -43,10 +62,10 @@ export default function FinanceOverviewTabs({
       />
 
       <TabPanel value={activeTab} index={0}>
-        {multiLevelPieChart(series)}
+        {multiLevelPieChart(expensesSeries)}
       </TabPanel>
       <TabPanel value={activeTab} index={1}>
-        {multiLevelPieChart(series, 1)}
+        {multiLevelPieChart(incomeSeries, 1)}
       </TabPanel>
     </>
   );

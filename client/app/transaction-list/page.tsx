@@ -12,7 +12,7 @@ export default function TransactionListPage() {
       {loading ? (
         <Loader />
       ) : (
-        <TransactionList transactionList={transactions} />
+        <TransactionList transactionList={transactions.ALL} />
       )}
       <div style={{ display: "flex", gap: "10px" }}>
         <button

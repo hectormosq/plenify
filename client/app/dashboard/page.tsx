@@ -6,10 +6,19 @@ import Loader from "../components/loader";
 import TransactionList from "../components/transactions/transaction-list";
 import Link from "next/link";
 import FinanceOverviewTabs from "../components/finance-overview-tabs";
+import { UtilsType } from "../models/transaction";
+
+import dayjs, { Dayjs } from "dayjs";
+import { MonthSelector } from "../components/date/MonthSelector";
 
 export default function DashboardPage() {
-  const { loading, transactions } = usePlenifyState();
-  const recentTransactions = transactions.slice(0, 5);
+  const { loading, transactions, setActiveDate, activeFromDate } =
+    usePlenifyState();
+  const recentTransactions = transactions[UtilsType.ALL].slice(0, 5);
+
+  const handleSetActiveDate = (date: Dayjs) => {
+    setActiveDate(date.toString());
+  };
 
   return (
     <>
@@ -21,10 +30,14 @@ export default function DashboardPage() {
             <p>TODO Summary Chart</p>
           </div>
           <div className={classes.overviewContainer}>
+            <MonthSelector
+              value={dayjs(activeFromDate)}
+              onChange={handleSetActiveDate}
+            />
             <FinanceOverviewTabs />
           </div>
           <div className={classes.addSection}>
-          <Link href="/admin/add">Add</Link>
+            <Link href="/admin/add">Add</Link>
           </div>
           <div className={classes.transactionsContainer}>
             <div className={classes.transactionsHeader}>

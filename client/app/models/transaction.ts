@@ -4,6 +4,14 @@ export enum TransactionType {
   EXPENSE = "EXPENSE",
 }
 
+export enum UtilsType {
+  ALL = 'ALL'
+}
+
+export type TransactionByType = Record<
+  TransactionType | UtilsType.ALL,
+  Transaction[]
+>;
 export interface Transaction {
   id?: string;
   transactionType: TransactionType;
@@ -14,6 +22,6 @@ export interface Transaction {
   tags: string[];
 }
 
-export type TransactionDefaultForm = Omit<Transaction, 'amount'> & {
-  amount: number | null
-}
+export type TransactionDefaultForm = Omit<Transaction, "amount"> & {
+  amount: number | null;
+};
