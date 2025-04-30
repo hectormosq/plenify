@@ -16,6 +16,11 @@ export interface WithTransactions {
   transactions: TransactionByType;
 }
 
+export interface WithActiveDateRange {
+  activeFromDate: string;
+  activeToDate: string
+}
+
 export type DefaultContext = WithDefaultControllerState;
 
 export type ControllerTypeState =
@@ -29,7 +34,7 @@ export type ControllerTypeState =
     }
   | {
       value: "loaded";
-      context: WithDefaultControllerState & WithCategories & WithTransactions;
+      context: WithDefaultControllerState & WithCategories & WithTransactions & WithActiveDateRange;
     };
 
 export type ControllerContext = ControllerTypeState["context"];
@@ -40,6 +45,7 @@ export type TransactionEvent = {
 };
 
 export type ActiveDateEvent = { type: "SET_ACTIVE_DATE"; activeDate?: string };
+
 export function isActiveDateEvent(
   event: ControllerEvent
 ): event is ActiveDateEvent {
