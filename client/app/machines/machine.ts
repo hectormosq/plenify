@@ -4,6 +4,7 @@ import {
   ControllerEvent,
   isActiveDateEvent,
   TransactionEvent,
+  WithActiveDateRange,
 } from "./types";
 import { DEFAULT_CONTEXT } from "./defaults";
 import { plenifyService } from "../services";
@@ -116,8 +117,8 @@ export const machine = setup({
                 src: "getTransactions",
                 input: ({ context }) => {
                   return {
-                    fromDate: context.activeFromDate,
-                    toDate: context.activeToDate,
+                    fromDate: (context as WithActiveDateRange).activeFromDate,
+                    toDate: (context as WithActiveDateRange).activeToDate,
                   };
                 },
                 onDone: {

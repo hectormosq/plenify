@@ -14,19 +14,16 @@ export const usePlenifyState = () => {
   const actor = usePlenifyContext();
 
   const activeFromDate = useSelector(actor, (state) => 
-    // @ts-expect-error TODO Fix "matches" type
     state.matches("loaded")
       ? (state.context.activeFromDate as string)
       : ""
   );
 
   const activeToDate = useSelector(actor, (state) =>
-    // @ts-expect-error TODO Fix "matches" type
     state.matches("loaded") ? (state.context.activeToDate as string) : ""
   );
 
   const transactions = useSelector(actor, (state) =>
-    // @ts-expect-error TODO Fix "matches" type
     state.matches("loaded")
       ? (state.context.transactions as TransactionByType)
       : {
@@ -37,14 +34,12 @@ export const usePlenifyState = () => {
   );
 
   const categories = useSelector(actor, (state) =>
-    // @ts-expect-error TODO Fix "matches" type
     state.matches("loaded")
       ? (state.context.categories as Categories)
       : ({} as Categories)
   );
 
   const loading = useSelector(actor, (state) =>
-    // @ts-expect-error TODO Fix "matches" type
     !state.matches("loaded") ? true : false
   );
 
