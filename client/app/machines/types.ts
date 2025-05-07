@@ -5,7 +5,7 @@ export interface WithDefaultControllerState {
   transactions?: TransactionByType;
   categories?: Categories;
   activeFromDate?: string;
-  activeToDate?: string
+  activeToDate?: string;
 }
 
 export interface WithCategories {
@@ -40,9 +40,10 @@ export type ControllerTypeState =
 export type ControllerContext = ControllerTypeState["context"];
 
 export type TransactionEvent = {
-  type: "ADD_TRANSACTION";
+  type: "ADD_TRANSACTION" | "UPDATE_TRANSACTION";
   transaction: Transaction;
 };
+
 
 export type ActiveDateEvent = { type: "SET_ACTIVE_DATE"; activeDate?: string };
 

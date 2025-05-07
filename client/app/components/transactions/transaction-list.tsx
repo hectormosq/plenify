@@ -2,6 +2,7 @@ import { Transaction } from "@app/models/transaction";
 import moment from "moment";
 import CategoryTag from "../categories/CategoryTag";
 import classes from "./transaction-list.module.css";
+import Link from "next/link";
 
 export default function TransactionList(props: {
   transactionList: Transaction[];
@@ -29,6 +30,7 @@ export default function TransactionList(props: {
             </div>
             <div>{moment(transaction.date).fromNow()}</div>
             <div>{`${transaction.amount} ${transaction.currency}`}</div>
+            <Link href={`/admin/add/${transaction.id}`}>Edit</Link>
           </div>
         ))
       ) : (

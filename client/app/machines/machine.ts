@@ -54,9 +54,18 @@ export const machine = setup({
         return plenifyService.addTransaction(transaction);
       }
     ),
+    updateTransaction: fromPromise(
+      async ({
+        input: { transaction },
+      }: {
+        input: { transaction: Transaction };
+      }) => {
+        return plenifyService.updateTransaction(transaction);
+      }
+    ),
   },
 }).createMachine({
-  /** @xstate-layout N4IgpgJg5mDOIC5QAcA2YB2BLAZgTwGIBlAUQBUB9AQQGEyBJANRIoBEqySBtABgF1EKAPawsAFyxCMgkAA9EAFgBMAGhB5EAVgBs2gHQAOHgGZjATmM8A7DoVmFAXwdq0mXISqtWFMgCUqAHJEtAwA8gG8AkggyCLiktLR8gjKahoIxgCMBoaaCpmZmjyaVjxmVvZOLujY+AS+JKRkkTKxohJSMsmp6ohKmcZ6mnnaxjY8CsYG2ppVMTXueljYEgCGqFgAXstQBBBSYEsYAG5CANaHrrV4R-HrWzsIy6cAxqsdGJEt0W3xnUmKKw5ew8HgGSYKBRAsZpRRKTR6GY2BTDTLaYo2OZXRbLO4bTaQPYHPSwMTvS4LfC3Nb4yDfYTtBJdRDZKZ6JR2MwGMzw4wKAxWVS9DLlPSFZGo9ElWbOeZuKm4mlbSB6MQAJ1WGFgqxeH1gelQQlWEB2RIwh2e5wp8puiqw9wJEFVGq1Or1BqNJowUCeJyEbw+X34rTiH2ZCC5gzKYxR-KskwMsJSJTFFSU5mKmiyUyxlNtK3ttKd6s12t1CX1huNZBdZb1ZotfouemxCoLDpVJdd5aklc9NdLborvte7wSQaiDL+iVAyUy+QRfNGpiMQMySiF6ShmT05k0BnhRWymTMOlzNupheVxdrQ97Hurt57WoIYDVaqEapbqHeOE-AFtvwvO0OxvQdnz7R9wL1Ed-THKQJxDRl-lnFkF13BRlymawDHXTc4QUIYzAKKYE3MSwZWqYD2yLPQAzAKBPywOAHy9XZ9nNI5TmbVt8zxa86PJRi1WYyC2NggNx34ekYlDJkAQQAozDMXcrG0JQDG5bRCmsTQkw3HdlKhYiOWMdMimMc9rmdaCEgbLirSA6yuzrBIJPgz5pODH45JQuRAWBBRQXBPkoQMGFhTMnhd33HglG0cLSnTJQrMWNU4DAMR7MtHi8z0dLYEy9zAy8ydZOQmd-JSIE9BBMEITCiL0n6BFigMPIeRCgorCsJxZQwIQIDgVo8yQ6dwwAWm0JMJuUPRQQWxbFss2VeMvB0djGsMFKyJQ9BsTRWSUKxsx64wkyC6LiJ4ddyjBXltFStt+MdLb5NQhBdD2470TM8o1KzabhRRXcN2Iyxsg3FFMievilUdGzuz1N6-OSKxMmin6TCUf6ZmMIH0lMKx2QSjc8iUG6EsouVrJA2iXLvLVWM2nyKvDGwcixv6erxgnFGGMUsxPHQKizTQzFh9b6afd0qwgAckYrFHKrnbIEX6bTQop7Qgr55MEUKLIbAKUZ4zySW6YEhmINYyBlfDNEN323D0yyE9xUTYHwsMBK7EyNTzFJi2aIE+jhNE+2FIsPadAKaZNGO+qrCTAY9p1-c+XBHkzKzYOXpVMOmJYuWWanbaPq5aLY+yGZE-BZPhX6FSzAS+MgW0M30bz+GC6EouxLt1nxoUgZTz0Ox0VF7RynivWOT2gY4vnIFlLMMpHtWvLrfL8rh4++FDLBdrwd98wG+asftJ4bSMZxpu+UluXB7L96quF77+j5DlbvIpM90MHSuFwR43XBvKi1kCqZUjvvXC49BQzBujdCmkwU5r13AUf2mE4rhWsH1BwQA */
+  /** @xstate-layout N4IgpgJg5mDOIC5QAcA2YB2BLAZgTwGIBBAERIH0AVAJSIDkBlIgYUoEkB5OgbQAYBdRCgD2sLABcswjEJAAPRABYATABoQeRMoDsARgB0AVgAcAZm0A2ZaeMWAnKd53tAXxfq0mXIQCqABRIiSgBRKlpGFnYuPkEkEGRRCSkZOIUEXUMjHV1eQ10rXl5jXW11TQRFU0yLRUtFOwzDXmUdQzcPdGx8AmpghmDKGNkEsUlpWTTFRX1tWyttFsddUzsLCzLEQztjfWN65XtnPVNdXXb4zu8CfspySLYANVDAkKG4kaTx1KU1DUR85T6exrHIZcxVRQWc6eLp4fRYbCSACGqCwAC8EVACBBpGB4RgAG7CADWeJh3nxSRR6MxCARRIAxkixhgYm8RKNkhNNnY7DMGg0plNjHkNghtLxtPpeJDeBCRRY9lD3BcvPhKcjUWjINjcfpYOJmWTLuqEVStZB2fFEizueljNpMtp6nZDOZtoo3boxctAc7TIpjMVVstbMZoSa4WbNejIPpxAAnJEYWBIhks2D6NOSAlgEhG2C6jB4+kk41qqOIrDU7UQeNJlPZ5KZpu5-PiOB0wnCJkstkCYY2rnfdItTKGCynWyKEqQnRi7QLaUWPTGBzWcw1CMVjXVi11xPJ1Pp5v6VDCJEQTFFkvd0n6cmmqs1uOHxsn6SZ8+X2ml3vJftYg5T4UlANJ8kMKVihsOVjF4XQZ1dBdbH0ZQzEsEMHBlcMVUfStzVjA8G2PDMzwvK8MCxMAEwTYQEwfVBmRwOiAFsGJ3aM90I+sjybT8yJ-Siu0ZZkAIEK0PltEcIKg0NYPgxDDAXFZ9FqOwikKEpdGsRRt1hXcXzrXswCgOisDgASKKxHFi3xIl7zwgz930YzTITcyv3I39u3-aRAMHTkvjA-5rAsXZLGUFQ7EDXI0LFFoDF5NTlBMNZA20vSKTfEjkizCAIBvOyy3Y-Tsr4jA8ogYSe1EvzxIHd4hyC+REF4MVeEy9Uyo-CqAFdkAgI1CtLBzIx498WX0frBo7arfNZeqgOtQLQJahA2r+dbOrhBM4DAcRhrvct9N22B9rm2qFv4CSmtWtILHg1TTBSlZDEqaLzDFB7eH0KoTksf7VisNwVQwYQIDgYZIwCkC7QAWkDMU4YdX6WgaSxF1MANDGUbanJpSiYak4KEHMH71O0Xl8kqGxSk2xUDEp2wVhWNc7DxzjDKJ4cSfU6Z-VqSVeTdZoxU9VHlDsA4120RwAzOXCxs55zuozbnmrSV0-UqQXKddRxfnKCwcf0DJJwaGUckXXHFY458VeI8qWxPNsC3Vu7-kKH6BYlPWRcNxBFx+y2EKsZ7IIODn7e41XT2-Kz3btBCdCBMwTFmKxJxxhcJWlGdQ+sFKFmVDo7YI2txpy-j48gRPpNsTJIpFbZHS2BCF22GYJxURQnFWWoFdL-Tle41yzMhxqVrtZxg8nFo9m2AMbB9Z6gU9Mxg2N2WzCj8u4zH9yLPjzE65J0Edl4Oe0PqMxKmMeLdD5VYHXqeoTCmSPbeH6OK4PjzLNrpPWG0lKiAl5A9AMi5rbKG9JtSKgJljNElGuLOhRXBfyyo7Hqp81pelUs6YonpTAPRnKYH0S4TBoUcDKZwpwVx41jtISqOC0gmB2KsGUrde5NADPFLY+h1KQQsMQhYyhL66QwV1LBk1ppGhYZsSm+D0pEJIcsMUIjfpbD2GYA4K5lgSKHhSGuEB5HpG2HyBYywraujgnFTaVjVLwRlBpFYCxTB41OvtUxVQwrY0frYCCkFFBignJkKoKUjiXxFE4EGLggA */
   id: "plenify",
   initial: "initializing",
   context: ({ input }) => ({
@@ -173,22 +182,43 @@ export const machine = setup({
     },
 
     transaction: {
-      invoke: {
-        src: "addTransaction",
-        input: ({ event }) => {
-          const { transaction } = event as TransactionEvent;
-          return {
-            transaction: {
-              date: transaction.date,
-              description: transaction.description,
-              amount: transaction.amount,
-              transactionType: transaction.transactionType,
-              tags: transaction.tags,
+      initial: "add",
+      states: {
+        add: {
+          invoke: {
+            src: "addTransaction",
+            input: ({ event }) => {
+              const { transaction } = event as TransactionEvent;
+              return {
+                transaction,
+              };
             },
-          };
+            onDone: {
+              target: "#plenify.initialized.transactions",
+            },
+          },
         },
-        onDone: {
-          target: "#plenify.initialized.transactions",
+        update: {
+          invoke: {
+            src: "updateTransaction",
+            input: ({ event }) => {
+              const { transaction } = event as TransactionEvent;
+              return {
+                transaction,
+              };
+            },
+            onDone: {
+              actions: [
+                assign({
+                  currentTransaction: ({ event }) => {
+                    console.log("currentTransaction", event);
+                    return {};
+                  },
+                }),
+              ],
+              target: "#plenify.initialized.transactions",
+            },
+          },
         },
       },
     },
@@ -206,12 +236,14 @@ export const machine = setup({
   },
   on: {
     ADD_TRANSACTION: {
-      target: ".transaction",
+      target: ".transaction.add",
+    },
+    UPDATE_TRANSACTION: {
+      target: ".transaction.update",
     },
     RESET: {
       target: ".reset",
     },
-
     SET_ACTIVE_DATE: {
       target: "#plenify.initialized.transactions",
     },

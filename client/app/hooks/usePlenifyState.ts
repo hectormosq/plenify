@@ -43,10 +43,22 @@ export const usePlenifyState = () => {
     !state.matches("loaded") ? true : false
   );
 
+  // TODO Merge into one ?
+
   const addTransaction = useCallback(
     (transaction: Transaction) => {
       actor.send({
         type: "ADD_TRANSACTION",
+        transaction,
+      });
+    },
+    [actor]
+  );
+
+  const updateTransaction = useCallback(
+    (transaction: Transaction) => {
+      actor.send({
+        type: "UPDATE_TRANSACTION",
         transaction,
       });
     },
@@ -76,6 +88,7 @@ export const usePlenifyState = () => {
     activeToDate,
     categories,
     addTransaction,
+    updateTransaction,
     reset,
     setActiveDate,
   };

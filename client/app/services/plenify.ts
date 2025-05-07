@@ -70,6 +70,42 @@ export default class PlenifyService {
     }
   }
 
+  updateTransaction(transaction: Transaction) {
+    if (!transaction.id) {
+      throw new Error("Transaction ID is required for update");
+    }
+    const transactionId = transaction.id as string;
+
+    this.deleteTransactionCategories(transactionId);
+    return this.addTransaction(transaction);
+  }
+
+  deleteTransactionCategories(transactionId: string) {
+    const store = this.persister.getStore();
+
+    const query = createQueries(store);
+    query.setQueryDefinition(
+      "transactionCategoriesByTransactionId",
+      Tables.transactionCategories,
+      ({ select, where }) => {
+        select("transaction");
+
+        where((getCell) => {
+          const transactionCell = getCell("transaction");
+          return (
+            typeof transactionCell === "string" &&
+            transactionCell === transactionId
+          );
+        });
+      }
+    );
+
+    const transactionCategories = query.getResultTable("transactionCategoriesByTransactionId");
+    Object.entries(transactionCategories).forEach(([id]) => {
+      this.persister.getStore().delRow(Tables.transactionCategories, id);
+    });
+  }
+
   addTransaction(transaction: Transaction) {
     const {
       date,
@@ -80,8 +116,8 @@ export default class PlenifyService {
       tags,
     } = transaction;
     const categories = tags && tags.length ? tags : [this.defaultCategoryId!];
-    const transactionId = v4();
 
+    const transactionId = transaction.id ?? v4();
     this.persister.getStore().transaction(() => {
       this.store.setRow(Tables.transactions, transactionId, {
         date: date.getTime(),
@@ -101,6 +137,44 @@ export default class PlenifyService {
     return { [transactionId]: transaction };
   }
 
+  getTransaction(id: string): Transaction | undefined {
+    const transaction = this.persister
+      .getStore()
+      .getRow(Tables.transactions, id);
+
+    if (!transaction || Object.keys(transaction).length === 0) {
+      return undefined;
+    }
+
+    const transactionCategories = this.persister
+      .getStore()
+      .getTable(Tables.transactionCategories);
+      
+
+    const transactionCategoriesGrouped = Object.values(transactionCategories)
+      .map((transactionCat) => transactionCat)
+      .reduce((acc, curr) => {
+        const transactionId = curr.transaction.toString();
+        const categoryId = curr.category.toString();
+        return {
+          ...acc,
+          [transactionId]: [...(acc[transactionId] ?? []), categoryId],
+        };
+      }, {} as Record<string, string[]>);
+
+    const currentTransaction = {
+      id,
+      date: new Date(transaction.date.valueOf() as number),
+      description: transaction.description.toString(),
+      amount: transaction.amount.valueOf() as number,
+      currency: transaction.currency.toString() as currency,
+      tags: transactionCategoriesGrouped[id],
+      transactionType: transaction.transactionType.valueOf() as TransactionType,
+    };
+
+    return currentTransaction;
+  }
+
   getTransactions(fromDate: string, toDate: string): TransactionByType {
     const minDate = new Date(fromDate).getTime();
     const maxDate = new Date(toDate).getTime();
@@ -110,11 +184,8 @@ export default class PlenifyService {
       [UtilsType.ALL]: [] as Transaction[],
     };
     
-    const store = this.persister.getStore();
 
-    /*const transactions = this.persister
-      .getStore()
-      .getTable(Tables.transactions);*/
+    const store = this.persister.getStore();
 
     const queries = createQueries(store);
     queries.setQueryDefinition(
@@ -129,17 +200,22 @@ export default class PlenifyService {
         select("id");
 
         where((getCell) => {
-          const dateCell = getCell('date');
-          return typeof dateCell === 'number' && (dateCell >= minDate &&  dateCell <= maxDate);
+          const dateCell = getCell("date");
+          return (
+            typeof dateCell === "number" &&
+            dateCell >= minDate &&
+            dateCell <= maxDate
+          );
         });
       }
     );
-    
-    const transactions = queries.getResultTable("transactionsByDateRange")
+
+    const transactions = queries.getResultTable("transactionsByDateRange");
 
     const transactionCategories = this.persister
       .getStore()
       .getTable(Tables.transactionCategories);
+
 
     const transactionCategoriesGrouped = Object.values(transactionCategories)
       .map((transactionCat) => transactionCat)
