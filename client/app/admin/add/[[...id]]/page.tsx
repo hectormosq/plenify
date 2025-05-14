@@ -1,7 +1,6 @@
 "use client";
 
 import { usePlenifyState } from "@app/hooks/usePlenifyState";
-import { plenifyService } from "@app/services";
 import {
   Transaction,
   TransactionDefaultForm,
@@ -15,60 +14,70 @@ import InputNumber from "@app/components/inputs/InputNumber";
 import { Button, TextField } from "@mui/material";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { currency, DEFAULT_CURRENCY } from "@app/models/currencies";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { ErrorMessage } from "@hookform/error-message";
 import TransactionTypeSelector from "@app/components/buttons/TransactionTypeSelector";
 import { useParams } from "next/navigation";
 
 export default function AdminPage() {
-  const { loading, addTransaction, updateTransaction, categories } =
-    usePlenifyState();
-  const params = useParams();
+  const {
+    addTransaction,
+    updateTransaction,
+    selectTransaction,
+    categories,
+    loading,
+    currentTransaction,
+  } = usePlenifyState();
 
-  let transaction: TransactionDefaultForm | undefined;
+  const { id } = useParams() as { id: string[] };
+  const transactionId = id?.[0] || null;
 
-  if (params.id && params.id?.length > 0) {
-    const transactionId = params.id[0] as string;
-    const currentTransaction = plenifyService.getTransaction(transactionId);
-
-    if (currentTransaction) {
-      transaction = {
-        id: transactionId,
-        transactionType: currentTransaction.transactionType,
-        amount: currentTransaction.amount,
-        date: currentTransaction.date,
-        description: currentTransaction.description,
-        currency: currentTransaction.currency,
-        tags: currentTransaction.tags,
-      } as TransactionDefaultForm;
-    }
-  } else {
-    transaction = {
+  const defaultTransaction = useMemo<TransactionDefaultForm>(
+    () => ({
       transactionType: TransactionType.EXPENSE,
       date: new Date(),
       description: "",
       currency: DEFAULT_CURRENCY as currency,
       amount: null,
       tags: [],
-    } as TransactionDefaultForm;
-  }
+    }),
+    []
+  );
 
   const { control, handleSubmit, reset, formState } = useForm({
-    defaultValues: transaction,
+    defaultValues: defaultTransaction,
   });
 
-  const REQUIRED_FIELD_ERROR = "Field is Required";
+  useEffect(() => {
+      selectTransaction(transactionId?? "");
+  }, [transactionId, selectTransaction]);
 
   useEffect(() => {
     if (formState.isSubmitSuccessful) {
-      reset();
+      reset(defaultTransaction);
     }
-  }, [formState, reset]);
+  }, [formState.isSubmitSuccessful, reset, defaultTransaction]);
+
+  useEffect(() => {
+      reset(
+        currentTransaction && currentTransaction.id
+          ? {
+              transactionType: currentTransaction.transactionType,
+              date: currentTransaction.date,
+              description: currentTransaction.description,
+              amount: currentTransaction.amount,
+              tags: currentTransaction.tags,
+            }
+          : defaultTransaction
+      );
+  }, [reset, currentTransaction, defaultTransaction]);
+
+  const REQUIRED_FIELD_ERROR = "Field is Required";
 
   const onSubmit: SubmitHandler<Transaction> = (data) => {
-    if (transaction?.id) {
+    if (transactionId) {
       updateTransaction({
-        id: transaction?.id,
+        id: transactionId,
         transactionType: data.transactionType,
         date: data.date,
         description: data.description,
@@ -114,7 +123,7 @@ export default function AdminPage() {
     <>
       {loading ? (
         <Loader />
-      ) : transaction ? (
+      ) : !transactionId || currentTransaction ? (
         <div className={classes.container}>
           <form
             className={classes.form}

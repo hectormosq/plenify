@@ -13,10 +13,8 @@ import { ActiveDateEvent } from "../machines";
 export const usePlenifyState = () => {
   const actor = usePlenifyContext();
 
-  const activeFromDate = useSelector(actor, (state) => 
-    state.matches("loaded")
-      ? (state.context.activeFromDate as string)
-      : ""
+  const activeFromDate = useSelector(actor, (state) =>
+    state.matches("loaded") ? (state.context.activeFromDate as string) : ""
   );
 
   const activeToDate = useSelector(actor, (state) =>
@@ -39,8 +37,24 @@ export const usePlenifyState = () => {
       : ({} as Categories)
   );
 
-  const loading = useSelector(actor, (state) =>
-    !state.matches("loaded") ? true : false
+  const loading = useSelector(actor, (state) => {
+    return !state.matches("loaded") ? true : false;
+  });
+
+  const currentTransaction = useSelector(actor, (state) => {
+    return state.matches("loaded")
+      ? (state.context.currentTransaction as Transaction)
+      : undefined;
+  });
+
+  const selectTransaction = useCallback(
+    (transactionId: string) => {
+      actor.send({
+        type: "GET_TRANSACTION",
+        transactionId: transactionId,
+      });
+    },
+    [actor]
   );
 
   // TODO Merge into one ?
@@ -87,6 +101,8 @@ export const usePlenifyState = () => {
     activeFromDate,
     activeToDate,
     categories,
+    currentTransaction,
+    selectTransaction,
     addTransaction,
     updateTransaction,
     reset,
