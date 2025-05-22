@@ -3,6 +3,7 @@ import {
   ControllerContext,
   ControllerEvent,
   isActiveDateEvent,
+  SelectTransactionEvent,
   TransactionEvent,
   WithActiveDateRange,
 } from "./types";
@@ -40,6 +41,11 @@ export const machine = setup({
     getCategories: fromPromise(async () => {
       return plenifyService.getCategories();
     }),
+    getTransaction: fromPromise(
+      async ({ input }: { input: { transactionId: string } }) => {
+        return plenifyService.getTransaction(input.transactionId);
+      }
+    ),
     getTransactions: fromPromise(
       async ({ input }: { input: { fromDate: string; toDate: string } }) => {
         return plenifyService.getTransactions(input.fromDate, input.toDate);
@@ -54,9 +60,17 @@ export const machine = setup({
         return plenifyService.addTransaction(transaction);
       }
     ),
+    updateTransaction: fromPromise(
+      async ({
+        input: { transaction },
+      }: {
+        input: { transaction: Transaction };
+      }) => {
+        return plenifyService.updateTransaction(transaction);
+      }
+    ),
   },
 }).createMachine({
-  /** @xstate-layout N4IgpgJg5mDOIC5QAcA2YB2BLAZgTwGIBlAUQBUB9AQQGEyBJANRIoBEqySBtABgF1EKAPawsAFyxCMgkAA9EAFgBMAGhB5EAVgBs2gHQAOHgGZjATmM8A7DoVmFAXwdq0mXISqtWFMgCUqAHJEtAwA8gG8AkggyCLiktLR8gjKahoIxgCMBoaaCpmZmjyaVjxmVvZOLujY+AS+JKRkkTKxohJSMsmp6ohKmcZ6mnnaxjY8CsYG2ppVMTXueljYEgCGqFgAXstQBBBSYEsYAG5CANaHrrV4R-HrWzsIy6cAxqsdGJEt0W3xnUmKKw5ew8HgGSYKBRAsZpRRKTR6GY2BTDTLaYo2OZXRbLO4bTaQPYHPSwMTvS4LfC3Nb4yDfYTtBJdRDZKZ6JR2MwGMzw4wKAxWVS9DLlPSFZGo9ElWbOeZuKm4mlbSB6MQAJ1WGFgqxeH1gelQQlWEB2RIwh2e5wp8puiqw9wJEFVGq1Or1BqNJowUCeJyEbw+X34rTiH2ZCC5gzKYxR-KskwMsJSJTFFSU5mKmiyUyxlNtK3ttKd6s12t1CX1huNZBdZb1ZotfouemxCoLDpVJdd5aklc9NdLborvte7wSQaiDL+iVAyUy+QRfNGpiMQMySiF6ShmT05k0BnhRWymTMOlzNupheVxdrQ97Hurt57WoIYDVaqEapbqHeOE-AFtvwvO0OxvQdnz7R9wL1Ed-THKQJxDRl-lnFkF13BRlymawDHXTc4QUIYzAKKYE3MSwZWqYD2yLPQAzAKBPywOAHy9XZ9nNI5TmbVt8zxa86PJRi1WYyC2NggNx34ekYlDJkAQQAozDMXcrG0JQDG5bRCmsTQkw3HdlKhYiOWMdMimMc9rmdaCEgbLirSA6yuzrBIJPgz5pODH45JQuRAWBBRQXBPkoQMGFhTMnhd33HglG0cLSnTJQrMWNU4DAMR7MtHi8z0dLYEy9zAy8ydZOQmd-JSIE9BBMEITCiL0n6BFigMPIeRCgorCsJxZQwIQIDgVo8yQ6dwwAWm0JMJuUPRQQWxbFss2VeMvB0djGsMFKyJQ9BsTRWSUKxsx64wkyC6LiJ4ddyjBXltFStt+MdLb5NQhBdD2470TM8o1KzabhRRXcN2Iyxsg3FFMievilUdGzuz1N6-OSKxMmin6TCUf6ZmMIH0lMKx2QSjc8iUG6EsouVrJA2iXLvLVWM2nyKvDGwcixv6erxgnFGGMUsxPHQKizTQzFh9b6afd0qwgAckYrFHKrnbIEX6bTQop7Qgr55MEUKLIbAKUZ4zySW6YEhmINYyBlfDNEN323D0yyE9xUTYHwsMBK7EyNTzFJi2aIE+jhNE+2FIsPadAKaZNGO+qrCTAY9p1-c+XBHkzKzYOXpVMOmJYuWWanbaPq5aLY+yGZE-BZPhX6FSzAS+MgW0M30bz+GC6EouxLt1nxoUgZTz0Ox0VF7RynivWOT2gY4vnIFlLMMpHtWvLrfL8rh4++FDLBdrwd98wG+asftJ4bSMZxpu+UluXB7L96quF77+j5DlbvIpM90MHSuFwR43XBvKi1kCqZUjvvXC49BQzBujdCmkwU5r13AUf2mE4rhWsH1BwQA */
   id: "plenify",
   initial: "initializing",
   context: ({ input }) => ({
@@ -76,71 +90,77 @@ export const machine = setup({
       type: "parallel",
       states: {
         transactions: {
-          initial: "activeDates",
+          type: "parallel",
           states: {
-            activeDates: {
-              invoke: {
-                src: "setActiveDates",
-                input: ({
-                  event,
-                }): { activeFromDate: string; activeToDate: string } => {
-                  if (isActiveDateEvent(event)) {
-                    return {
-                      activeFromDate: dayjs(event.activeDate)
-                        .startOf("month")
-                        .toISOString(),
-                      activeToDate: dayjs(event.activeDate)
-                        .endOf("month")
-                        .toISOString(),
-                    };
-                  }
-                  return {
-                    activeFromDate: dayjs().startOf("month").toISOString(),
-                    activeToDate: dayjs().endOf("month").toISOString(),
-                  };
-                },
-                onDone: {
-                  actions: assign({
-                    activeFromDate: ({ event }) => {
-                      return event.output.activeFromDate;
+            list: {
+              initial: "activeDates",
+              states: {
+                activeDates: {
+                  invoke: {
+                    src: "setActiveDates",
+                    input: ({
+                      event,
+                    }): { activeFromDate: string; activeToDate: string } => {
+                      if (isActiveDateEvent(event)) {
+                        return {
+                          activeFromDate: dayjs(event.activeDate)
+                            .startOf("month")
+                            .toISOString(),
+                          activeToDate: dayjs(event.activeDate)
+                            .endOf("month")
+                            .toISOString(),
+                        };
+                      }
+                      return {
+                        activeFromDate: dayjs().startOf("month").toISOString(),
+                        activeToDate: dayjs().endOf("month").toISOString(),
+                      };
                     },
-                    activeToDate: ({ event }) => {
-                      return event.output.activeToDate;
+                    onDone: {
+                      actions: assign({
+                        activeFromDate: ({ event }) => {
+                          return event.output.activeFromDate;
+                        },
+                        activeToDate: ({ event }) => {
+                          return event.output.activeToDate;
+                        },
+                      }),
+                      target: "loading",
                     },
-                  }),
-                  target: "loading",
+                  },
                 },
-              },
-            },
-            loading: {
-              invoke: {
-                src: "getTransactions",
-                input: ({ context }) => {
-                  return {
-                    fromDate: (context as WithActiveDateRange).activeFromDate,
-                    toDate: (context as WithActiveDateRange).activeToDate,
-                  };
-                },
-                onDone: {
-                  target: "loaded",
-                  actions: assign({
-                    transactions: ({ event }) => {
-                      return "output" in event
-                        ? (event.output as TransactionByType)
-                        : {
-                            [TransactionType.EXPENSE]: [] as Transaction[],
-                            [TransactionType.INCOME]: [] as Transaction[],
-                            [UtilsType.ALL]: [] as Transaction[],
-                          };
+                loading: {
+                  invoke: {
+                    src: "getTransactions",
+                    input: ({ context }) => {
+                      return {
+                        fromDate: (context as WithActiveDateRange)
+                          .activeFromDate,
+                        toDate: (context as WithActiveDateRange).activeToDate,
+                      };
                     },
-                  }),
+                    onDone: {
+                      target: "loaded",
+                      actions: assign({
+                        transactions: ({ event }) => {
+                          return "output" in event
+                            ? (event.output as TransactionByType)
+                            : {
+                                [TransactionType.EXPENSE]: [] as Transaction[],
+                                [TransactionType.INCOME]: [] as Transaction[],
+                                [UtilsType.ALL]: [] as Transaction[],
+                              } as TransactionByType;
+                        },
+                      }),
+                    },
+                    onError: "loaded",
+                  },
                 },
-                onError: "loaded",
-              },
-            },
 
-            loaded: {
-              type: "final",
+                loaded: {
+                  type: "final",
+                },
+              },
             },
           },
         },
@@ -173,23 +193,87 @@ export const machine = setup({
     },
 
     transaction: {
-      invoke: {
-        src: "addTransaction",
-        input: ({ event }) => {
-          const { transaction } = event as TransactionEvent;
-          return {
-            transaction: {
-              date: transaction.date,
-              description: transaction.description,
-              amount: transaction.amount,
-              transactionType: transaction.transactionType,
-              tags: transaction.tags,
+      initial: "get",
+      states: {
+        loaded: {
+          on: {
+            EXIT_TRANSACTION: {
+              actions: assign({
+                currentTransaction: () => undefined,
+              }),
+              target: "#plenify.loaded",
+            }
+          }
+        },
+        get: {
+          initial: "loading",
+          states: {
+            loading: {
+              invoke: {
+                src: "getTransaction",
+                input: ({ event }) => {
+                   const { transactionId } = event as SelectTransactionEvent;
+                  return {
+                    transactionId: transactionId,
+                  };
+                },
+                onDone: {
+                  actions: assign({
+                    currentTransaction: ({ event }) => {
+                      return "output" in event
+                        ? (event.output as Transaction)
+                        : undefined;
+                    },
+                  }),
+                  target: "#plenify.transaction.loaded",
+                },
+              },
             },
-          };
+            
+          },
         },
-        onDone: {
-          target: "#plenify.initialized.transactions",
+        update: {
+          initial: "saving",
+          states: {
+            saving: {
+              invoke: {
+                src: "updateTransaction",
+                input: ({ event }) => {
+                  const { transaction } = event as TransactionEvent;
+                  return {
+                    transaction,
+                  };
+                },
+                onDone: {
+                  target: "success",
+                },
+              },
+            },
+            success: {
+              after: {
+                100: "#plenify.initialized.transactions",
+              },
+            },
+          },
         },
+
+        add: {
+          invoke: {
+            src: "addTransaction",
+            input: ({ event }) => {
+              const { transaction } = event as TransactionEvent;
+              return {
+                transaction,
+              };
+            },
+            onDone: {
+              target: "#plenify.initialized.transactions",
+            },
+          },
+        },
+      },
+      onDone: {
+        target: "#plenify.loaded",
       },
     },
 
@@ -206,12 +290,17 @@ export const machine = setup({
   },
   on: {
     ADD_TRANSACTION: {
-      target: ".transaction",
+      target: ".transaction.add",
+    },
+    GET_TRANSACTION: {
+      target: ".transaction.get",
+    },
+    UPDATE_TRANSACTION: {
+      target: "#plenify.transaction.update",
     },
     RESET: {
       target: ".reset",
     },
-
     SET_ACTIVE_DATE: {
       target: "#plenify.initialized.transactions",
     },

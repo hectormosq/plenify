@@ -13,10 +13,8 @@ import { ActiveDateEvent } from "../machines";
 export const usePlenifyState = () => {
   const actor = usePlenifyContext();
 
-  const activeFromDate = useSelector(actor, (state) => 
-    state.matches("loaded")
-      ? (state.context.activeFromDate as string)
-      : ""
+  const activeFromDate = useSelector(actor, (state) =>
+    state.matches("loaded") ? (state.context.activeFromDate as string) : ""
   );
 
   const activeToDate = useSelector(actor, (state) =>
@@ -34,13 +32,33 @@ export const usePlenifyState = () => {
   );
 
   const categories = useSelector(actor, (state) =>
-    state.matches("loaded")
+    state.matches("loaded") || state.matches({transaction: "loaded"})
       ? (state.context.categories as Categories)
       : ({} as Categories)
   );
 
-  const loading = useSelector(actor, (state) =>
-    !state.matches("loaded") ? true : false
+  const idle = useSelector(actor, (state) => {
+    return state.matches("loaded") ? true : false;
+  });
+
+  const loading = useSelector(actor, (state) => {
+    return !state.matches("loaded") && !state.matches({transaction: "loaded"}) ? true : false;
+  });
+
+  const currentTransaction = useSelector(actor, (state) => {
+    return state.matches({transaction: "loaded"})
+      ? (state.context.currentTransaction as Transaction)
+      : undefined;
+  });
+
+  const selectTransaction = useCallback(
+    (transactionId: string) => {
+      actor.send({
+        type: "GET_TRANSACTION",
+        transactionId: transactionId,
+      });
+    },
+    [actor]
   );
 
   const addTransaction = useCallback(
@@ -52,6 +70,22 @@ export const usePlenifyState = () => {
     },
     [actor]
   );
+
+  const updateTransaction = useCallback(
+    (transaction: Transaction) => {
+      actor.send({
+        type: "UPDATE_TRANSACTION",
+        transaction,
+      });
+    },
+    [actor]
+  );
+
+  const exitTransaction = useCallback(() => {
+    actor.send({
+      type: "EXIT_TRANSACTION",
+    });
+  }, [actor]);
 
   const reset = useCallback(() => {
     actor.send({
@@ -70,12 +104,17 @@ export const usePlenifyState = () => {
   );
 
   return {
+    idle,
     loading,
     transactions,
     activeFromDate,
     activeToDate,
     categories,
+    currentTransaction,
+    selectTransaction,
     addTransaction,
+    updateTransaction,
+    exitTransaction,
     reset,
     setActiveDate,
   };

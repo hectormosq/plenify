@@ -5,7 +5,7 @@ import {
   Transaction,
   TransactionDefaultForm,
   TransactionType,
-} from "../../models/transaction";
+} from "../../../models/transaction";
 import StyledDate from "@app/components/date/StyledDate";
 import CategorySelector from "@app/components/categories/CategorySelector";
 import Loader from "@app/components/loader";
@@ -14,39 +14,95 @@ import InputNumber from "@app/components/inputs/InputNumber";
 import { Button, TextField } from "@mui/material";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { currency, DEFAULT_CURRENCY } from "@app/models/currencies";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { ErrorMessage } from "@hookform/error-message";
 import TransactionTypeSelector from "@app/components/buttons/TransactionTypeSelector";
+import { useParams } from "next/navigation";
 
 export default function AdminPage() {
-  const { loading, addTransaction, categories } = usePlenifyState();
-  const { control, handleSubmit, reset, formState } = useForm({
-    defaultValues: {
+  const {
+    addTransaction,
+    updateTransaction,
+    selectTransaction,
+    exitTransaction,
+    categories,
+    idle,
+    loading,
+    currentTransaction,
+  } = usePlenifyState();
+
+  const { id } = useParams() as { id: string[] };
+  const transactionId = id?.[0] || null;
+
+  const defaultTransaction = useMemo<TransactionDefaultForm>(
+    () => ({
       transactionType: TransactionType.EXPENSE,
       date: new Date(),
       description: "",
       currency: DEFAULT_CURRENCY as currency,
       amount: null,
       tags: [],
-    } as TransactionDefaultForm,
+    }),
+    []
+  );
+
+  const { control, handleSubmit, reset, formState } = useForm({
+    defaultValues: defaultTransaction,
   });
 
-  const REQUIRED_FIELD_ERROR = "Field is Required";
+  useEffect(() => {
+  return () => {
+    exitTransaction();
+  };
+}, [exitTransaction]);
+
+  useEffect(() => {
+    if(idle) {
+      selectTransaction(transactionId?? "");
+    }
+  }, [transactionId, selectTransaction, idle]);
 
   useEffect(() => {
     if (formState.isSubmitSuccessful) {
-      reset();
+      reset(defaultTransaction);
     }
-  }, [formState, reset]);
+  }, [formState.isSubmitSuccessful, reset, defaultTransaction]);
+
+  useEffect(() => {
+      reset(
+        currentTransaction && currentTransaction.id
+          ? {
+              transactionType: currentTransaction.transactionType,
+              date: currentTransaction.date,
+              description: currentTransaction.description,
+              amount: currentTransaction.amount,
+              tags: currentTransaction.tags,
+            }
+          : defaultTransaction
+      );
+  }, [reset, currentTransaction, defaultTransaction]);
+
+  const REQUIRED_FIELD_ERROR = "Field is Required";
 
   const onSubmit: SubmitHandler<Transaction> = (data) => {
-    addTransaction({
-      transactionType: data.transactionType,
-      date: data.date,
-      description: data.description,
-      amount: data.amount,
-      tags: data.tags,
-    });
+    if (transactionId) {
+      updateTransaction({
+        id: transactionId,
+        transactionType: data.transactionType,
+        date: data.date,
+        description: data.description,
+        amount: data.amount,
+        tags: data.tags,
+      });
+    } else {
+      addTransaction({
+        transactionType: data.transactionType,
+        date: data.date,
+        description: data.description,
+        amount: data.amount,
+        tags: data.tags,
+      });
+    }
   };
 
   const generateFake = () => {
@@ -77,7 +133,7 @@ export default function AdminPage() {
     <>
       {loading ? (
         <Loader />
-      ) : (
+      ) : !transactionId || currentTransaction ? (
         <div className={classes.container}>
           <form
             className={classes.form}
@@ -204,6 +260,8 @@ export default function AdminPage() {
             </Button>
           </form>
         </div>
+      ) : (
+        <div>Transaction not Found</div>
       )}
     </>
   );
