@@ -24,6 +24,7 @@ enum Tables {
 const tablesSchema = {
   [Tables.transactions]: {
     date: { type: "number" },
+    account: { type: "string" },
     description: { type: "string" },
     amount: { type: "number" },
     currency: { type: "string", default: DEFAULT_CURRENCY },
@@ -50,25 +51,29 @@ export default class PlenifyService {
     this.persister = createIndexedDbPersister(this.store, STORE);
   }
 
-  async setup() {
+  private async fetchCategories() {
     const res = await fetch("/api/v1/categories");
-    if (res.ok) {
-      const json = await res.json();
-      const { categories, defaultCategory } = json.data;
-      this.defaultCategoryId = defaultCategory;
-      this.categoryList = categories;
-
-      await this.persister.startAutoLoad([
-        { [Tables.categories]: { ...categories } },
-        {},
-      ]);
-      await this.persister.startAutoSave();
-    } else {
-      return Promise.reject(
-        new Error(`There was a problem trying to load defaultCategories`)
-      );
+    if (!res.ok) {
+      throw new Error("There was a problem trying to load defaultCategories");
     }
+    const { categories, defaultCategory } = (await res.json()).data;
+    this.defaultCategoryId = defaultCategory;
+    this.categoryList = categories;
+    return categories;
   }
+
+  async setup() {
+    const categories = await this.fetchCategories();
+    await this.persister.startAutoLoad([{ [Tables.categories]: { ...categories } }, {}]);
+    await this.persister.startAutoSave();
+  }
+
+  async resetCategories() {
+    this.persister.getStore().delTable(Tables.categories);
+    const categories = await this.fetchCategories();
+    this.persister.getStore().setTable(Tables.categories, categories);
+  }
+
 
   updateTransaction(transaction: Transaction) {
     if (!transaction.id) {
@@ -100,7 +105,9 @@ export default class PlenifyService {
       }
     );
 
-    const transactionCategories = query.getResultTable("transactionCategoriesByTransactionId");
+    const transactionCategories = query.getResultTable(
+      "transactionCategoriesByTransactionId"
+    );
     Object.entries(transactionCategories).forEach(([id]) => {
       this.persister.getStore().delRow(Tables.transactionCategories, id);
     });
@@ -109,6 +116,7 @@ export default class PlenifyService {
   addTransaction(transaction: Transaction) {
     const {
       date,
+      account,
       description,
       amount,
       transactionType,
@@ -120,9 +128,10 @@ export default class PlenifyService {
     const transactionId = transaction.id ?? v4();
     this.persister.getStore().transaction(() => {
       this.store.setRow(Tables.transactions, transactionId, {
+        account: account || "",
+        amount,
         date: date.getTime(),
         description,
-        amount,
         currency,
         transactionType,
       });
@@ -149,7 +158,6 @@ export default class PlenifyService {
     const transactionCategories = this.persister
       .getStore()
       .getTable(Tables.transactionCategories);
-      
 
     const transactionCategoriesGrouped = Object.values(transactionCategories)
       .map((transactionCat) => transactionCat)
@@ -164,6 +172,7 @@ export default class PlenifyService {
 
     const currentTransaction = {
       id,
+      account: transaction.account?.toString() || "",
       date: new Date(transaction.date.valueOf() as number),
       description: transaction.description.toString(),
       amount: transaction.amount.valueOf() as number,
@@ -183,7 +192,6 @@ export default class PlenifyService {
       [TransactionType.INCOME]: [] as Transaction[],
       [UtilsType.ALL]: [] as Transaction[],
     };
-    
 
     const store = this.persister.getStore();
 
@@ -193,6 +201,7 @@ export default class PlenifyService {
       Tables.transactions,
       ({ select, where }) => {
         select("date");
+        select("account");
         select("description");
         select("amount");
         select("currency");
@@ -216,7 +225,6 @@ export default class PlenifyService {
       .getStore()
       .getTable(Tables.transactionCategories);
 
-
     const transactionCategoriesGrouped = Object.values(transactionCategories)
       .map((transactionCat) => transactionCat)
       .reduce((acc, curr) => {
@@ -233,6 +241,7 @@ export default class PlenifyService {
         transaction.transactionType.valueOf() as TransactionType;
       const currentTransaction = {
         id,
+        account: transaction?.account.toString() || "",
         date: new Date(transaction.date.valueOf() as number),
         description: transaction.description.toString(),
         amount: transaction.amount.valueOf() as number,
@@ -275,4 +284,6 @@ export default class PlenifyService {
     this.persister.getStore().delTable(Tables.transactionCategories);
     this.persister.getStore().delTable(Tables.transactions);
   }
+
+  
 }

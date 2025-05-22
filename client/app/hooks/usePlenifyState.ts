@@ -93,6 +93,12 @@ export const usePlenifyState = () => {
     });
   }, [actor]);
 
+    const resetCategories = useCallback(() => {
+    actor.send({
+      type: "RESET_CATEGORIES",
+    });
+  }, [actor]);
+
   const setActiveDate = useCallback(
     (activeDate: string) => {
       actor.send({
@@ -116,6 +122,7 @@ export const usePlenifyState = () => {
     updateTransaction,
     exitTransaction,
     reset,
+    resetCategories,
     setActiveDate,
   };
 };

@@ -37,6 +37,8 @@ export default function FinanceOverviewTabs({
     [incomesPieChart]
   );
 
+  const incomesTotal = incomesPieChart.getTotal();
+
   const expensesPieChart = useMemo(() => {
     const expensesChartService = new ChartService(
       transactions.EXPENSE,
@@ -51,21 +53,26 @@ export default function FinanceOverviewTabs({
     [expensesPieChart]
   );
 
+  const expensesTotal = expensesPieChart.getTotal();
+
   return (
     <>
       <TabsContainer
-        value={activeTab}
-        tabs={["Expenses", "Incomes"]}
-        onChange={(_: unknown, newActiveTab: number) => {
-          setActiveTab(newActiveTab);
-        }}
+      value={activeTab}
+      tabs={[
+        `Expenses: ${expensesTotal.toLocaleString()}`,
+        `Incomes: ${incomesTotal.toLocaleString()}`
+      ]}
+      onChange={(_: unknown, newActiveTab: number) => {
+        setActiveTab(newActiveTab);
+      }}
       />
 
       <TabPanel value={activeTab} index={0}>
-        {multiLevelPieChart(expensesSeries)}
+      {multiLevelPieChart(expensesSeries)}
       </TabPanel>
       <TabPanel value={activeTab} index={1}>
-        {multiLevelPieChart(incomeSeries, 1)}
+      {multiLevelPieChart(incomeSeries, 1)}
       </TabPanel>
     </>
   );

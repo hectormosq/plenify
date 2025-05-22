@@ -30,6 +30,9 @@ export const machine = setup({
     reset: fromPromise(async () => {
       return plenifyService.reset();
     }),
+    resetCategories: fromPromise(async () => {
+      return plenifyService.resetCategories();
+    }),
     setActiveDates: fromPromise(
       async ({ input }: { input: ControllerContext }) => {
         return {
@@ -287,6 +290,14 @@ export const machine = setup({
         },
       },
     },
+    resetCategories: {
+      invoke: {
+        src: "resetCategories",
+        onDone: {
+          target: "#plenify",
+        },
+      },
+    },
   },
   on: {
     ADD_TRANSACTION: {
@@ -300,6 +311,9 @@ export const machine = setup({
     },
     RESET: {
       target: ".reset",
+    },
+    RESET_CATEGORIES: {
+      target: ".resetCategories",
     },
     SET_ACTIVE_DATE: {
       target: "#plenify.initialized.transactions",

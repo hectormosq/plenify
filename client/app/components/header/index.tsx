@@ -10,10 +10,16 @@ export default function Header() {
             <Link href="/dashboard">Main</Link>
           </li>
           <li>
-            <Link href="/transaction-list">Transaction List</Link>
+            <Link href="/transaction-list">List</Link>
+          </li>
+          <li>
+            <Link href="/overview">Overview</Link>
           </li>
           <li>
             <Link href="/admin/add">Add</Link>
+          </li>
+          <li>
+            <Link href="/admin/categories">Categories</Link>
           </li>
         </ul>
       </nav>
