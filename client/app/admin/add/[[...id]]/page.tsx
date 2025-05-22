@@ -36,6 +36,7 @@ export default function AdminPage() {
 
   const defaultTransaction = useMemo<TransactionDefaultForm>(
     () => ({
+      account: "",
       transactionType: TransactionType.EXPENSE,
       date: new Date(),
       description: "",
@@ -88,6 +89,7 @@ export default function AdminPage() {
     if (transactionId) {
       updateTransaction({
         id: transactionId,
+        account: data.account,
         transactionType: data.transactionType,
         date: data.date,
         description: data.description,
@@ -96,6 +98,7 @@ export default function AdminPage() {
       });
     } else {
       addTransaction({
+        account: data.account,
         transactionType: data.transactionType,
         date: data.date,
         description: data.description,
@@ -142,6 +145,29 @@ export default function AdminPage() {
             })}
           >
             <div className={classes.row}>
+              <div className={classes.form__item}>
+                <label htmlFor="account">Account</label>
+                <Controller
+                  name="account"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      className={classes.form__input}
+                      {...field}
+                      onChange={(e) => {
+                        field.onChange(e.target.value);
+                      }}
+                    />
+                  )}
+                />
+                <ErrorMessage
+                  errors={formState.errors}
+                  name="description"
+                  render={(error) => (
+                    <div className="form__error">{error.message}</div>
+                  )}
+                />
+              </div>
               <div className={classes.form__item}>
                 <label htmlFor="amount">Amount</label>
                 <Controller
