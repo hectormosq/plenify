@@ -78,4 +78,7 @@ export type ControllerEvent =
   | {
       type: "RESET";
     }
-  | ActiveDateEvent;
+  | ActiveDateEvent
+  | {
+      type: "EXIT_TRANSACTION";
+    }

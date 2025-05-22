@@ -24,7 +24,9 @@ export default function AdminPage() {
     addTransaction,
     updateTransaction,
     selectTransaction,
+    exitTransaction,
     categories,
+    idle,
     loading,
     currentTransaction,
   } = usePlenifyState();
@@ -49,8 +51,16 @@ export default function AdminPage() {
   });
 
   useEffect(() => {
+  return () => {
+    exitTransaction();
+  };
+}, [exitTransaction]);
+
+  useEffect(() => {
+    if(idle) {
       selectTransaction(transactionId?? "");
-  }, [transactionId, selectTransaction]);
+    }
+  }, [transactionId, selectTransaction, idle]);
 
   useEffect(() => {
     if (formState.isSubmitSuccessful) {

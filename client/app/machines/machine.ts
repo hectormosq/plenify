@@ -195,6 +195,16 @@ export const machine = setup({
     transaction: {
       initial: "get",
       states: {
+        loaded: {
+          on: {
+            EXIT_TRANSACTION: {
+              actions: assign({
+                currentTransaction: () => undefined,
+              }),
+              target: "#plenify.loaded",
+            }
+          }
+        },
         get: {
           initial: "loading",
           states: {
@@ -215,17 +225,11 @@ export const machine = setup({
                         : undefined;
                     },
                   }),
-                  target: "loaded",
+                  target: "#plenify.transaction.loaded",
                 },
               },
             },
-            loaded: {
-              type: "final",
-            },
-          },
-          onDone: {
-            // Should i go to base state "loaded" ?
-            target: "#plenify.loaded",
+            
           },
         },
         update: {
@@ -241,9 +245,6 @@ export const machine = setup({
                   };
                 },
                 onDone: {
-                  actions: assign({
-                    currentTransaction: undefined,
-                  }),
                   target: "success",
                 },
               },

@@ -32,17 +32,21 @@ export const usePlenifyState = () => {
   );
 
   const categories = useSelector(actor, (state) =>
-    state.matches("loaded")
+    state.matches("loaded") || state.matches({transaction: "loaded"})
       ? (state.context.categories as Categories)
       : ({} as Categories)
   );
 
+  const idle = useSelector(actor, (state) => {
+    return state.matches("loaded") ? true : false;
+  });
+
   const loading = useSelector(actor, (state) => {
-    return !state.matches("loaded") ? true : false;
+    return !state.matches("loaded") && !state.matches({transaction: "loaded"}) ? true : false;
   });
 
   const currentTransaction = useSelector(actor, (state) => {
-    return state.matches("loaded")
+    return state.matches({transaction: "loaded"})
       ? (state.context.currentTransaction as Transaction)
       : undefined;
   });
@@ -56,8 +60,6 @@ export const usePlenifyState = () => {
     },
     [actor]
   );
-
-  // TODO Merge into one ?
 
   const addTransaction = useCallback(
     (transaction: Transaction) => {
@@ -79,6 +81,12 @@ export const usePlenifyState = () => {
     [actor]
   );
 
+  const exitTransaction = useCallback(() => {
+    actor.send({
+      type: "EXIT_TRANSACTION",
+    });
+  }, [actor]);
+
   const reset = useCallback(() => {
     actor.send({
       type: "RESET",
@@ -96,6 +104,7 @@ export const usePlenifyState = () => {
   );
 
   return {
+    idle,
     loading,
     transactions,
     activeFromDate,
@@ -105,6 +114,7 @@ export const usePlenifyState = () => {
     selectTransaction,
     addTransaction,
     updateTransaction,
+    exitTransaction,
     reset,
     setActiveDate,
   };
