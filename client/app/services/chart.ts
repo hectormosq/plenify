@@ -35,6 +35,10 @@ export default class ChartService {
     return this._series[index] || [];
   }
 
+  getTotal() {
+    return this._total;
+  }
+
   private _groupTransactionsByCategory(): hashByCategory {
     let hashByCategory: hashByCategory = {};
 

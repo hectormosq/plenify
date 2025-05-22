@@ -26,9 +26,11 @@ export default function DashboardPage() {
         <Loader />
       ) : (
         <div className={classes.dashboardContainer}>
+          {/* TODO: Add summary chart here 
           <div className={classes.summaryContainer}>
             <p>TODO Summary Chart</p>
           </div>
+          */}
           <div className={classes.overviewContainer}>
             <MonthSelector
               value={dayjs(activeFromDate)}
