@@ -14,6 +14,7 @@ export type TransactionByType = Record<
 >;
 export interface Transaction {
   id?: string;
+  account?: string
   transactionType: TransactionType;
   date: Date;
   description: string;

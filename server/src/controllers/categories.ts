@@ -48,7 +48,71 @@ const restCategories = {
   '0j1k2l3m-4n5o-6p7q-8r9s-0t1u2v3w4x5y': {
     name: 'Viajes',
     color: '#ff9800',
-  }
+  },
+  '1k2l3m4n-5o6p-7q8r-9s0t-1u2v3w4x5y6z': {
+    name: 'Coche',
+    color: '#673ab7',
+  },
+  '2l3m4n5o-6p7q-8r9s-0t1u-2v3w4x5y6z7a': {
+    name: 'Restaurantes',
+    color: '#795548',
+  },
+  '3m4n5o6p-7q8r-9s0t-1u2v-3w4x5y6z7a8b': {
+    name: 'Combustible',
+    color: '#607d8b',
+  },
+  '4n5o6p7q-8r9s-0t1u-2v3w-4x5y6z7a8b9c': {
+    name: 'Parking',
+    color: '#ff5722',
+  },
+  '5o6p7q8r-9s0t-1u2v-3w4x-5y6z7a8b9c0d': {
+    name: 'Regalos',
+    color: '#4caf50',
+  },
+  '6p7q8r9s-0t1u-2v3w-4x5y-6z7a8b9c0d1e': {
+    name: 'Farmacia',
+    color: '#ffeb3b',
+  },
+  '7q8r9s0t-1u2v-3w4x-5y6z-7a8b9c0d1e2f': {
+    name: 'Familia',
+    color: '#e91e63',
+  },
+  '8r9s0t1u-2v3w-4x5y-6z7a-8b9c0d1e2f3g': {
+    name: 'Transporte',
+    color: '#2196f3',
+  },
+  '9s0t1u2v-3w4x-5y6z-7a8b-9c0d1e2f3g4h': {
+    name: 'Videojuegos',
+    color: '#9c27b0',
+  },
+  '0t1u2v3w-4x5y-6z7a-8b9c-0d1e2f3g4h5i': {
+    name: 'Tecnologia',
+    color: '#00bcd4',
+  },
+  '1u2v3w4x-5y6z-7a8b-9c0d-1e2f3g4h5i6j': {
+    name: 'Supermercado',
+    color: '#8bc34a',
+  },
+  '2v3w4x5y-6z7a-8b9c-0d1e-2f3g4h5i6j7k': {
+    name: 'Piso',
+    color: '#ffc107',
+  },
+  '3w4x5y6z-7a8b-9c0d-1e2f-3g4h5i6j7k8l': {
+    name: 'Hipoteca',
+    color: '#ff9800',
+  },
+  '4x5y6z7a-8b9c-0d1e-2f3g-4h5i6j7k8l9m': {
+    name: 'Comunidad',
+    color: '#673ab7',
+  },
+  '5y6z7a8b-9c0d-1e2f-3g4h-5i6j7k8l9m0n': {
+    name: 'Prestamos',
+    color: '#795548',
+  },
+  '6z7a8b9c-0d1e-2f3g-4h5i-6j7k8l9m0n1o': {
+    name: 'Seguros',
+    color: '#607d8b',
+  },
 }
 
 export const categories: RequestHandler = (req, res, next) => {
