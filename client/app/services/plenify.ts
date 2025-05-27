@@ -241,7 +241,7 @@ export default class PlenifyService {
         transaction.transactionType.valueOf() as TransactionType;
       const currentTransaction = {
         id,
-        account: transaction?.account.toString() || "",
+        account: transaction.account?.toString() || "",
         date: new Date(transaction.date.valueOf() as number),
         description: transaction.description.toString(),
         amount: transaction.amount.valueOf() as number,
