@@ -26,3 +26,12 @@ export interface Transaction {
 export type TransactionDefaultForm = Omit<Transaction, "amount"> & {
   amount: number | null;
 };
+
+export type hashItem = {
+  categoryKey: string;
+  amount: number;
+  children: Record<string, hashItem>;
+  transactionsByType?: TransactionByType
+  parent?: hashItem;
+};
+export type hashByCategory = Record<string, hashItem>;

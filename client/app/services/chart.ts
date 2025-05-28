@@ -1,17 +1,8 @@
-type hashItem = {
-  categoryKey: string;
-  amount: number;
-  percentageFromTotal?: number;
-  children: Record<string, hashItem>;
-  parent?: hashItem;
-};
-type hashByCategory = Record<string, hashItem>;
-
-
 import { lighten } from "@mui/material";
 import { Categories } from "../models/categories";
-import { Transaction } from "../models/transaction";
+import { Transaction, hashByCategory, hashItem } from "../models/transaction";
 import { Series } from "../models/chart";
+import { TransactionService } from "./transaction";
 
 export default class ChartService {
   _transactions: Transaction[];
@@ -46,33 +37,9 @@ export default class ChartService {
       if (t.tags!.length > this._deepness) {
         this._deepness = t.tags!.length;
       }
-      const tags = [...t.tags!];
       this._total += t.amount;
-      hashByCategory = this._setHashList(tags, t.amount, hashByCategory);
+      hashByCategory = TransactionService.createHashList(t, hashByCategory, true);
     });
-    return hashByCategory;
-  }
-
-  private _setHashList(
-    tags: string[],
-    amount: number,
-    hashByCategory: hashByCategory,
-    parent?: hashItem
-  ): hashByCategory {
-    if (tags.length > 0) {
-      const tag: string = tags.shift() as string;
-      if (!hashByCategory[tag]) {
-        hashByCategory[tag] = { amount: 0, children: {}, categoryKey: tag };
-      }
-      hashByCategory[tag].parent = parent;
-      hashByCategory[tag].amount += amount;
-      hashByCategory[tag].children = this._setHashList(
-        tags,
-        amount,
-        hashByCategory[tag].children,
-        hashByCategory[tag]
-      );
-    }
     return hashByCategory;
   }
 

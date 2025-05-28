@@ -1,9 +1,11 @@
-import { Transaction, TransactionType } from "../models/transaction";
+import { hashByCategory, Transaction, TransactionType } from "../models/transaction";
 import dayjs from "dayjs";
+import { TransactionService } from "./transaction";
 
 interface TransactionsByMonth {
     [TransactionType.INCOME]: Transaction[];
     [TransactionType.EXPENSE]: Transaction[];
+    hashByCategory: hashByCategory;
     total: number;
 }
 
@@ -27,11 +29,11 @@ export default class OverviewService {
             const month = String(date.month() + 1).padStart(2, '0');
             const yearMonth = `${year}${month}`;
             if (!acc[yearMonth]) {
-                acc[yearMonth] = { [TransactionType.INCOME]: [], [TransactionType.EXPENSE]: [], total: 0 };
+                acc[yearMonth] = { [TransactionType.INCOME]: [], [TransactionType.EXPENSE]: [], hashByCategory: {}, total: 0 };
             }
             acc[yearMonth] = this._recalculateMonthData(acc[yearMonth], transaction);
             return acc;
-        }, {} as Record<string, { [TransactionType.INCOME]: Transaction[]; [TransactionType.EXPENSE]: Transaction[]; total: number; }>);
+        }, {} as Record<string, TransactionsByMonth>);
     }
 
     private _recalculateMonthData(monthData: TransactionsByMonth, transaction: Transaction): TransactionsByMonth {
@@ -47,6 +49,14 @@ export default class OverviewService {
             default:
                 throw new Error(`Unknown transaction type: ${transaction.transactionType}`);
         }
+        monthData.hashByCategory = this._recalculateHashByCategory(monthData.hashByCategory, transaction);
         return monthData;
+    }
+
+    private _recalculateHashByCategory(
+        hashByCategory: hashByCategory = {},
+        transaction: Transaction
+    ): hashByCategory {
+        return TransactionService.createHashList(transaction, hashByCategory);
     }
 }
