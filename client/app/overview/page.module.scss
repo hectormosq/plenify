@@ -51,3 +51,15 @@
 .negative {
   color: var(--expensescolor);
 }
+
+.groupHeader {
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.groupItem {
+    background-color: #2c2f35;
+    & :first-child {
+        margin-left: 10px;
+    }
+}

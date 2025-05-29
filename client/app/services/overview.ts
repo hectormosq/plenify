@@ -1,33 +1,15 @@
 import {
+  categoryKey,
   hashByCategory,
   hashItem,
   Transaction,
+  TransactionsByCategoryAndMonth,
+  TransactionsByMonth,
   TransactionType,
+  YearMontkKey,
 } from "../models/transaction";
 import dayjs from "dayjs";
 import { TransactionService } from "./transaction";
-
-interface TransactionsByMonth {
-  [TransactionType.INCOME]: Transaction[];
-  [TransactionType.EXPENSE]: Transaction[];
-  hashByCategory: hashByCategory;
-  total: number;
-  totalExpense: number;
-  totalIncome: number;
-}
-
-type categoryKey = string;
-type YearMontkKey = string; // e.g., "202510" for October 2025
-
-interface TransactionMonthDetails {
-  month: Record<YearMontkKey, hashItem>;
-  children: TransactionsByCategoryAndMonth;
-}
-
-type TransactionsByCategoryAndMonth = Record<
-  categoryKey,
-  TransactionMonthDetails
->;
 
 export default class OverviewService {
   _transactions: Transaction[];

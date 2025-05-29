@@ -9,11 +9,15 @@ import classes from "./page.module.scss";
 import GrandTotalCard from "../components/Card/GrandTotalCard";
 import CategoryTag from "../components/categories/CategoryTag";
 import { useState } from "react";
+import {
+  hashItem,
+  TransactionMonthDetails,
+} from "../models/transaction";
 
 export default function TransactionListPage() {
   const [openGroups, setOpenGroups] = useState(() => {
-    const state: Record<number, boolean> = {}
-    return state
+    const state: Record<number, boolean> = {};
+    return state;
   });
 
   const toggleGroup = (index: number) => {
@@ -122,56 +126,39 @@ export default function TransactionListPage() {
               </tfoot>
               {Object.keys(transactionsByCategoryAndMonth).map(
                 (categoryKey, idx) => {
-                  const transactionCategory = transactionsByCategoryAndMonth[categoryKey];
+                  const transactionCategory =
+                    transactionsByCategoryAndMonth[categoryKey];
+
                   return (
-                    <tbody key={idx} role="rowgroup">
-                      <tr onClick={() => toggleGroup(idx)}>
-                        <td>
-                          <CategoryTag id={categoryKey} />
-                        </td>
-                        {Array.from({ length: 12 }, (_, i) => {
-                          const month = dayjs().month(i).format("MM");
-                          const key = `${year}${month}`;
-                          const transaction =
-                            transactionCategory?.month?.[key];
-                          return (
-                            <td key={`${categoryKey}-${key}`}>
-                              <div>
-                                {transaction
-                                  ? transaction.amount.toLocaleString()
-                                  : ""}
-                              </div>
-                            </td>
-                          );
-                        })}
-                      </tr>
-                      {openGroups[idx] && transactionCategory?.children && Object.keys(transactionCategory.children).map(
-                        (categoryKey) => {
-                          const childTransaction = transactionCategory.children[categoryKey];
-                          return (
-                            <tr key={categoryKey}>
-                              <td>
-                                <CategoryTag id={categoryKey} />
-                              </td>
-                              {Array.from({ length: 12 }, (_, i) => {
-                                const month = dayjs().month(i).format("MM");
-                                const key = `${year}${month}`;
-                                const transaction =
-                                  childTransaction?.month?.[key];
-                                return (
-                                  <td key={`${categoryKey}-${key}`}>
-                                    <div>
-                                      {transaction
-                                        ? transaction.amount.toLocaleString()
-                                        : ""}
-                                    </div>
-                                  </td>
-                                );
-                              })}
-                            </tr>
-                          );
-                        }
-                      )}
+                    <tbody key={categoryKey} role="rowgroup">
+                      <OverviewRow
+                        handleClick={() => toggleGroup(idx)}
+                        categoryKey={categoryKey}
+                        year={year}
+                        transaction={transactionCategory}
+                        rowKey={`${categoryKey}`}
+                        classes={classes.groupHeader}
+                      />
+
+                      {openGroups[idx] &&
+                        transactionCategory?.children &&
+                        Object.keys(transactionCategory.children).map(
+                          (childCategoryKey, idx) => {
+                            const rowKey = `${categoryKey}-${idx}`;
+                            const childTransaction =
+                              transactionCategory.children[childCategoryKey];
+                            return (
+                              <OverviewRow
+                                key={rowKey}
+                                categoryKey={childCategoryKey}
+                                year={year}
+                                transaction={childTransaction}
+                                rowKey={rowKey}
+                                classes={classes.groupItem}
+                              />
+                            );
+                          }
+                        )}
                     </tbody>
                   );
                 }
@@ -182,4 +169,49 @@ export default function TransactionListPage() {
       )}
     </>
   );
+}
+
+function OverviewRow(props: {
+  categoryKey: string;
+  year: number;
+  transaction: TransactionMonthDetails;
+  rowKey: string;
+  handleClick?: () => void;
+  classes?: string;
+}) {
+  const {
+    categoryKey,
+    year,
+    transaction: childTransaction,
+    rowKey,
+    handleClick,
+    classes,
+  } = props;
+  return (
+    <tr key={rowKey} onClick={handleClick} className={classes || ""}>
+      <td>
+        <CategoryTag id={categoryKey} />
+      </td>
+      {OverviewColumn(year, childTransaction, rowKey)}
+    </tr>
+  );
+}
+
+function OverviewColumn(
+  year: number,
+  transactionCategory: TransactionMonthDetails,
+  rowKey: string
+) {
+  return Array.from({ length: 12 }, (_, colId) => {
+    const month = dayjs().month(colId).format("MM");
+    const key = `${year}${month}`;
+    const transaction = transactionCategory?.month?.[key];
+    const colKey = `${rowKey}-${colId}`;
+    // TODO Fix key
+    return <td key={colKey}>{amountFormat(transaction)}</td>;
+  });
+}
+
+function amountFormat(transaction: hashItem) {
+  return transaction ? transaction.amount.toLocaleString() : "";
 }
