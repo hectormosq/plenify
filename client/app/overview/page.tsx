@@ -8,8 +8,17 @@ import OverviewService from "../services/overview";
 import classes from "./page.module.scss";
 import GrandTotalCard from "../components/Card/GrandTotalCard";
 import CategoryTag from "../components/categories/CategoryTag";
+import { useState } from "react";
 
 export default function TransactionListPage() {
+  const [openGroups, setOpenGroups] = useState(() => {
+    const state: Record<number, boolean> = {}
+    return state
+  });
+
+  const toggleGroup = (index: number) => {
+    setOpenGroups((prev) => ({ ...prev, [index]: !prev[index] }));
+  };
   const { loading } = usePlenifyState();
   const today = dayjs();
   const year = today.year();
@@ -62,34 +71,6 @@ export default function TransactionListPage() {
                   })}
                 </tr>
               </thead>
-              <tbody>
-                {Object.keys(transactionsByCategoryAndMonth).map(
-                  (categoryKey) => {
-                    return (
-                      <tr key={categoryKey}>
-                        <td>
-                          <CategoryTag id={categoryKey} />
-                        </td>
-                        {Array.from({ length: 12 }, (_, i) => {
-                          const month = dayjs().month(i).format("MM");
-                          const key = `${year}${month}`;
-                          const transaction =
-                            transactionsByCategoryAndMonth[categoryKey]?.[key];
-                          return (
-                            <td key={`${categoryKey}-${key}`}>
-                              <div>
-                                {transaction
-                                  ? transaction.amount.toLocaleString()
-                                  : ""}
-                              </div>
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    );
-                  }
-                )}
-              </tbody>
               <tfoot>
                 <tr>
                   <td>Total Income</td>
@@ -139,6 +120,62 @@ export default function TransactionListPage() {
                   })}
                 </tr>
               </tfoot>
+              {Object.keys(transactionsByCategoryAndMonth).map(
+                (categoryKey, idx) => {
+                  const transactionCategory = transactionsByCategoryAndMonth[categoryKey];
+                  return (
+                    <tbody key={idx} role="rowgroup">
+                      <tr onClick={() => toggleGroup(idx)}>
+                        <td>
+                          <CategoryTag id={categoryKey} />
+                        </td>
+                        {Array.from({ length: 12 }, (_, i) => {
+                          const month = dayjs().month(i).format("MM");
+                          const key = `${year}${month}`;
+                          const transaction =
+                            transactionCategory?.month?.[key];
+                          return (
+                            <td key={`${categoryKey}-${key}`}>
+                              <div>
+                                {transaction
+                                  ? transaction.amount.toLocaleString()
+                                  : ""}
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                      {openGroups[idx] && transactionCategory?.children && Object.keys(transactionCategory.children).map(
+                        (categoryKey) => {
+                          const childTransaction = transactionCategory.children[categoryKey];
+                          return (
+                            <tr key={categoryKey}>
+                              <td>
+                                <CategoryTag id={categoryKey} />
+                              </td>
+                              {Array.from({ length: 12 }, (_, i) => {
+                                const month = dayjs().month(i).format("MM");
+                                const key = `${year}${month}`;
+                                const transaction =
+                                  childTransaction?.month?.[key];
+                                return (
+                                  <td key={`${categoryKey}-${key}`}>
+                                    <div>
+                                      {transaction
+                                        ? transaction.amount.toLocaleString()
+                                        : ""}
+                                    </div>
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        }
+                      )}
+                    </tbody>
+                  );
+                }
+              )}
             </table>
           </div>
         </div>

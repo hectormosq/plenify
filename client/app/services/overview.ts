@@ -19,9 +19,14 @@ interface TransactionsByMonth {
 type categoryKey = string;
 type YearMontkKey = string; // e.g., "202510" for October 2025
 
+interface TransactionMonthDetails {
+  month: Record<YearMontkKey, hashItem>;
+  children: TransactionsByCategoryAndMonth;
+}
+
 type TransactionsByCategoryAndMonth = Record<
   categoryKey,
-  Record<YearMontkKey, hashItem>
+  TransactionMonthDetails
 >;
 
 export default class OverviewService {
@@ -34,7 +39,14 @@ export default class OverviewService {
   constructor(transactions: Transaction[]) {
     this._transactions = transactions;
     this._transactionsByMonth = this._groupByMonth();
-    this._transactionsByCategoryAndMonth = this._groupByCategoryAndMonth();
+    
+    Object.keys(this._transactionsByMonth).forEach((yearMonth) => {
+      this._transactionsByCategoryAndMonth = this._groupByCategoryAndMonth(
+        this._transactionsByCategoryAndMonth,
+        this._transactionsByMonth[yearMonth].hashByCategory,
+        yearMonth
+      );
+    });
   }
 
   getTransactionsByMonth(): Record<string, TransactionsByMonth> {
@@ -124,17 +136,21 @@ export default class OverviewService {
     return TransactionService.createHashList(transaction, hashByCategory);
   }
 
-  private _groupByCategoryAndMonth(): TransactionsByCategoryAndMonth {
-    const groupedData = {} as TransactionsByCategoryAndMonth;
-    Object.keys(this._transactionsByMonth).forEach((yearMonth) => {
-      Object.keys(this._transactionsByMonth[yearMonth].hashByCategory).forEach(
-        (categoryKey) => {
-          if (!groupedData[categoryKey]) {
-            groupedData[categoryKey] = {};
-          }
-          groupedData[categoryKey][yearMonth] =
-            this._transactionsByMonth[yearMonth].hashByCategory[categoryKey];
-        }
+  private _groupByCategoryAndMonth(
+    groupedData: TransactionsByCategoryAndMonth,
+    transactionsByCategory: Record<categoryKey, hashItem>,
+    yearMonthKey: YearMontkKey
+  ): TransactionsByCategoryAndMonth {
+    Object.keys(transactionsByCategory).forEach((categoryKey) => {
+      if (!groupedData[categoryKey]) {
+        groupedData[categoryKey] = { month: {}, children: {} };
+      }
+      groupedData[categoryKey].month[yearMonthKey] =
+        transactionsByCategory[categoryKey];
+      groupedData[categoryKey].children = this._groupByCategoryAndMonth(
+        groupedData[categoryKey].children,
+        transactionsByCategory[categoryKey].children,
+        yearMonthKey
       );
     });
     return groupedData;
