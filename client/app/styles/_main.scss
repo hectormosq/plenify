@@ -9,6 +9,7 @@
   --incomescolor: #32cd32;
   --inputLabel: #b3aea5;
   --buttonRadius: 4px;
+  --componentRadius: 8px;
   --errorColor: #ed4337;
 }
 
@@ -28,4 +29,19 @@ body {
 
 main {
   padding: 20px;
+}
+h1, h2, h3 {
+  color: var(--foreground);
+}
+
+h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 15px;
+}
+
+h2 {
+font-size: 1.2rem;
+  font-weight: 400;
+  margin-bottom: 15px;
 }
