@@ -1,12 +1,13 @@
 import {
   categoryKey,
-  hashByCategory,
   hashItem,
   Transaction,
+  TransactionByType,
   TransactionMonthDetails,
   TransactionsByCategoryAndMonth,
   TransactionsByMonth,
   TransactionType,
+  UtilsType,
   YearMontkKey,
 } from "../models/transaction";
 import dayjs from "dayjs";
@@ -57,8 +58,6 @@ export default class OverviewService {
       const yearMonth = `${year}${month}`;
       if (!acc[yearMonth]) {
         acc[yearMonth] = {
-          [TransactionType.INCOME]: [],
-          [TransactionType.EXPENSE]: [],
           hashByCategory: {},
           total: 0,
           totalExpense: 0,
@@ -75,25 +74,9 @@ export default class OverviewService {
     monthData: TransactionsByMonth,
     transaction: Transaction
   ): TransactionsByMonth {
-    switch (transaction.transactionType) {
-      case TransactionType.INCOME:
-        monthData[TransactionType.INCOME].push(transaction);
-        monthData.total += transaction.amount;
-        monthData.totalIncome += transaction.amount;
-        break;
-      case TransactionType.EXPENSE:
-        monthData[TransactionType.EXPENSE].push(transaction);
-        monthData.total -= transaction.amount;
-        monthData.totalExpense += transaction.amount;
-        break;
-      default:
-        throw new Error(
-          `Unknown transaction type: ${transaction.transactionType}`
-        );
-    }
-    monthData.hashByCategory = this._recalculateHashByCategory(
-      monthData.hashByCategory,
-      transaction
+    monthData.hashByCategory = TransactionService.createHashList(
+      transaction,
+      monthData.hashByCategory
     );
     return monthData;
   }
@@ -111,13 +94,6 @@ export default class OverviewService {
           `Unknown transaction type: ${transaction.transactionType}`
         );
     }
-  }
-
-  private _recalculateHashByCategory(
-    hashByCategory: hashByCategory = {},
-    transaction: Transaction
-  ): hashByCategory {
-    return TransactionService.createHashList(transaction, hashByCategory);
   }
 
   private _groupByCategoryAndMonth(
@@ -148,7 +124,7 @@ export default class OverviewService {
    * we need to normalize all transactions with the same amount of categories and subcategories.
    * For those transactions missing the subcategory, we are creating an specialone for only visualization,
    * so in the overview chart sum of sub categories match with main category.
-   * 
+   *
    *
    * @param transactionDetails
    * @returns
@@ -161,12 +137,25 @@ export default class OverviewService {
       const parent = transactionDetails.month[yearMonthKey];
       if (!parent) return;
 
+      // Create a deep copy to avoid mutating the original parent.transactionsByType
+      const diffTransactionsByType: TransactionByType = JSON.parse(
+        JSON.stringify(parent.transactionsByType)
+      );
+      const existingTransactionsByType = {
+        [TransactionType.EXPENSE]: [] as Transaction[],
+        [TransactionType.INCOME]: [] as Transaction[],
+        [UtilsType.ALL]: [] as Transaction[],
+      };
       // Sum all children amounts for this month
       let childrenSum = 0;
       if (transactionDetails.children) {
         Object.values(transactionDetails.children).forEach((child) => {
           if (child.month[yearMonthKey]) {
             childrenSum += child.month[yearMonthKey].amount || 0;
+            // Merge transactionsByType of the child for this month into existingTransactionsByType
+            existingTransactionsByType[TransactionType.EXPENSE] = [...existingTransactionsByType[TransactionType.EXPENSE], ...child.month[yearMonthKey].transactionsByType[TransactionType.EXPENSE]]
+            existingTransactionsByType[TransactionType.INCOME] = [...existingTransactionsByType[TransactionType.INCOME], ...child.month[yearMonthKey].transactionsByType[TransactionType.EXPENSE]]
+            existingTransactionsByType[UtilsType.ALL] = [...existingTransactionsByType[UtilsType.ALL], ...child.month[yearMonthKey].transactionsByType[TransactionType.EXPENSE]]
           }
         });
       }
@@ -182,6 +171,17 @@ export default class OverviewService {
             [yearMonthKey]: {
               ...parent,
               amount: diff,
+              transactionsByType: {
+          [UtilsType.ALL]: diffTransactionsByType[UtilsType.ALL].filter(
+            x => !existingTransactionsByType[UtilsType.ALL].some(y => y.id === x.id)
+          ),
+          [TransactionType.EXPENSE]: diffTransactionsByType[TransactionType.EXPENSE].filter(
+            x => !existingTransactionsByType[TransactionType.EXPENSE].some(y => y.id === x.id)
+          ),
+          [TransactionType.INCOME]: diffTransactionsByType[TransactionType.INCOME].filter(
+            x => !existingTransactionsByType[TransactionType.INCOME].some(y => y.id === x.id)
+          ),
+              }
             },
           },
           children: {},

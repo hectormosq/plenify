@@ -32,13 +32,11 @@ export type hashItem = {
   categoryKey: string;
   amount: number;
   children: Record<string, hashItem>;
-  transactionsByType?: TransactionByType;
+  transactionsByType: TransactionByType;
   parent?: hashItem;
 };
 export type hashByCategory = Record<string, hashItem>;
 export interface TransactionsByMonth {
-  [TransactionType.INCOME]: Transaction[];
-  [TransactionType.EXPENSE]: Transaction[];
   hashByCategory: hashByCategory;
   total: number;
   totalExpense: number;
