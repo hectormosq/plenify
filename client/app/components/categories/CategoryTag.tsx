@@ -1,3 +1,5 @@
+import { DIFF_CATEGORY } from "@/app/models/categories";
+import { plenifyService } from "@/app/services";
 import { usePlenifyState } from "@app/hooks/usePlenifyState";
 import { Chip, styled } from "@mui/material";
 
@@ -7,7 +9,12 @@ export default function CategoryTag(props: {
 }) {
   const { categories } = usePlenifyState();
   const { id, handleDeleteCategory } = props;
-  const categoryObj = categories && categories[id];
+  let categoryObj;
+  if (id === DIFF_CATEGORY) {
+    categoryObj = categories[plenifyService.defaultCategoryId!];
+  } else {
+    categoryObj = categories && categories[id];
+  }
   const conditionalOnDelete = () => {
     if (handleDeleteCategory) {
       return {

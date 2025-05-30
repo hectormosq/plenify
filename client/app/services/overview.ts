@@ -3,6 +3,7 @@ import {
   hashByCategory,
   hashItem,
   Transaction,
+  TransactionMonthDetails,
   TransactionsByCategoryAndMonth,
   TransactionsByMonth,
   TransactionType,
@@ -10,6 +11,7 @@ import {
 } from "../models/transaction";
 import dayjs from "dayjs";
 import { TransactionService } from "./transaction";
+import { DIFF_CATEGORY } from "../models/categories";
 
 export default class OverviewService {
   _transactions: Transaction[];
@@ -21,7 +23,7 @@ export default class OverviewService {
   constructor(transactions: Transaction[]) {
     this._transactions = transactions;
     this._transactionsByMonth = this._groupByMonth();
-    
+
     Object.keys(this._transactionsByMonth).forEach((yearMonth) => {
       this._transactionsByCategoryAndMonth = this._groupByCategoryAndMonth(
         this._transactionsByCategoryAndMonth,
@@ -134,7 +136,58 @@ export default class OverviewService {
         transactionsByCategory[categoryKey].children,
         yearMonthKey
       );
+      groupedData[categoryKey] = this._calculateDifferenceFromChildren(
+        groupedData[categoryKey]
+      );
     });
     return groupedData;
+  }
+
+  /**
+   * Since we are grouping and summing in categories and sub categories,
+   * we need to normalize all transactions with the same amount of categories and subcategories.
+   * For those transactions missing the subcategory, we are creating an specialone for only visualization,
+   * so in the overview chart sum of sub categories match with main category.
+   * 
+   *
+   * @param transactionDetails
+   * @returns
+   */
+  private _calculateDifferenceFromChildren(
+    transactionDetails: TransactionMonthDetails
+  ): TransactionMonthDetails {
+    // For each month in this category, calculate the sum of children for that month
+    Object.keys(transactionDetails.month).forEach((yearMonthKey) => {
+      const parent = transactionDetails.month[yearMonthKey];
+      if (!parent) return;
+
+      // Sum all children amounts for this month
+      let childrenSum = 0;
+      if (transactionDetails.children) {
+        Object.values(transactionDetails.children).forEach((child) => {
+          if (child.month[yearMonthKey]) {
+            childrenSum += child.month[yearMonthKey].amount || 0;
+          }
+        });
+      }
+
+      // Calculate the difference
+      const diff = (parent.amount || 0) - childrenSum;
+
+      // If there is a difference, add a special child to compensate
+      if (diff !== 0) {
+        if (!transactionDetails.children) transactionDetails.children = {};
+        transactionDetails.children[DIFF_CATEGORY] = {
+          month: {
+            [yearMonthKey]: {
+              ...parent,
+              amount: diff,
+            },
+          },
+          children: {},
+        };
+      }
+    });
+    return transactionDetails;
   }
 }
