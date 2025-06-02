@@ -1,0 +1,13 @@
+.row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  border-bottom: 1px solid #454952;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.description {
+  white-space: normal;
+  word-break: break-word;
+}

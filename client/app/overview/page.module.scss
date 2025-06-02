@@ -27,6 +27,7 @@
     width: 1%;
     white-space: nowrap;
     padding: 10px 10px;
+   
   }
   & tr {
     border-bottom: 1px solid #2c2f35;
@@ -62,4 +63,16 @@
     & :first-child {
         margin-left: 10px;
     }
+}
+
+.overviewColumn {
+   text-align: right;
+}
+
+.transactionAmount {
+  cursor: pointer;
+}
+
+.transactionDetails {
+  max-width: 200px;
 }

@@ -9,10 +9,8 @@ import classes from "./page.module.scss";
 import GrandTotalCard from "../components/Card/GrandTotalCard";
 import CategoryTag from "../components/categories/CategoryTag";
 import { useState } from "react";
-import {
-  hashItem,
-  TransactionMonthDetails,
-} from "../models/transaction";
+import { hashItem, TransactionMonthDetails } from "../models/transaction";
+import CompactTransactionList from "../components/transactions/CompactTransactionList";
 
 export default function TransactionListPage() {
   const [openGroups, setOpenGroups] = useState(() => {
@@ -20,8 +18,16 @@ export default function TransactionListPage() {
     return state;
   });
 
+  const [openDetails, setOpenDetails] = useState(() => {
+    const state: Record<string, boolean> = {};
+    return state;
+  });
+
   const toggleGroup = (index: number) => {
     setOpenGroups((prev) => ({ ...prev, [index]: !prev[index] }));
+  };
+  const toggleDetails = (index: string) => {
+    setOpenDetails((prev) => ({ ...prev, [index]: !prev[index] }));
   };
   const { loading } = usePlenifyState();
   const today = dayjs();
@@ -37,6 +43,8 @@ export default function TransactionListPage() {
   const transactionsByMonth = overviewService.getTransactionsByMonth();
   const transactionsByCategoryAndMonth =
     overviewService.getTransactionsByCategoryAndMonth();
+
+  console.log({ transactionsByMonth, transactionsByCategoryAndMonth });
 
   return (
     <>
@@ -132,7 +140,9 @@ export default function TransactionListPage() {
                   return (
                     <tbody key={categoryKey} role="rowgroup">
                       <OverviewRow
-                        handleClick={() => toggleGroup(idx)}
+                        handleRowClick={() => toggleGroup(idx)}
+                        handleColumnClick={toggleDetails}
+                        columnState={openDetails}
                         categoryKey={categoryKey}
                         year={year}
                         transaction={transactionCategory}
@@ -151,6 +161,8 @@ export default function TransactionListPage() {
                               <OverviewRow
                                 key={rowKey}
                                 categoryKey={childCategoryKey}
+                                handleColumnClick={toggleDetails}
+                                columnState={openDetails}
                                 year={year}
                                 transaction={childTransaction}
                                 rowKey={rowKey}
@@ -176,7 +188,9 @@ function OverviewRow(props: {
   year: number;
   transaction: TransactionMonthDetails;
   rowKey: string;
-  handleClick?: () => void;
+  columnState: Record<string, boolean>
+  handleRowClick?: () => void;
+  handleColumnClick?: (id: string) => void;
   classes?: string;
 }) {
   const {
@@ -184,15 +198,17 @@ function OverviewRow(props: {
     year,
     transaction: childTransaction,
     rowKey,
-    handleClick,
+    handleRowClick: handleRowClick,
+    handleColumnClick: handleColumnClick,
+    columnState: columnState,
     classes,
   } = props;
   return (
-    <tr key={rowKey} onClick={handleClick} className={classes || ""}>
+    <tr key={rowKey} onClick={handleRowClick} className={classes || ""}>
       <td>
         <CategoryTag id={categoryKey} />
       </td>
-      {OverviewColumn(year, childTransaction, rowKey)}
+      {OverviewColumn(year, childTransaction, rowKey, columnState, handleColumnClick)}
     </tr>
   );
 }
@@ -200,7 +216,9 @@ function OverviewRow(props: {
 function OverviewColumn(
   year: number,
   transactionCategory: TransactionMonthDetails,
-  rowKey: string
+  rowKey: string,
+  isDetailsVisible?: Record<string, boolean>,
+  handleToggleDetails?: (id: string) => void
 ) {
   return Array.from({ length: 12 }, (_, colId) => {
     const month = dayjs().month(colId).format("MM");
@@ -208,7 +226,24 @@ function OverviewColumn(
     const transaction = transactionCategory?.month?.[key];
     const colKey = `${rowKey}-${colId}`;
     // TODO Fix key
-    return <td key={colKey}>{amountFormat(transaction)}</td>;
+    return (
+      <td key={colKey} className={classes.overviewColumn}>
+        <span className={classes.transactionAmount}
+          onClick={
+            handleToggleDetails ? () => handleToggleDetails(colKey) : undefined
+          }
+        >
+          {amountFormat(transaction)}
+        </span>
+        {isDetailsVisible && isDetailsVisible[colKey] && (
+          <div className={classes.transactionDetails}>
+            <CompactTransactionList
+              transactionList={transaction?.transactionsByType.ALL}
+            />
+          </div>
+        )}
+      </td>
+    );
   });
 }
 
