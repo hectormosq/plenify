@@ -74,6 +74,20 @@ export default class OverviewService {
     monthData: TransactionsByMonth,
     transaction: Transaction
   ): TransactionsByMonth {
+    switch (transaction.transactionType) {
+      case TransactionType.INCOME:
+        monthData.total += transaction.amount;
+        monthData.totalIncome += transaction.amount;
+        break;
+      case TransactionType.EXPENSE:
+        monthData.total -= transaction.amount;
+        monthData.totalExpense += transaction.amount;
+        break;
+      default:
+        throw new Error(
+          `Unknown transaction type: ${transaction.transactionType}`
+        );
+    }
     monthData.hashByCategory = TransactionService.createHashList(
       transaction,
       monthData.hashByCategory

@@ -44,8 +44,6 @@ export default function TransactionListPage() {
   const transactionsByCategoryAndMonth =
     overviewService.getTransactionsByCategoryAndMonth();
 
-  console.log({ transactionsByMonth, transactionsByCategoryAndMonth });
-
   return (
     <>
       {loading ? (
