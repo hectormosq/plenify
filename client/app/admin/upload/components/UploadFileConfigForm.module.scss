@@ -1,0 +1,22 @@
+@use "@styles/forms";
+
+.form {
+    background-color: var(--componentBackground);
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: var(--componentPadding);
+    border-radius: var(--componentRadius);
+    margin-bottom: 10px;
+    margin-top: 10px;
+    &__column {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    &__container {
+        display: flex;
+        flex-direction: row;
+        gap: 20px;
+    }
+}

@@ -21,6 +21,9 @@ export default function Header() {
           <li>
             <Link href="/admin/categories">Categories</Link>
           </li>
+          <li>
+            <Link href="/admin/upload">Upload</Link>
+          </li>
         </ul>
       </nav>
     </header>

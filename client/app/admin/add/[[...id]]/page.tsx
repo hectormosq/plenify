@@ -162,7 +162,7 @@ export default function AdminPage() {
                 />
                 <ErrorMessage
                   errors={formState.errors}
-                  name="description"
+                  name="account"
                   render={(error) => (
                     <div className="form__error">{error.message}</div>
                   )}

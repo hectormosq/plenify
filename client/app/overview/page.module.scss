@@ -5,7 +5,7 @@
 }
 .tableContainer {
   padding: 10px;
-  background-color: #1a1f25;
+  background-color: var(--componentBackground);
   border-radius: var(--componentRadius);
 }
 .table {

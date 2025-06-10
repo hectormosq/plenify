@@ -285,5 +285,18 @@ export default class PlenifyService {
     this.persister.getStore().delTable(Tables.transactions);
   }
 
+  downloadDb() {
+    const values = this.persister.getStore().getJson();
+    const jsonString = `data:text/json;chatset=utf-8,${encodeURIComponent(
+      values
+    )}`;
+
+    const link = document.createElement("a");
+    link.href = jsonString;
+    link.download = `plenify-${new Date().getTime()}.json`;
+
+    link.click();
+  }
+
   
 }

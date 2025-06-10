@@ -30,6 +30,7 @@
     "tinybase": "^5.4.8",
     "util": "^0.12.5",
     "uuidv4": "^6.2.13",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "xstate": "^5.19.2"
   },
   "devDependencies": {
