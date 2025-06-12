@@ -1,7 +1,7 @@
 import { Controller, useForm } from "react-hook-form";
 import classes from "./UploadFileConfigForm.module.scss";
-import { Checkbox, MenuItem, Select, TextField } from "@mui/material";
-import { use, useEffect, useState } from "react";
+import { Checkbox, TextField } from "@mui/material";
+import { useEffect, useState } from "react";
 import { ErrorMessage } from "@hookform/error-message";
 import StyledSelect from "@/app/components/inputs/StyledSelect";
 
@@ -10,22 +10,27 @@ type UploadFileConfigFormProps = {
   selectedRow: number | null;
 };
 
+type DynamicColumns = {
+  [key: `column-${number}`]: string;
+};
+
 type UploadFileConfigFormValues = {
   [key: `column-${number}`]: string;
   account: string;
   calculatedTransactionType: boolean;
-};
+} & DynamicColumns;
 
 export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
-  const defaultFormFields = {
-    date: { label: "Date" },
-    description: { label: "Description" },
-    amount: { label: "Amount" },
-  };
+  const defaultFormFieldsArray = [
+    { key: "date", label: "Date" },
+    { key: "description", label: "Description" },
+    { key: "amount", label: "Amount" },
+  ];
+
   const { maxLength, selectedRow } = props;
   const dynamicColumns = _computeDynamicColumns(maxLength);
   const [formFields, setFormFields] =
-    useState<Record<string, { label: string }>>(defaultFormFields);
+    useState<Record<string, { key: string; label: string }[]>>();
   const { control, handleSubmit, formState } =
     useForm<UploadFileConfigFormValues>({
       defaultValues: {
@@ -36,22 +41,36 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
       mode: "onChange",
     });
 
-  function handleUploadPageConfig(data: any) {
-    console.log("Submit Config Page", data);
+  useEffect(() => {
+    _calculateParseColumnOptions(dynamicColumns);
+  }, []);
+
+  //
+
+  function handleUploadPageConfig(data: UploadFileConfigFormValues) {
+    console.log("handleUploadPageConfig", data);
+    _calculateParseColumnOptions(data);
   }
 
-  /*
-    useEffect(() => {
-    if (maxLength > 0) {
-      const defaultValues: Record<string, any> = {};
-      for (let i = 0; i < maxLength; i++) {
-        defaultValues[`column-${i}`] = '';
-      }
-      console.log("defaultValues", defaultValues);
-      reset(defaultValues);
+  function _calculateParseColumnOptions(data: DynamicColumns) {
+    const selectedColumns = Object.entries(data)
+      .filter(([key, val]) => key.startsWith("column-") && val)
+      .map(([_, val]) => val);
+
+    // For each form field, create an options list excluding those selected by other columns
+    const updatedFormFields: Record<string, { key: string; label: string }[]> =
+      {};
+    for (let i = 0; i < maxLength; i++) {
+      updatedFormFields[`column-${i}`] = defaultFormFieldsArray
+        .filter(
+          ({ key }) =>
+            !selectedColumns.includes(key) || key === data[`column-${i}`]
+        )
+        .map(({ key, label }) => ({ key, label }));
     }
-  }, [maxLength, reset]);
-  */
+
+    setFormFields(updatedFormFields);
+  }
 
   return (
     <div className={classes.form}>
@@ -73,19 +92,12 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
               <div className={classes.form__item} key={i}>
                 <label htmlFor={`column-${i}`}>Parse Column {i} as </label>
                 <Controller
-                  name="column-0"
+                  name={`column-${i}`}
                   control={control}
                   render={({ field }) => (
                     <StyledSelect
                       {...field}
-                      options={Object.entries(formFields).map(
-                        ([key, formField]) => {
-                          return {
-                            key,
-                            label: formField.label,
-                          };
-                        }
-                      )}
+                      options={formFields?.[`column-${i}`] || []}
                     />
                   )}
                 />
@@ -140,6 +152,7 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
     </div>
   );
 }
+
 function _computeDynamicColumns(maxLength: number) {
   const computedColums: Record<string, string> = {};
 

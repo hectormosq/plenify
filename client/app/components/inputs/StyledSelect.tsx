@@ -1,12 +1,14 @@
-import { MenuItem, Select, styled } from "@mui/material";
+import { Select, styled } from "@mui/material";
 
 export default function StyledSelect({
+    name,
   value,
   onChange,
   options = [],
   displayNone = true,
   className = "",
 }: {
+    name: string;
   value: unknown;
   onChange: (value: unknown) => void;
   options: { key: string; label: string }[];
@@ -17,17 +19,16 @@ export default function StyledSelect({
     <StyledSelectLocal
       className={className}
       value={value}
-      onChange={(e) => {
-        console.log("inStyledSelect");
-        onChange(e.target.value as string);
-      }}
-
+      native={true}
+      onChange={onChange}
+        name={name}
     >
-      {displayNone && <MenuItem value="">None</MenuItem>}
+     
+      {displayNone && <option value="">None</option>}
       {options.map((option, i) => (
-        <MenuItem key={i} value={option.key}>
+        <option key={i} value={option.key}>
           {option.label}
-        </MenuItem>
+        </option>
       ))}
     </StyledSelectLocal>
   );
