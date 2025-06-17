@@ -1,20 +1,21 @@
 "use client";
 
 import { plenifyService } from "@/app/services";
-import { ChangeEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { read, utils } from "xlsx";
 import classes from "./page.module.scss";
-import { Button,   styled } from "@mui/material";
+import { Button, styled } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import UploadFileConfigForm from "./components/UploadFileConfigForm";
+import { FormState } from "react-hook-form";
+import { UploadFileConfigFormValues } from "./model/UploadFile";
 export default function UploadPage() {
-
-
-
   const [rows, setRows] = useState<string[][]>([]);
   const [maxLength, setMaxLength] = useState(0);
+  const [files, setFiles] = useState<File[]>([]);
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
   const [step, setStep] = useState(0);
+  const [formState, setFormState] = useState<Partial<FormState<UploadFileConfigFormValues>>>({isValid: false})
 
   const VisuallyHiddenInput = styled("input")({
     clip: "rect(0 0 0 0)",
@@ -36,8 +37,24 @@ export default function UploadPage() {
     }
   };
 
+  function _validatePreviousState() {
+    if (step > 0) {
+      return false; // Allow going back if not on the first step
+    }
+    return true; // Prevent going back if on the first step
+  }
+ 
+ function  _validateNextState() {
+  const stepValidation: Record<number, () => boolean> = {
+    0: () => true,
+    1: () => !_formIsValid()
+  }
+
+  return stepValidation[step] ? stepValidation[step]() : true; // Default to true if no validation is defined for the step
+ }
+
   function nextStep() {
-    console.log('step', step);
+    setStep(step + 1);
   }
 
   function prevStep() {
@@ -50,12 +67,28 @@ export default function UploadPage() {
     plenifyService.downloadDb();
   }
 
-  const handleStep1 = async (event: ChangeEvent<HTMLInputElement>) => {
-    // TODO handle multiple files
-    if (await handleFile(event.target.files?.[0])) {
-      setStep(1);
-    }
-  };
+  function _formIsValid() {
+    return formState.isValid
+  }
+
+  function handleFormChange(formState: FormState<UploadFileConfigFormValues>) {
+    setFormState(formState);
+  }
+
+  // Initialization of each step
+  useEffect(() => {
+    const stepInit: Record<number, () => void> = {
+      0: () => setRows([]),
+      1: async () => {
+        // TODO Handle multiple files
+        if (!(await handleFile(files[0]))) {
+          console.error("Failed to handle file");
+          setStep(0);
+        }
+      },
+    };
+    stepInit[step]?.();
+  }, [step]);
 
   const handleFile = async (file?: File) => {
     if (!file) return false;
@@ -79,8 +112,6 @@ export default function UploadPage() {
     }
   };
 
-
-
   return (
     <div>
       <h1>Upload Page</h1>
@@ -98,20 +129,29 @@ export default function UploadPage() {
           Upload files
           <VisuallyHiddenInput
             type="file"
-            onChange={(event) => handleStep1(event)}
+            onChange={(event) => {
+              setFiles(
+                event.target.files ? Array.from(event.target.files) : []
+              );
+              nextStep();
+            }}
           />
         </Button>
       )}
       {step === 1 && (
         <div>
           {maxLength && (
-            <UploadFileConfigForm maxLength={maxLength} selectedRow={selectedRow} />
+            <UploadFileConfigForm
+              maxLength={maxLength}
+              selectedRow={selectedRow}
+              onFormChange={handleFormChange}
+            />
           )}
         </div>
       )}
       <div>
-        <Button onClick={prevStep}>Previous</Button>
-        <Button onClick={nextStep}>Next</Button>
+        <Button onClick={prevStep} disabled={_validatePreviousState()}>Previous</Button>
+        <Button onClick={nextStep} disabled={_validateNextState()}>Next</Button>
       </div>
 
       <h2>File Preview</h2>

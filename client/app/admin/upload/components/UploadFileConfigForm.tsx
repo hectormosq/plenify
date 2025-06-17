@@ -1,24 +1,14 @@
-import { Controller, useForm } from "react-hook-form";
+import { Controller, FormState, useForm, useWatch } from "react-hook-form";
 import classes from "./UploadFileConfigForm.module.scss";
-import { Checkbox, TextField } from "@mui/material";
-import { useEffect, useState } from "react";
+import { Checkbox, debounce, TextField } from "@mui/material";
+import { useEffect, useState, useCallback } from "react";
 import { ErrorMessage } from "@hookform/error-message";
 import StyledSelect from "@/app/components/inputs/StyledSelect";
-
-type UploadFileConfigFormProps = {
-  maxLength: number;
-  selectedRow: number | null;
-};
-
-type DynamicColumns = {
-  [key: `column-${number}`]: string;
-};
-
-type UploadFileConfigFormValues = {
-  [key: `column-${number}`]: string;
-  account: string;
-  calculatedTransactionType: boolean;
-} & DynamicColumns;
+import {
+  DynamicColumns,
+  UploadFileConfigFormProps,
+  UploadFileConfigFormValues,
+} from "../model/UploadFile";
 
 export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
   const defaultFormFieldsArray = [
@@ -27,11 +17,11 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
     { key: "amount", label: "Amount" },
   ];
 
-  const { maxLength, selectedRow } = props;
+  const { maxLength, selectedRow, onFormChange } = props;
   const dynamicColumns = _computeDynamicColumns(maxLength);
   const [formFields, setFormFields] =
     useState<Record<string, { key: string; label: string }[]>>();
-  const { control, handleSubmit, formState } =
+  const { control, formState, subscribe } =
     useForm<UploadFileConfigFormValues>({
       defaultValues: {
         ...dynamicColumns,
@@ -41,18 +31,30 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
       mode: "onChange",
     });
 
-  useEffect(() => {
-    _calculateParseColumnOptions(dynamicColumns);
+
+
+  const watchedData = useWatch({
+    control,
+  });
+
+  
+
+  const handleUploadPageConfig = useCallback((data: Partial<FormState<UploadFileConfigFormValues>>) => {
+    onFormChange(data as FormState<UploadFileConfigFormValues>);
   }, []);
 
-  //
+    useEffect(() => {
+    const callback = subscribe({
+      formState: { values: true, isValid: true },
+      callback: (formState) => {
+        debounce(() => handleUploadPageConfig(formState), 500)();
+      },
+    });
 
-  function handleUploadPageConfig(data: UploadFileConfigFormValues) {
-    console.log("handleUploadPageConfig", data);
-    _calculateParseColumnOptions(data);
-  }
+    return () => callback();
+  }, [subscribe, handleUploadPageConfig]);
 
-  function _calculateParseColumnOptions(data: DynamicColumns) {
+  const  _calculateParseColumnOptions = useCallback((data: DynamicColumns) => {
     const selectedColumns = Object.entries(data)
       .filter(([key, val]) => key.startsWith("column-") && val)
       .map(([_, val]) => val);
@@ -70,7 +72,11 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
     }
 
     setFormFields(updatedFormFields);
-  }
+  }, [] );
+
+  useEffect(() => {
+    _calculateParseColumnOptions(watchedData as DynamicColumns);
+  }, [watchedData, _calculateParseColumnOptions]);
 
   return (
     <div className={classes.form}>
@@ -80,7 +86,6 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
       </p>
       <form
         className={classes.form__container}
-        onChange={handleSubmit(handleUploadPageConfig)}
       >
         <div className={classes.form__column}>
           <div className={classes.form__item}>
@@ -137,13 +142,7 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
               name="calculatedTransactionType"
               control={control}
               render={({ field }) => (
-                <Checkbox
-                  {...field}
-                  onChange={(e) => {
-                    field.onChange(e.target.value);
-                  }}
-                  disabled
-                />
+                <Checkbox {...field} checked={field.value} disabled />
               )}
             />
           </div>
