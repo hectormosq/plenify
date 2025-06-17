@@ -7,6 +7,7 @@ import StyledSelect from "@/app/components/inputs/StyledSelect";
 import {
   DynamicColumns,
   UploadFileConfigFormProps,
+  UploadFileConfigFormState,
   UploadFileConfigFormValues,
 } from "../model/UploadFile";
 
@@ -21,29 +22,29 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
   const dynamicColumns = _computeDynamicColumns(maxLength);
   const [formFields, setFormFields] =
     useState<Record<string, { key: string; label: string }[]>>();
-  const { control, formState, subscribe } =
+  const { control, formState, subscribe, setValue } =
     useForm<UploadFileConfigFormValues>({
       defaultValues: {
         ...dynamicColumns,
+        selectedRow: selectedRow ?? "",
         account: "",
         calculatedTransactionType: true,
       },
       mode: "onChange",
     });
 
-
-
   const watchedData = useWatch({
     control,
   });
 
-  
+  const handleUploadPageConfig = useCallback(
+    (data: UploadFileConfigFormState) => {
+      onFormChange(data);
+    },
+    []
+  );
 
-  const handleUploadPageConfig = useCallback((data: Partial<FormState<UploadFileConfigFormValues>>) => {
-    onFormChange(data as FormState<UploadFileConfigFormValues>);
-  }, []);
-
-    useEffect(() => {
+  useEffect(() => {
     const callback = subscribe({
       formState: { values: true, isValid: true },
       callback: (formState) => {
@@ -54,7 +55,7 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
     return () => callback();
   }, [subscribe, handleUploadPageConfig]);
 
-  const  _calculateParseColumnOptions = useCallback((data: DynamicColumns) => {
+  const _calculateParseColumnOptions = useCallback((data: DynamicColumns) => {
     const selectedColumns = Object.entries(data)
       .filter(([key, val]) => key.startsWith("column-") && val)
       .map(([_, val]) => val);
@@ -72,7 +73,12 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
     }
 
     setFormFields(updatedFormFields);
-  }, [] );
+  }, []);
+
+  useEffect(() => {
+    console.log('updating Selected Row:', selectedRow);
+    setValue("selectedRow", selectedRow ?? "");
+  }, [selectedRow, setValue]);
 
   useEffect(() => {
     _calculateParseColumnOptions(watchedData as DynamicColumns);
@@ -84,13 +90,35 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
         Please, select the starting row to parse the uploaded file, skip
         headers. Headers has to be configured by configuring the parse column
       </p>
-      <form
-        className={classes.form__container}
-      >
+      <form className={classes.form__container}>
         <div className={classes.form__column}>
           <div className={classes.form__item}>
             <label>Start from Row</label>
-            <div>{selectedRow}</div>
+            <div className={classes.form__item}>
+              <label htmlFor="selectedRow">Parse Starting Row</label>
+              <Controller
+                name="selectedRow"
+                control={control}
+                rules={{ required: "Select Starting row to parse file" }}
+                render={({ field }) => (
+                  <TextField
+                    className={classes.form__input}
+                    disabled={true}
+                    {...field}
+                    onChange={(e) => {
+                      field.onChange(e.target.value);
+                    }}
+                  />
+                )}
+              />
+              <ErrorMessage
+                errors={formState.errors}
+                name="account"
+                render={(error) => (
+                  <div className="form__error">{error.message}</div>
+                )}
+              />
+            </div>
           </div>
           <div>
             {Array.from({ length: maxLength }, (_, i) => (

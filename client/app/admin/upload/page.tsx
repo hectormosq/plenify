@@ -7,15 +7,15 @@ import classes from "./page.module.scss";
 import { Button, styled } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import UploadFileConfigForm from "./components/UploadFileConfigForm";
-import { FormState } from "react-hook-form";
-import { UploadFileConfigFormValues } from "./model/UploadFile";
+import { UploadFileConfigFormState } from "./model/UploadFile";
+import TransactionFormMapper from "./components/TransactionFormMapper";
 export default function UploadPage() {
   const [rows, setRows] = useState<string[][]>([]);
   const [maxLength, setMaxLength] = useState(0);
   const [files, setFiles] = useState<File[]>([]);
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
   const [step, setStep] = useState(0);
-  const [formState, setFormState] = useState<Partial<FormState<UploadFileConfigFormValues>>>({isValid: false})
+  const [formState, setFormState] = useState<UploadFileConfigFormState>({isValid: false} as UploadFileConfigFormState)
 
   const VisuallyHiddenInput = styled("input")({
     clip: "rect(0 0 0 0)",
@@ -71,7 +71,7 @@ export default function UploadPage() {
     return formState.isValid
   }
 
-  function handleFormChange(formState: FormState<UploadFileConfigFormValues>) {
+  function handleFormChange(formState: UploadFileConfigFormState) {
     setFormState(formState);
   }
 
@@ -148,6 +148,9 @@ export default function UploadPage() {
             />
           )}
         </div>
+      )}
+      {step === 2 && (
+        <TransactionFormMapper fileRows={rows} formValues={formState.values} />
       )}
       <div>
         <Button onClick={prevStep} disabled={_validatePreviousState()}>Previous</Button>
