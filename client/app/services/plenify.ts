@@ -1,4 +1,10 @@
-import { createMergeableStore, createQueries, MergeableStore } from "tinybase";
+import {
+  createMergeableStore,
+  createQueries,
+  MergeableStore,
+  Row,
+  Where,
+} from "tinybase";
 import {
   createIndexedDbPersister,
   IndexedDbPersister,
@@ -64,7 +70,10 @@ export default class PlenifyService {
 
   async setup() {
     const categories = await this.fetchCategories();
-    await this.persister.startAutoLoad([{ [Tables.categories]: { ...categories } }, {}]);
+    await this.persister.startAutoLoad([
+      { [Tables.categories]: { ...categories } },
+      {},
+    ]);
     await this.persister.startAutoSave();
   }
 
@@ -73,7 +82,6 @@ export default class PlenifyService {
     const categories = await this.fetchCategories();
     this.persister.getStore().setTable(Tables.categories, categories);
   }
-
 
   updateTransaction(transaction: Transaction) {
     if (!transaction.id) {
@@ -147,6 +155,7 @@ export default class PlenifyService {
   }
 
   getTransaction(id: string): Transaction | undefined {
+    console.log("getTransaction");
     const transaction = this.persister
       .getStore()
       .getRow(Tables.transactions, id);
@@ -155,22 +164,22 @@ export default class PlenifyService {
       return undefined;
     }
 
-    const transactionCategories = this.persister
-      .getStore()
-      .getTable(Tables.transactionCategories);
+    const transactionCategoriesGrouped = this._getTransactionCategories();
+    const currentTransaction = this._buildTransactionFromRow(
+      id,
+      transaction,
+      transactionCategoriesGrouped
+    );
 
-    const transactionCategoriesGrouped = Object.values(transactionCategories)
-      .map((transactionCat) => transactionCat)
-      .reduce((acc, curr) => {
-        const transactionId = curr.transaction.toString();
-        const categoryId = curr.category.toString();
-        return {
-          ...acc,
-          [transactionId]: [...(acc[transactionId] ?? []), categoryId],
-        };
-      }, {} as Record<string, string[]>);
+    return currentTransaction;
+  }
 
-    const currentTransaction = {
+  private _buildTransactionFromRow(
+    id: string,
+    transaction: Row,
+    transactionCategoriesGrouped: Record<string, string[]>
+  ) {
+    return {
       id,
       account: transaction.account?.toString() || "",
       date: new Date(transaction.date.valueOf() as number),
@@ -180,8 +189,65 @@ export default class PlenifyService {
       tags: transactionCategoriesGrouped[id],
       transactionType: transaction.transactionType.valueOf() as TransactionType,
     };
+  }
 
-    return currentTransaction;
+  getTransactionByProps(props: Record<string, any>): TransactionByType {
+    const normalizedProps = props || {};
+    const transactionByType: TransactionByType = {
+      [TransactionType.EXPENSE]: [] as Transaction[],
+      [TransactionType.INCOME]: [] as Transaction[],
+      [UtilsType.ALL]: [] as Transaction[],
+    };
+
+    const store = this.persister.getStore();
+    const queries = createQueries(store);
+    queries.setQueryDefinition(
+      "transactionsByProps",
+      Tables.transactions,
+      ({ select, where }) => {
+        select("id");
+        select("date");
+        select("account");
+        select("description");
+        select("amount");
+        select("currency");
+        select("transactionType");
+
+        this._executeWhere(normalizedProps, where);
+      }
+    );
+    const transactions = queries.getResultTable("transactionsByProps");
+    const transactionCategoriesGrouped = this._getTransactionCategories();
+    Object.entries(transactions).forEach(([id, transaction]) => {
+      const transactionType =
+        transaction.transactionType.valueOf() as TransactionType;
+
+      const currentTransaction = this._buildTransactionFromRow(
+        id,
+        transaction,
+        transactionCategoriesGrouped
+      );
+
+      transactionByType[transactionType].push(currentTransaction);
+      transactionByType[UtilsType.ALL].push(currentTransaction);
+    });
+
+    console.log("Result: ", transactionByType);
+    return transactionByType;
+
+  }
+
+  private _executeWhere(normalizedProps: Record<string, any>, where: Where) {
+    const queryWhitelist = ["amount", "transactionType"];
+
+    queryWhitelist.forEach((queryItem) => {
+      const formProp = normalizedProps[queryItem];
+      if (formProp !== undefined && formProp !== null) {
+        console.log("queryItem: ", queryItem);
+        console.log("formProp: ", formProp);
+        where(queryItem, formProp);
+      }
+    });
   }
 
   getTransactions(fromDate: string, toDate: string): TransactionByType {
@@ -194,19 +260,19 @@ export default class PlenifyService {
     };
 
     const store = this.persister.getStore();
-
     const queries = createQueries(store);
     queries.setQueryDefinition(
       "transactionsByDateRange",
       Tables.transactions,
       ({ select, where }) => {
+        select("id");
         select("date");
         select("account");
         select("description");
         select("amount");
         select("currency");
         select("transactionType");
-        select("id");
+        
 
         where((getCell) => {
           const dateCell = getCell("date");
@@ -221,6 +287,26 @@ export default class PlenifyService {
 
     const transactions = queries.getResultTable("transactionsByDateRange");
 
+    const transactionCategoriesGrouped = this._getTransactionCategories();
+
+    Object.entries(transactions).forEach(([id, transaction]) => {
+      const transactionType =
+        transaction.transactionType.valueOf() as TransactionType;
+
+      const currentTransaction = this._buildTransactionFromRow(
+        id,
+        transaction,
+        transactionCategoriesGrouped
+      );
+
+      transactionByType[transactionType].push(currentTransaction);
+      transactionByType[UtilsType.ALL].push(currentTransaction);
+    });
+
+    return transactionByType;
+  }
+
+  private _getTransactionCategories() {
     const transactionCategories = this.persister
       .getStore()
       .getTable(Tables.transactionCategories);
@@ -235,26 +321,7 @@ export default class PlenifyService {
           [transactionId]: [...(acc[transactionId] ?? []), categoryId],
         };
       }, {} as Record<string, string[]>);
-
-    Object.entries(transactions).forEach(([id, transaction]) => {
-      const transactionType =
-        transaction.transactionType.valueOf() as TransactionType;
-      const currentTransaction = {
-        id,
-        account: transaction.account?.toString() || "",
-        date: new Date(transaction.date.valueOf() as number),
-        description: transaction.description.toString(),
-        amount: transaction.amount.valueOf() as number,
-        currency: transaction.currency.toString() as currency,
-        tags: transactionCategoriesGrouped[id],
-        transactionType,
-      };
-
-      transactionByType[transactionType].push(currentTransaction);
-      transactionByType[UtilsType.ALL].push(currentTransaction);
-    });
-
-    return transactionByType;
+    return transactionCategoriesGrouped;
   }
 
   getCategories(): Categories {
@@ -297,6 +364,4 @@ export default class PlenifyService {
 
     link.click();
   }
-
-  
 }
