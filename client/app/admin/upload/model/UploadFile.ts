@@ -11,14 +11,30 @@ export type DynamicColumns = {
 };
 
 export type UploadFileConfigFormValues = {
-  [key: `column-${number}`]: string;
+  date: string | FromIndex
+  description: string | FromIndex
+  amount: number | FromIndex
   account: string;
   selectedRow: number | "";
   calculatedTransactionType: boolean;
-} & DynamicColumns;
+};
 
 export type UploadFileConfigFormState = Partial<
   FormState<UploadFileConfigFormValues>
 > & {
   values: UploadFileConfigFormValues;
 };
+
+export type FromIndex = {fromIndex: number}
+
+export function isFromIndex(value: unknown): value is FromIndex {
+  return !!value && typeof value === "object" && !!("fromIndex" in value);
+}
+
+export type UploadFileConfigOptions = "date" | "description" | "amount";
+
+export const defaultFormFieldsArray = [
+    { key: "date", label: "Date" },
+    { key: "description", label: "Description" },
+    { key: "amount", label: "Amount" },
+  ];

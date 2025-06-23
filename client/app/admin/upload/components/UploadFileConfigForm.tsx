@@ -1,31 +1,32 @@
-import { Controller, FormState, useForm, useWatch } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import classes from "./UploadFileConfigForm.module.scss";
-import { Checkbox, debounce, TextField } from "@mui/material";
+import {
+  Checkbox,
+  debounce,
+  SelectChangeEvent,
+  TextField,
+} from "@mui/material";
 import { useEffect, useState, useCallback } from "react";
 import { ErrorMessage } from "@hookform/error-message";
 import StyledSelect from "@/app/components/inputs/StyledSelect";
 import {
-  DynamicColumns,
+  defaultFormFieldsArray,
+  FromIndex,
+  isFromIndex,
   UploadFileConfigFormProps,
   UploadFileConfigFormState,
   UploadFileConfigFormValues,
+  UploadFileConfigOptions,
 } from "../model/UploadFile";
 
 export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
-  const defaultFormFieldsArray = [
-    { key: "date", label: "Date" },
-    { key: "description", label: "Description" },
-    { key: "amount", label: "Amount" },
-  ];
-
   const { maxLength, selectedRow, onFormChange } = props;
-  const dynamicColumns = _computeDynamicColumns(maxLength);
   const [formFields, setFormFields] =
     useState<Record<string, { key: string; label: string }[]>>();
-  const { control, formState, subscribe, setValue } =
+
+  const { control, formState, subscribe, setValue, getValues } =
     useForm<UploadFileConfigFormValues>({
       defaultValues: {
-        ...dynamicColumns,
         selectedRow: selectedRow ?? "",
         account: "",
         calculatedTransactionType: true,
@@ -55,33 +56,44 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
     return () => callback();
   }, [subscribe, handleUploadPageConfig]);
 
-  const _calculateParseColumnOptions = useCallback((data: DynamicColumns) => {
-    const selectedColumns = Object.entries(data)
-      .filter(([key, val]) => key.startsWith("column-") && val)
-      .map(([_, val]) => val);
+  const _calculateParseColumnOptions = useCallback(
+    (data: UploadFileConfigFormValues) => {
+      const selectedColumns = Object.entries(data)
+        .filter(([_, val]) => isFromIndex(val))
+        .map(([key, val]) => {
+          return { key: key, col: (val as FromIndex).fromIndex };
+        });
 
-    // For each form field, create an options list excluding those selected by other columns
-    const updatedFormFields: Record<string, { key: string; label: string }[]> =
-      {};
-    for (let i = 0; i < maxLength; i++) {
-      updatedFormFields[`column-${i}`] = defaultFormFieldsArray
-        .filter(
-          ({ key }) =>
-            !selectedColumns.includes(key) || key === data[`column-${i}`]
-        )
-        .map(({ key, label }) => ({ key, label }));
-    }
+      // For each form field, create an options list excluding those selected by other columns
+      const updatedFormFields: Record<
+        string,
+        { key: string; label: string }[]
+      > = {};
+      for (let i = 0; i < maxLength; i++) {
+        updatedFormFields[`column-${i}`] = defaultFormFieldsArray
+          .filter(({ key }) => {
+            if (!selectedColumns.length) {
+              return true;
+            }
+            // Only filter out keys that are selected in other columns (col !== i)
+            return !selectedColumns.some(
+              (col) => col.key === key && col.col !== i
+            );
+          })
+          .map(({ key, label }) => ({ key, label }));
+      }
 
-    setFormFields(updatedFormFields);
-  }, []);
+      setFormFields(updatedFormFields);
+    },
+    []
+  );
 
   useEffect(() => {
-    console.log('updating Selected Row:', selectedRow);
     setValue("selectedRow", selectedRow ?? "");
   }, [selectedRow, setValue]);
 
   useEffect(() => {
-    _calculateParseColumnOptions(watchedData as DynamicColumns);
+    _calculateParseColumnOptions(watchedData as UploadFileConfigFormValues);
   }, [watchedData, _calculateParseColumnOptions]);
 
   return (
@@ -124,15 +136,31 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
             {Array.from({ length: maxLength }, (_, i) => (
               <div className={classes.form__item} key={i}>
                 <label htmlFor={`column-${i}`}>Parse Column {i} as </label>
-                <Controller
+                <StyledSelect
                   name={`column-${i}`}
-                  control={control}
-                  render={({ field }) => (
-                    <StyledSelect
-                      {...field}
-                      options={formFields?.[`column-${i}`] || []}
-                    />
-                  )}
+                  options={formFields?.[`column-${i}`] || []}
+                  onChange={(event: SelectChangeEvent<unknown>) => {
+                    const selectedValue = event.target
+                      .value as UploadFileConfigOptions;
+                    // Remove any previous selection that had { fromIndex: i }
+                    const currentFormValue: UploadFileConfigFormValues =
+                      getValues();
+                    Object.keys(currentFormValue).forEach((key) => {
+                      const currentValue =
+                        currentFormValue[
+                          key as keyof UploadFileConfigFormValues
+                        ];
+                      if (
+                        isFromIndex(currentValue) &&
+                        currentValue.fromIndex === i
+                      ) {
+                        setValue(key as keyof UploadFileConfigFormValues, "");
+                      }
+                    });
+                    if (selectedValue) {
+                      setValue(selectedValue, { fromIndex: i });
+                    }
+                  }}
                 />
               </div>
             ))}
@@ -178,13 +206,4 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
       </form>
     </div>
   );
-}
-
-function _computeDynamicColumns(maxLength: number) {
-  const computedColums: Record<string, string> = {};
-
-  for (let i = 0; i < maxLength; i++) {
-    computedColums[`column-${i}`] = "";
-  }
-  return computedColums;
 }

@@ -1,4 +1,4 @@
-import { Select, styled } from "@mui/material";
+import { Select, SelectChangeEvent, styled } from "@mui/material";
 
 export default function StyledSelect({
     name,
@@ -9,8 +9,8 @@ export default function StyledSelect({
   className = "",
 }: {
     name: string;
-  value: unknown;
-  onChange: (value: unknown) => void;
+  value?: unknown;
+  onChange: (value: SelectChangeEvent<unknown>) => void;
   options: { key: string; label: string }[];
   displayNone?: boolean;
   className?: string;
@@ -25,8 +25,8 @@ export default function StyledSelect({
     >
      
       {displayNone && <option value="">None</option>}
-      {options.map((option, i) => (
-        <option key={i} value={option.key}>
+      {options.map((option) => (
+        <option key={`${option.key}`} value={option.key}>
           {option.label}
         </option>
       ))}
