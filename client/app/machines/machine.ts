@@ -51,7 +51,7 @@ export const machine = setup({
     ),
     getTransactions: fromPromise(
       async ({ input }: { input: { fromDate: string; toDate: string } }) => {
-        return plenifyService.getTransactions(input.fromDate, input.toDate);
+        return plenifyService.getTransactionsByRangeDate(input.fromDate, input.toDate);
       }
     ),
     addTransaction: fromPromise(

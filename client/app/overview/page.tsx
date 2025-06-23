@@ -35,7 +35,7 @@ export default function TransactionListPage() {
   const firstDayOfYear = today.startOf("year").toISOString();
   const lastDayOfYear = today.endOf("year").toISOString();
 
-  const yearTransactions = plenifyService.getTransactions(
+  const yearTransactions = plenifyService.getTransactionsByRangeDate(
     firstDayOfYear,
     lastDayOfYear
   );
