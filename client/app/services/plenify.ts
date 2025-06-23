@@ -327,8 +327,6 @@ export default class PlenifyService {
     queryWhitelist.forEach((queryItem) => {
       const formProp = normalizedProps[queryItem];
       if (formProp !== undefined && formProp !== null) {
-        console.log("queryItem: ", queryItem);
-        console.log("formProp: ", formProp);
         where(queryItem, formProp);
       }
     });
