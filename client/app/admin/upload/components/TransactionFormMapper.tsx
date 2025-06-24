@@ -13,8 +13,9 @@ export default function TransactionFormMapper(
   for (let i = formValues.selectedRow as number; i < fileRows.length; i++) {
     const row = fileRows[i];
     const normalizedProps = _normalizeRowProps(row, formValues);
+    const transactionsByType = plenifyService.getTransactionByProps(normalizedProps)
     console.log("Processing row:", i, row);
-    plenifyService.getTransactionByProps(normalizedProps)
+    console.log("Result:", transactionsByType);
   }
   return <>Transaction Mapper Works!</>;
 }

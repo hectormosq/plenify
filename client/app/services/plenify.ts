@@ -19,6 +19,7 @@ import {
 } from "../models/transaction";
 import { currency, DEFAULT_CURRENCY } from "../models/currencies";
 import { Categories } from "../models/categories";
+import dayjs from "dayjs";
 
 const STORE = "plenify";
 
@@ -200,8 +201,6 @@ export default class PlenifyService {
     return this._formatTransactionByType(transactions);
   }
 
-
-
   private _formatTransactionByType(transactions: ResultTable) {
     const transactionByType: TransactionByType = {
       [TransactionType.EXPENSE]: [] as Transaction[],
@@ -322,14 +321,48 @@ export default class PlenifyService {
   }
 
   private _executeWhere(normalizedProps: Record<string, any>, where: Where) {
-    const queryWhitelist = ["amount", "transactionType"];
+    const queryWhitelist = [
+      "amount",
+      "transactionType",
+      { key: "date", type: "rangeDate" },
+    ];
 
     queryWhitelist.forEach((queryItem) => {
-      const formProp = normalizedProps[queryItem];
+      const key = typeof queryItem === "object" ? queryItem.key : queryItem;
+
+      const formProp = normalizedProps[key];
       if (formProp !== undefined && formProp !== null) {
-        where(queryItem, formProp);
+        const type = typeof queryItem === "object" ? queryItem.type : undefined;
+
+        this._executeWhereConditionByType(where, key, formProp, type);
       }
     });
+  }
+
+  private _executeWhereConditionByType(
+    where: Where,
+    key: string,
+    formProp: unknown,
+    type?: string
+  ) {
+    if (
+      type === "rangeDate"
+    ) {
+      // TODO Read format date in form and use it here
+      const date = dayjs(formProp as string, "DD/MM/YYYY");
+      const minDate = date.subtract(1, "day").startOf("day").valueOf();
+      const maxDate = date.add(1, "day").endOf("day").valueOf();
+
+      where((getCell) => {
+        const dateCell = getCell(key);
+        return typeof dateCell === "number" && dateCell >= minDate && dateCell <= maxDate;
+      });
+    } else {
+      where((getCell) => {
+        const value = getCell(key);
+        return value === formProp;
+      });
+    }
   }
 
   private _getTransactionCategories() {
