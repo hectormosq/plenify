@@ -15,7 +15,9 @@ export default function UploadPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [selectedRow, setSelectedRow] = useState<number | null>(null);
   const [step, setStep] = useState(0);
-  const [formState, setFormState] = useState<UploadFileConfigFormState>({isValid: false} as UploadFileConfigFormState)
+  const [formState, setFormState] = useState<UploadFileConfigFormState>({
+    isValid: false,
+  } as UploadFileConfigFormState);
 
   const VisuallyHiddenInput = styled("input")({
     clip: "rect(0 0 0 0)",
@@ -43,15 +45,15 @@ export default function UploadPage() {
     }
     return true; // Prevent going back if on the first step
   }
- 
- function  _validateNextState() {
-  const stepValidation: Record<number, () => boolean> = {
-    0: () => true,
-    1: () => !_formIsValid()
-  }
 
-  return stepValidation[step] ? stepValidation[step]() : true; // Default to true if no validation is defined for the step
- }
+  function _validateNextState() {
+    const stepValidation: Record<number, () => boolean> = {
+      0: () => true,
+      1: () => !_formIsValid(),
+    };
+
+    return stepValidation[step] ? stepValidation[step]() : true; // Default to true if no validation is defined for the step
+  }
 
   function nextStep() {
     setStep(step + 1);
@@ -68,7 +70,7 @@ export default function UploadPage() {
   }
 
   function _formIsValid() {
-    return formState.isValid
+    return formState.isValid;
   }
 
   function handleFormChange(formState: UploadFileConfigFormState) {
@@ -153,49 +155,50 @@ export default function UploadPage() {
         <TransactionFormMapper fileRows={rows} formValues={formState.values} />
       )}
       <div>
-        <Button onClick={prevStep} disabled={_validatePreviousState()}>Previous</Button>
-        <Button onClick={nextStep} disabled={_validateNextState()}>Next</Button>
+        <Button onClick={prevStep} disabled={_validatePreviousState()}>
+          Previous
+        </Button>
+        <Button onClick={nextStep} disabled={_validateNextState()}>
+          Next
+        </Button>
       </div>
-
-      <h2>File Preview</h2>
-      <div className={classes.previewContainer}>
-        <table className={classes.table}>
-          <tbody>
-            {rows &&
-              rows.map((row, index) => (
-                <tr
-                  key={index}
-                  onClick={() => toggleSelectedRow(index)}
-                  className={`${classes.row} ${
-                    selectedRow === index ? classes.selectedRow : ""
-                  }`}
-                >
-                  <td style={{ display: "none" }}>
-                    <input
-                      type="radio"
-                      name="rowSelect"
-                      value={index}
-                      checked={selectedRow === index}
-                      readOnly={true}
-                      style={{ display: "none" }}
-                    />
-                  </td>
-                  {row.map((cell: string, cellIndex: number) => (
-                    <td key={cellIndex} className="border px-4 py-2">
-                      {cell}
-                    </td>
+      {step === 1 && (
+        <div>
+          <h2>File Preview</h2>
+          <div className={classes.previewContainer}>
+            <table className={classes.table}>
+              <tbody>
+                {rows &&
+                  rows.map((row, index) => (
+                    <tr
+                      key={index}
+                      onClick={() => toggleSelectedRow(index)}
+                      className={`${classes.row} ${
+                        selectedRow === index ? classes.selectedRow : ""
+                      }`}
+                    >
+                      <td style={{ display: "none" }}>
+                        <input
+                          type="radio"
+                          name="rowSelect"
+                          value={index}
+                          checked={selectedRow === index}
+                          readOnly={true}
+                          style={{ display: "none" }}
+                        />
+                      </td>
+                      {row.map((cell: string, cellIndex: number) => (
+                        <td key={cellIndex} className="border px-4 py-2">
+                          {cell}
+                        </td>
+                      ))}
+                    </tr>
                   ))}
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
-      <button
-        onClick={handleUpload}
-        className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-      >
-        Upload
-      </button>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

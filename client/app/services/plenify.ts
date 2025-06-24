@@ -348,11 +348,9 @@ export default class PlenifyService {
     if (
       type === "rangeDate"
     ) {
-      // TODO Read format date in form and use it here
-      const date = dayjs(formProp as string, "DD/MM/YYYY");
+      const date = dayjs(formProp as Date);
       const minDate = date.subtract(1, "day").startOf("day").valueOf();
       const maxDate = date.add(1, "day").endOf("day").valueOf();
-
       where((getCell) => {
         const dateCell = getCell(key);
         return typeof dateCell === "number" && dateCell >= minDate && dateCell <= maxDate;
