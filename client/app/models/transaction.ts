@@ -22,6 +22,7 @@ export interface Transaction {
   amount: number;
   currency?: currency;
   tags: string[];
+  createdTs?: number;
 }
 
 export type TransactionDefaultForm = Omit<Transaction, "amount"> & {
