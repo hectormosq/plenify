@@ -5,7 +5,9 @@ import dayjs from "dayjs";
 import classes from "./TransactionFormMapper.module.scss";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import CategorySelector from "@/app/components/categories/CategorySelector";
-import { Checkbox } from "@mui/material";
+import { Checkbox, Snackbar, TextField } from "@mui/material";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 type TransactionFormMapperProps = {
   fileRows: string[][];
@@ -14,6 +16,12 @@ type TransactionFormMapperProps = {
 export default function TransactionFormMapper(
   props: TransactionFormMapperProps
 ) {
+  const router = useRouter();
+  const [snackState, setSnackState] = useState({
+    state: false,
+    message: "",
+  });
+
   const { fileRows, formValues } = props;
   const dataset = [];
 
@@ -35,6 +43,7 @@ export default function TransactionFormMapper(
         transactionType: proccessedRow.transactionType,
         date: proccessedRow.date,
         description: proccessedRow.description,
+        notes: proccessedRow.notes,
       },
     });
   }
@@ -64,6 +73,10 @@ export default function TransactionFormMapper(
             <div>{transaction?.amount}</div>
           </div>
           <div>
+            <div>Type</div>
+            <div>{transaction?.transactionType}</div>
+          </div>
+          <div>
             <div>Date</div>
             <div>
               {transaction.date
@@ -91,7 +104,9 @@ export default function TransactionFormMapper(
             />
 
             <div>
-              <label htmlFor="skip">Skip Transaction ?</label>
+              <label htmlFor={`transactionRow.${index}.skip`}>
+                Skip Transaction ?
+              </label>
               <Controller
                 key={field.id}
                 name={`transactionRow.${index}.skip`}
@@ -105,12 +120,31 @@ export default function TransactionFormMapper(
             {
               <>
                 <div>
-                  <label htmlFor="tags">Categories</label>
+                  <label htmlFor={`transactionRow.${index}.tags`}>
+                    Categories
+                  </label>
                   <Controller
                     key={field.id}
                     name={`transactionRow.${index}.tags`}
                     control={control}
                     render={({ field }) => <CategorySelector {...field} />}
+                  />
+                </div>
+                <div>
+                  <label htmlFor={`transactionRow.${index}.notes`}>Notes</label>
+                  <Controller
+                    key={field.id}
+                    name={`transactionRow.${index}.notes`}
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        className={classes.form__input}
+                        {...field}
+                        onChange={(e) => {
+                          field.onChange(e.target.value);
+                        }}
+                      />
+                    )}
                   />
                 </div>
               </>
@@ -121,24 +155,31 @@ export default function TransactionFormMapper(
     );
   }
 
-  function onSubmit(data: { transactionRow: (Transaction & { skip: boolean })[] }) {
+  function onSubmit(data: {
+    transactionRow: (Transaction & { skip: boolean })[];
+  }) {
     const summary = {};
-    data.transactionRow.forEach((transaction) => {
-      if (!transaction.skip) {
-        try {
+    try {
+      data.transactionRow.forEach((transaction) => {
+        if (!transaction.skip) {
           const result = plenifyService.addTransaction(transaction);
           Object.assign(summary, result);
-        } catch (e) {
-          console.error(e);
         }
-      }
-    });
-    console.log(summary);
+      });
+      const totalAdded = Object.entries(summary).length + 1;
+      setSnackState({ state: true, message: `Added ${totalAdded}` });
+      // Use Next.js router for navigation
+      
+      router.push("/overview");
+    } catch (e) {
+      console.error(e);
+      setSnackState({ state: true, message: `Error While Adding ` });
+    }
   }
 
   return (
     <>
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form className={classes.form} onSubmit={handleSubmit(onSubmit)}>
         <div>Total Transactions: {dataset.length + 1}</div>
         <button type="submit">Submit</button>
         {dataset.map((item, idx) => (
@@ -164,6 +205,12 @@ export default function TransactionFormMapper(
           </div>
         ))}
       </form>
+      <Snackbar
+        open={snackState.state}
+        autoHideDuration={6000}
+        onClose={() => setSnackState({ state: false, message: "" })}
+        message={snackState.message}
+      />
     </>
   );
 }

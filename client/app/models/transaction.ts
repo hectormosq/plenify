@@ -19,6 +19,7 @@ export interface Transaction {
   transactionType: TransactionType;
   date: Date;
   description: string;
+  notes?: string;
   amount: number;
   currency?: currency;
   tags: string[];

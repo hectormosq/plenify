@@ -34,6 +34,7 @@ const tablesSchema = {
     date: { type: "number" },
     account: { type: "string" },
     description: { type: "string" },
+    notes: { type: "string" },
     amount: { type: "number" },
     currency: { type: "string", default: DEFAULT_CURRENCY },
     transactionType: { type: "string" },
@@ -129,6 +130,7 @@ export default class PlenifyService {
       date,
       account,
       description,
+      notes,
       amount,
       transactionType,
       currency = "EUR",
@@ -144,6 +146,7 @@ export default class PlenifyService {
         amount,
         date: date.getTime(),
         description,
+        notes: notes || "",
         currency,
         transactionType,
         createdTs
