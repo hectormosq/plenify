@@ -1,18 +1,20 @@
 import { Select, SelectChangeEvent, styled } from "@mui/material";
 
 export default function StyledSelect({
-    name,
+  name,
   value,
   onChange,
   options = [],
   displayNone = true,
+  emptyLabel = "None",
   className = "",
 }: {
-    name: string;
+  name: string;
   value?: unknown;
   onChange: (value: SelectChangeEvent<unknown>) => void;
   options: { key: string; label: string }[];
   displayNone?: boolean;
+  emptyLabel?: string;
   className?: string;
 }) {
   return (
@@ -21,10 +23,9 @@ export default function StyledSelect({
       value={value}
       native={true}
       onChange={onChange}
-        name={name}
+      name={name}
     >
-     
-      {displayNone && <option value="">None</option>}
+      {displayNone && <option value="">{emptyLabel}</option>}
       {options.map((option) => (
         <option key={`${option.key}`} value={option.key}>
           {option.label}

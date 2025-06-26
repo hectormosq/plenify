@@ -3,29 +3,27 @@
 import { useEffect, useState } from "react";
 import { read, utils } from "xlsx";
 import classes from "./page.module.scss";
-import { Button } from "@mui/material";
+import { Button, Step, StepLabel } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import UploadFileConfigForm from "./components/UploadFileConfigForm";
 import { UploadFileConfigFormState } from "./model/UploadFile";
 import TransactionFormMapper from "./components/TransactionFormMapper";
+import { StyledStepper } from "@/app/components/Stepper/StyledStepper";
 export default function UploadPage() {
-
   const [rows, setRows] = useState<string[][]>([]);
   const [maxLength, setMaxLength] = useState(0);
   const [files, setFiles] = useState<File[]>([]);
-  const [selectedRow, setSelectedRow] = useState<number | null>(null);
+
   const [step, setStep] = useState(0);
   const [formState, setFormState] = useState<UploadFileConfigFormState>({
     isValid: false,
   } as UploadFileConfigFormState);
 
-  const toggleSelectedRow = (index: number) => {
-    if (selectedRow === index) {
-      setSelectedRow(null);
-    } else {
-      setSelectedRow(index);
-    }
-  };
+  const steps = [
+    { title: "Upload File" },
+    { title: "Set-Up Parser" },
+    { title: "Review Transactions" },
+  ];
 
   function _validatePreviousState() {
     if (step > 0) {
@@ -100,33 +98,45 @@ export default function UploadPage() {
 
   return (
     <div>
-      <h1>Upload Page</h1>
-      <div>
-        <p>Step: {step + 1}</p>
+      <div className={classes.stepper}>
+        <StyledStepper activeStep={step} alternativeLabel>
+          {steps.map((step) => (
+            <Step key={step.title}>
+              <StepLabel>{step.title}</StepLabel>
+            </Step>
+          ))}
+        </StyledStepper>
       </div>
+
       {step === 0 && (
-        <Button
-          component="label"
-          role={undefined}
-          variant="contained"
-          tabIndex={-1}
-          startIcon={<CloudUploadIcon />}
-        >
-          Upload files
-          <input hidden type="file" onChange={(event) => {
-              setFiles(
-                event.target.files ? Array.from(event.target.files) : []
-              );
-              nextStep();
-            }} />
-        </Button>
+        <div className={classes.stepContainer}>
+          <Button
+            component="label"
+            role={undefined}
+            variant="contained"
+            tabIndex={-1}
+            startIcon={<CloudUploadIcon />}
+          >
+            Upload files
+            <input
+              hidden
+              type="file"
+              onChange={(event) => {
+                setFiles(
+                  event.target.files ? Array.from(event.target.files) : []
+                );
+                nextStep();
+              }}
+            />
+          </Button>
+        </div>
       )}
       {step === 1 && (
-        <div>
+        <div className={classes.stepContainer}>
           {maxLength && (
             <UploadFileConfigForm
               maxLength={maxLength}
-              selectedRow={selectedRow}
+              rows={rows}
               onFormChange={handleFormChange}
             />
           )}
@@ -143,43 +153,6 @@ export default function UploadPage() {
           Next
         </Button>
       </div>
-      {step === 1 && (
-        <div>
-          <h2>File Preview</h2>
-          <div className={classes.previewContainer}>
-            <table className={classes.table}>
-              <tbody>
-                {rows &&
-                  rows.map((row, index) => (
-                    <tr
-                      key={index}
-                      onClick={() => toggleSelectedRow(index)}
-                      className={`${classes.row} ${
-                        selectedRow === index ? classes.selectedRow : ""
-                      }`}
-                    >
-                      <td style={{ display: "none" }}>
-                        <input
-                          type="radio"
-                          name="rowSelect"
-                          value={index}
-                          checked={selectedRow === index}
-                          readOnly={true}
-                          style={{ display: "none" }}
-                        />
-                      </td>
-                      {row.map((cell: string, cellIndex: number) => (
-                        <td key={cellIndex} className="border px-4 py-2">
-                          {cell}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

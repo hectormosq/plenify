@@ -2,7 +2,7 @@ import { FormState } from "react-hook-form";
 
 export type UploadFileConfigFormProps = {
   maxLength: number;
-  selectedRow: number | null;
+  rows: string[][];
   onFormChange: (formState: UploadFileConfigFormState) => void;
 };
 

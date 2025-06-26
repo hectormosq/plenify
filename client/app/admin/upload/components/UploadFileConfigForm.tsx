@@ -19,7 +19,16 @@ import {
 } from "../model/UploadFile";
 
 export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
-  const { maxLength, selectedRow, onFormChange } = props;
+  const { maxLength, onFormChange, rows } = props;
+  const [selectedRow, setSelectedRow] = useState<number | null>(null);
+
+  const toggleSelectedRow = (index: number) => {
+    if (selectedRow === index) {
+      setSelectedRow(null);
+    } else {
+      setSelectedRow(index);
+    }
+  };
   const [formFields, setFormFields] =
     useState<Record<string, { key: string; label: string }[]>>();
 
@@ -102,24 +111,44 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
 
   return (
     <div className={classes.form}>
-      <p>
-        Please, select the starting row to parse the uploaded file, skip
-        headers. Headers has to be configured by configuring the parse column
-      </p>
       <form className={classes.form__container}>
-        <div className={classes.form__column}>
-          <div className={classes.form__item}>
-            <label>Start from Row</label>
+        <div>
+          <div className={classes.form__column}>
             <div className={classes.form__item}>
-              <label htmlFor="selectedRow">Parse Starting Row</label>
+              <div className={classes.form__item}>
+                <label htmlFor="selectedRow">Parse Starting Row</label>
+                <Controller
+                  name="selectedRow"
+                  control={control}
+                  rules={{ required: "Select Starting row to parse file" }}
+                  render={({ field }) => (
+                    <TextField
+                      className={classes.form__input}
+                      disabled={true}
+                      {...field}
+                      onChange={(e) => {
+                        field.onChange(e.target.value);
+                      }}
+                    />
+                  )}
+                />
+                <ErrorMessage
+                  errors={formState.errors}
+                  name="account"
+                  render={(error) => (
+                    <div className="form__error">{error.message}</div>
+                  )}
+                />
+              </div>
+            </div>
+            <div className={classes.form__item}>
+              <label htmlFor="account">Account</label>
               <Controller
-                name="selectedRow"
+                name="account"
                 control={control}
-                rules={{ required: "Select Starting row to parse file" }}
                 render={({ field }) => (
                   <TextField
                     className={classes.form__input}
-                    disabled={true}
                     {...field}
                     onChange={(e) => {
                       field.onChange(e.target.value);
@@ -135,76 +164,96 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
                 )}
               />
             </div>
-          </div>
-          <div>
-            {Array.from({ length: maxLength }, (_, i) => (
-              <div className={classes.form__item} key={i}>
-                <label htmlFor={`column-${i}`}>Parse Column {i} as </label>
-                <StyledSelect
-                  name={`column-${i}`}
-                  options={formFields?.[`column-${i}`] || []}
-                  onChange={(event: SelectChangeEvent<unknown>) => {
-                    const selectedValue = event.target
-                      .value as UploadFileConfigOptions;
-                    // Remove any previous selection that had { fromIndex: i }
-                    const currentFormValue: UploadFileConfigFormValues =
-                      getValues();
-                    Object.keys(currentFormValue).forEach((key) => {
-                      const currentValue =
-                        currentFormValue[
-                          key as keyof UploadFileConfigFormValues
-                        ];
-                      if (
-                        isFromIndex(currentValue) &&
-                        currentValue.fromIndex === i
-                      ) {
-                        setValue(key as keyof UploadFileConfigFormValues, "");
-                      }
-                    });
-                    if (selectedValue) {
-                      setValue(selectedValue, { fromIndex: i });
-                    }
-                  }}
-                />
-              </div>
-            ))}
+            <div>
+              <label htmlFor="calculatedTransactionType">
+                Transaction type from amount sign
+              </label>
+              <Controller
+                name="calculatedTransactionType"
+                control={control}
+                render={({ field }) => (
+                  <Checkbox {...field} checked={field.value} disabled />
+                )}
+              />
+            </div>
           </div>
         </div>
-        <div className={classes.form__column}>
-          <div className={classes.form__item}>
-            <label htmlFor="account">Account</label>
-            <Controller
-              name="account"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  className={classes.form__input}
-                  {...field}
-                  onChange={(e) => {
-                    field.onChange(e.target.value);
-                  }}
-                />
-              )}
-            />
-            <ErrorMessage
-              errors={formState.errors}
-              name="account"
-              render={(error) => (
-                <div className="form__error">{error.message}</div>
-              )}
-            />
-          </div>
-          <div>
-            <label htmlFor="calculatedTransactionType">
-              Transaction type from amount sign
-            </label>
-            <Controller
-              name="calculatedTransactionType"
-              control={control}
-              render={({ field }) => (
-                <Checkbox {...field} checked={field.value} disabled />
-              )}
-            />
+        <div>
+          <h2>File Preview</h2>
+          <div className={classes.previewContainer}>
+            <table className={classes.table}>
+              <caption>
+                Select the starting row to parse the uploaded file and choose
+                how columns should be parsed
+              </caption>
+              <thead>
+                <tr>
+                  {Array.from({ length: maxLength }, (_, i) => (
+                    <th className={classes.form__item} key={i}>
+                      <label htmlFor={`column-${i}`}>Parse as </label>
+                      <StyledSelect
+                        name={`column-${i}`}
+                        options={formFields?.[`column-${i}`] || []}
+                        emptyLabel="Ignore"
+                        onChange={(event: SelectChangeEvent<unknown>) => {
+                          const selectedValue = event.target
+                            .value as UploadFileConfigOptions;
+                          // Remove any previous selection that had { fromIndex: i }
+                          const currentFormValue: UploadFileConfigFormValues =
+                            getValues();
+                          Object.keys(currentFormValue).forEach((key) => {
+                            const currentValue =
+                              currentFormValue[
+                                key as keyof UploadFileConfigFormValues
+                              ];
+                            if (
+                              isFromIndex(currentValue) &&
+                              currentValue.fromIndex === i
+                            ) {
+                              setValue(
+                                key as keyof UploadFileConfigFormValues,
+                                ""
+                              );
+                            }
+                          });
+                          if (selectedValue) {
+                            setValue(selectedValue, { fromIndex: i });
+                          }
+                        }}
+                      />
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows &&
+                  rows.map((row, index) => (
+                    <tr
+                      key={index}
+                      onClick={() => toggleSelectedRow(index)}
+                      className={`${classes.row} ${
+                        selectedRow === index ? classes.selectedRow : ""
+                      }`}
+                    >
+                      <td style={{ display: "none" }}>
+                        <input
+                          type="radio"
+                          name="rowSelect"
+                          value={index}
+                          checked={selectedRow === index}
+                          readOnly={true}
+                          style={{ display: "none" }}
+                        />
+                      </td>
+                      {row.map((cell: string, cellIndex: number) => (
+                        <td key={cellIndex} className="border px-4 py-2">
+                          {cell}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </form>
