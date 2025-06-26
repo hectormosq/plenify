@@ -143,7 +143,12 @@ export default function UploadPage() {
         </div>
       )}
       {step === 2 && (
-        <TransactionFormMapper fileRows={rows} formValues={formState.values} />
+        <div className={classes.stepContainer}>
+          <TransactionFormMapper
+            fileRows={rows}
+            formValues={formState.values}
+          />
+        </div>
       )}
       <div>
         <Button onClick={prevStep} disabled={_validatePreviousState()}>
