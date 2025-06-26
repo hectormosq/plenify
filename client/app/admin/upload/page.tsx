@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import { read, utils } from "xlsx";
 import classes from "./page.module.scss";
-import { Button, styled } from "@mui/material";
+import { Button } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import UploadFileConfigForm from "./components/UploadFileConfigForm";
 import { UploadFileConfigFormState } from "./model/UploadFile";
 import TransactionFormMapper from "./components/TransactionFormMapper";
 export default function UploadPage() {
+
   const [rows, setRows] = useState<string[][]>([]);
   const [maxLength, setMaxLength] = useState(0);
   const [files, setFiles] = useState<File[]>([]);
@@ -17,18 +18,6 @@ export default function UploadPage() {
   const [formState, setFormState] = useState<UploadFileConfigFormState>({
     isValid: false,
   } as UploadFileConfigFormState);
-
-  const VisuallyHiddenInput = styled("input")({
-    clip: "rect(0 0 0 0)",
-    clipPath: "inset(50%)",
-    height: 1,
-    overflow: "hidden",
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    whiteSpace: "nowrap",
-    width: 1,
-  });
 
   const toggleSelectedRow = (index: number) => {
     if (selectedRow === index) {
@@ -124,15 +113,12 @@ export default function UploadPage() {
           startIcon={<CloudUploadIcon />}
         >
           Upload files
-          <VisuallyHiddenInput
-            type="file"
-            onChange={(event) => {
+          <input hidden type="file" onChange={(event) => {
               setFiles(
                 event.target.files ? Array.from(event.target.files) : []
               );
               nextStep();
-            }}
-          />
+            }} />
         </Button>
       )}
       {step === 1 && (
