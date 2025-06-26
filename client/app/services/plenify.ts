@@ -182,7 +182,7 @@ export default class PlenifyService {
     return currentTransaction;
   }
 
-  getTransactionByProps(props: Record<string, any>): TransactionByType {
+  getTransactionByProps(props: Transaction): TransactionByType {
     const normalizedProps = props || {};
 
     const store = this.persister.getStore();
@@ -326,7 +326,7 @@ export default class PlenifyService {
     };
   }
 
-  private _executeWhere(normalizedProps: Record<string, any>, where: Where) {
+  private _executeWhere(normalizedProps: Transaction, where: Where) {
     const queryWhitelist = [
       "amount",
       "transactionType",
@@ -336,7 +336,7 @@ export default class PlenifyService {
     queryWhitelist.forEach((queryItem) => {
       const key = typeof queryItem === "object" ? queryItem.key : queryItem;
 
-      const formProp = normalizedProps[key];
+      const formProp = normalizedProps[key as keyof Transaction];
       if (formProp !== undefined && formProp !== null) {
         const type = typeof queryItem === "object" ? queryItem.type : undefined;
 

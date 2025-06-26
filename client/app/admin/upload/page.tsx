@@ -1,6 +1,5 @@
 "use client";
 
-import { plenifyService } from "@/app/services";
 import { useEffect, useState } from "react";
 import { read, utils } from "xlsx";
 import classes from "./page.module.scss";
@@ -63,10 +62,6 @@ export default function UploadPage() {
     if (step > 0) {
       setStep(step - 1);
     }
-  }
-
-  function handleUpload() {
-    plenifyService.downloadDb();
   }
 
   function _formIsValid() {

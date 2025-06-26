@@ -10,8 +10,7 @@ import { useEffect, useState, useCallback } from "react";
 import { ErrorMessage } from "@hookform/error-message";
 import StyledSelect from "@/app/components/inputs/StyledSelect";
 import {
-  defaultFormFieldsArray,
-  FromIndex,
+  columnOptions,
   isFromIndex,
   UploadFileConfigFormProps,
   UploadFileConfigFormState,
@@ -58,10 +57,15 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
 
   const _calculateParseColumnOptions = useCallback(
     (data: UploadFileConfigFormValues) => {
-      const selectedColumns = Object.entries(data)
-        .filter(([_, val]) => isFromIndex(val))
-        .map(([key, val]) => {
-          return { key: key, col: (val as FromIndex).fromIndex };
+      const selectedColumns = columnOptions
+        .filter(({ key }) =>
+          isFromIndex(data[key as keyof UploadFileConfigFormValues])
+        )
+        .map(({ key }) => {
+          const value = data[key as keyof UploadFileConfigFormValues];
+          return isFromIndex(value)
+            ? { key: key, col: value.fromIndex }
+            : { key: key, col: undefined };
         });
 
       // For each form field, create an options list excluding those selected by other columns
@@ -70,7 +74,7 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
         { key: string; label: string }[]
       > = {};
       for (let i = 0; i < maxLength; i++) {
-        updatedFormFields[`column-${i}`] = defaultFormFieldsArray
+        updatedFormFields[`column-${i}`] = columnOptions
           .filter(({ key }) => {
             if (!selectedColumns.length) {
               return true;

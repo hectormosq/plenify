@@ -33,7 +33,7 @@ export function isFromIndex(value: unknown): value is FromIndex {
 
 export type UploadFileConfigOptions = "date" | "description" | "amount";
 
-export const defaultFormFieldsArray = [
+export const columnOptions = [
     { key: "date", label: "Date" },
     { key: "description", label: "Description" },
     { key: "amount", label: "Amount" },
