@@ -3,7 +3,7 @@ import { FormState } from "react-hook-form";
 export type UploadFileConfigFormProps = {
   maxLength: number;
   rows: string[][];
-  onFormChange: (formState: UploadFileConfigFormState) => void;
+  onFormChange: (formState : UploadFileConfigFormState) => void;
 };
 
 export type DynamicColumns = {
@@ -19,11 +19,7 @@ export type UploadFileConfigFormValues = {
   calculatedTransactionType: boolean;
 };
 
-export type UploadFileConfigFormState = Partial<
-  FormState<UploadFileConfigFormValues>
-> & {
-  values: UploadFileConfigFormValues;
-};
+export type UploadFileConfigFormState = Partial<FormState<UploadFileConfigFormValues>> & {values: UploadFileConfigFormValues, name?: string}
 
 export type FromIndex = {fromIndex: number}
 

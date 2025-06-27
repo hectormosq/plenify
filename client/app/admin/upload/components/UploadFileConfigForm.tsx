@@ -1,4 +1,4 @@
-import { Controller, useForm, useWatch } from "react-hook-form";
+import { Controller, FormState, useForm, useWatch } from "react-hook-form";
 import classes from "./UploadFileConfigForm.module.scss";
 import {
   Checkbox,
@@ -20,44 +20,59 @@ import {
 
 export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
   const { maxLength, onFormChange, rows } = props;
-  const [selectedRow, setSelectedRow] = useState<number | null>(null);
+  const [selectedRow, setSelectedRow] = useState<number | "">("");
 
-  const toggleSelectedRow = (index: number) => {
-    if (selectedRow === index) {
-      setSelectedRow(null);
-    } else {
-      setSelectedRow(index);
-    }
-  };
   const [formFields, setFormFields] =
     useState<Record<string, { key: string; label: string }[]>>();
 
   const { control, formState, subscribe, setValue, getValues } =
     useForm<UploadFileConfigFormValues>({
       defaultValues: {
-        selectedRow: selectedRow ?? "",
+        selectedRow: "",
         account: "",
         calculatedTransactionType: true,
       },
-      mode: "onChange",
     });
 
   const watchedData = useWatch({
     control,
   });
 
+  const toggleSelectedRow = (index: number) => {
+    let selection: "" | number;
+    if (selectedRow === index) {
+      selection = "";
+    } else {
+      selection = index;
+    }
+
+    setSelectedRow(selection);
+    setValue("selectedRow", selection, {
+      shouldValidate: true,
+      shouldDirty: true,
+      shouldTouch: true,
+    });
+  };
+
+  useEffect(() => {
+    
+  }, [selectedRow, setValue]);
+
   const handleUploadPageConfig = useCallback(
-    (data: UploadFileConfigFormState) => {
+    (data: Partial<FormState<UploadFileConfigFormValues>> & {
+    values: UploadFileConfigFormValues;
+}) => {
       onFormChange(data);
     },
-    []
+    [onFormChange]
   );
 
   useEffect(() => {
     const callback = subscribe({
       formState: { values: true, isValid: true },
-      callback: (formState) => {
-        debounce(() => handleUploadPageConfig(formState), 500)();
+      callback: (formState:UploadFileConfigFormState) => {
+        const debounceTime = formState.name === 'selectedRow' ? 0 : 500;
+        debounce(() => handleUploadPageConfig(formState), debounceTime)();
       },
     });
 
@@ -102,10 +117,6 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
   );
 
   useEffect(() => {
-    setValue("selectedRow", selectedRow ?? "");
-  }, [selectedRow, setValue]);
-
-  useEffect(() => {
     _calculateParseColumnOptions(watchedData as UploadFileConfigFormValues);
   }, [watchedData, _calculateParseColumnOptions]);
 
@@ -116,25 +127,24 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
           <div className={classes.form__column}>
             <div className={classes.form__item}>
               <div className={classes.form__item}>
-                <label htmlFor="selectedRow">Parse Starting Row</label>
+                <label>Parse Starting Row</label>
                 <Controller
                   name="selectedRow"
                   control={control}
-                  rules={{ required: "Select Starting row to parse file" }}
+                  rules={{
+                    required: "You have to select starting row from table",
+                  }}
                   render={({ field }) => (
                     <TextField
                       className={classes.form__input}
                       disabled={true}
                       {...field}
-                      onChange={(e) => {
-                        field.onChange(e.target.value);
-                      }}
                     />
                   )}
                 />
                 <ErrorMessage
                   errors={formState.errors}
-                  name="account"
+                  name="selectedRow"
                   render={(error) => (
                     <div className="form__error">{error.message}</div>
                   )}
@@ -142,7 +152,7 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
               </div>
             </div>
             <div className={classes.form__item}>
-              <label htmlFor="account">Account</label>
+              <label>Account</label>
               <Controller
                 name="account"
                 control={control}
@@ -190,7 +200,7 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
                 <tr>
                   {Array.from({ length: maxLength }, (_, i) => (
                     <th className={classes.form__item} key={i}>
-                      <label htmlFor={`column-${i}`}>Parse as </label>
+                      <label>Parse as </label>
                       <StyledSelect
                         name={`column-${i}`}
                         options={formFields?.[`column-${i}`] || []}
@@ -230,24 +240,15 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
                   rows.map((row, index) => (
                     <tr
                       key={index}
-                      onClick={() => toggleSelectedRow(index)}
                       className={`${classes.row} ${
                         selectedRow === index ? classes.selectedRow : ""
                       }`}
                     >
-                      <td style={{ display: "none" }}>
-                        <input
-                          type="radio"
-                          name="rowSelect"
-                          value={index}
-                          checked={selectedRow === index}
-                          readOnly={true}
-                          style={{ display: "none" }}
-                        />
-                      </td>
                       {row.map((cell: string, cellIndex: number) => (
                         <td key={cellIndex} className="border px-4 py-2">
-                          {cell}
+                          <div onClick={() => toggleSelectedRow(index)}>
+                            {cell}
+                          </div>
                         </td>
                       ))}
                     </tr>
