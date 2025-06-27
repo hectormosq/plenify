@@ -19,9 +19,11 @@ export interface Transaction {
   transactionType: TransactionType;
   date: Date;
   description: string;
+  notes?: string;
   amount: number;
   currency?: currency;
   tags: string[];
+  createdTs?: number;
 }
 
 export type TransactionDefaultForm = Omit<Transaction, "amount"> & {

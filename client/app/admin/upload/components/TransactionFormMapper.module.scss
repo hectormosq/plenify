@@ -1,0 +1,28 @@
+@use "@styles/forms";
+
+.formMapperRow {
+  border-bottom: 1px solid #454952;
+  padding: 1rem;
+}
+.transactionRow {
+  padding: 1rem;
+  flex-direction: row;
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-radius: var(--componentRadius);
+  background-color: var(--componentBackground);
+}
+
+.transaction {
+  flex: 1;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.transactionActions {
+  flex: 1;
+
+  padding-left: 1rem;
+  border-left: 1px solid #454952;
+}

@@ -2,6 +2,7 @@
   --fontFamily: Arial, Helvetica, sans-serif;
   --background: #ffffff;
   --foreground: #171717;
+  --disabled: #454952;
   --border: #454952;
   --maincolor: #32cd32;
   --gradientmaincolor: #9acd32;
@@ -10,7 +11,9 @@
   --inputLabel: #b3aea5;
   --buttonRadius: 4px;
   --componentRadius: 8px;
+  --componentPadding: 10px;
   --errorColor: #ed4337;
+  --componentBackground: #1a1f25; // We need default colors for a default theme
 }
 
 @media (prefers-color-scheme: dark) {
@@ -18,6 +21,7 @@
     --background: #0a0a0a;
     --foreground: #ededed;
     --inputBackground: #1c2027;
+    --componentBackground: #1a1f25;
   }
 }
 
