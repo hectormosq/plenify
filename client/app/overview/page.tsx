@@ -226,7 +226,12 @@ function OverviewColumn(
     // TODO Fix key
     return (
       <td key={colKey} className={pageClasses.overviewColumn}>
-        <span className={pageClasses.transactionAmount}
+        <span
+          className={`${pageClasses.transactionAmount} ${
+            isDetailsVisible && isDetailsVisible[colKey]
+              ? pageClasses.overviewColumn__expanded
+              : ''
+          }`}
           onClick={
             handleToggleDetails ? () => handleToggleDetails(colKey) : undefined
           }

@@ -101,6 +101,10 @@
 
 .overviewColumn {
   text-align: right;
+  border: 1px solid var(--foreground);
+  &__expanded {
+    color: var(--highlightColor);
+  }
 }
 
 .transactionAmount {
