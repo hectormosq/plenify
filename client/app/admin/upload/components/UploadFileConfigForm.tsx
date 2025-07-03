@@ -123,9 +123,8 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
   return (
     <div className={classes.form}>
       <form className={classes.form__container}>
-        <div>
-          <div className={classes.form__column}>
-            <div className={classes.form__item}>
+        <div className={classes.form__baseContent}>
+          <div className={classes.form__row}>
               <div className={classes.form__item}>
                 <label>Parse Starting Row</label>
                 <Controller
@@ -149,7 +148,6 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
                     <div className="form__error">{error.message}</div>
                   )}
                 />
-              </div>
             </div>
             <div className={classes.form__item}>
               <label>Account</label>
@@ -174,7 +172,7 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
                 )}
               />
             </div>
-            <div>
+            <div className={classes.form__item}>
               <label htmlFor="calculatedTransactionType">
                 Transaction type from amount sign
               </label>
@@ -189,7 +187,6 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
           </div>
         </div>
         <div>
-          <h2>File Preview</h2>
           <div className={classes.previewContainer}>
             <table className={classes.table}>
               <caption>
