@@ -31,7 +31,11 @@
 
 .actions button:hover,
 .actions button:focus {
-  background: linear-gradient(90deg, var(--maincolor), var(--gradientmaincolor));
+  background: linear-gradient(
+    90deg,
+    var(--maincolor),
+    var(--gradientmaincolor)
+  );
 }
 
 .actions button:disabled,
@@ -48,7 +52,6 @@
     margin-top: 1rem;
   }
 }
-
 
 .chips {
   display: flex;

@@ -64,28 +64,28 @@ export default function TransactionFormMapper(
     return (
       <div className={classes.transactionRow}>
         <div className={classes.transaction}>
-          <div>
-            <div>Account</div>
+          <div className={classes.transactionItem}>
+            <div className={classes.transaction__itemTitle}>Account</div>
             <div>{transaction?.account}</div>
           </div>
-          <div>
-            <div>Amount</div>
+          <div className={classes.transactionItem}>
+            <div className={classes.transaction__itemTitle}>Amount</div>
             <div>{transaction?.amount}</div>
           </div>
-          <div>
-            <div>Type</div>
+          <div className={classes.transactionItem}>
+            <div className={classes.transaction__itemTitle}>Type</div>
             <div>{transaction?.transactionType}</div>
           </div>
-          <div>
-            <div>Date</div>
+          <div className={classes.transactionItem}>
+            <div className={classes.transaction__itemTitle}>Date</div>
             <div>
               {transaction.date
                 ? dayjs(transaction.date).format("DD/MM/YYYY")
                 : ""}
             </div>
           </div>
-          <div>
-            <div>Description</div>
+          <div className={classes.transactionItem}>
+            <div  className={classes.transaction__itemTitle}>Description</div>
             <div>{transaction.description}</div>
           </div>
         </div>

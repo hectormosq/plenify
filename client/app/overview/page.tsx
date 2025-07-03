@@ -5,7 +5,7 @@ import { usePlenifyState } from "../hooks/usePlenifyState";
 import dayjs from "dayjs";
 import { plenifyService } from "../services";
 import OverviewService from "../services/overview";
-import classes from "./page.module.scss";
+import pageClasses from "./page.module.scss";
 import GrandTotalCard from "../components/Card/GrandTotalCard";
 import CategoryTag from "../components/categories/CategoryTag";
 import { useState } from "react";
@@ -51,8 +51,8 @@ export default function TransactionListPage() {
       ) : (
         <div>
           <h1>Overview for {year}</h1>
-          <h2 className={classes.subHeading}>Yearly Summary</h2>
-          <div className={classes.summary}>
+          <h2 className={pageClasses.subHeading}>Yearly Summary</h2>
+          <div className={pageClasses.summary}>
             <GrandTotalCard
               title="Total Income"
               description={overviewService.getTotalIncome().toLocaleString()}
@@ -63,18 +63,18 @@ export default function TransactionListPage() {
             />
           </div>
 
-          <h2 className={classes.subHeading}>Monthly Breakdown</h2>
-          <div className={classes.tableContainer}>
-            <table className={classes.table}>
+          <h2 className={pageClasses.subHeading}>Monthly Breakdown</h2>
+          <div className={pageClasses.tableContainer}>
+            <table className={pageClasses.table}>
               <thead>
                 <tr>
-                  <th>Category</th>
+                  <th className={pageClasses.table__fixed}>Category</th>
                   {Array.from({ length: 12 }, (_, i) => {
                     const month = dayjs().month(i).format("MM");
                     const monthName = dayjs().month(i).format("MMM");
                     const key = `${year}${month}`;
                     return (
-                      <th key={key}>
+                      <th className={pageClasses.table__fixed} key={key}>
                         <div>{monthName}</div>
                       </th>
                     );
@@ -83,7 +83,7 @@ export default function TransactionListPage() {
               </thead>
               <tfoot>
                 <tr>
-                  <td>Total Income</td>
+                  <td className={pageClasses.table__fixed}>Total Income</td>
                   {Array.from({ length: 12 }, (_, i) => {
                     const month = dayjs().month(i).format("MM");
                     const key = `${year}${month}`;
@@ -96,7 +96,7 @@ export default function TransactionListPage() {
                   })}
                 </tr>
                 <tr>
-                  <td>Total Expense</td>
+                  <td className={pageClasses.table__fixed}>Total Expense</td>
                   {Array.from({ length: 12 }, (_, i) => {
                     const month = dayjs().month(i).format("MM");
                     const key = `${year}${month}`;
@@ -109,7 +109,7 @@ export default function TransactionListPage() {
                   })}
                 </tr>
                 <tr>
-                  <td>Total</td>
+                  <td className={pageClasses.table__fixed}>Total</td>
                   {Array.from({ length: 12 }, (_, i) => {
                     const month = dayjs().month(i).format("MM");
                     const key = `${year}${month}`;
@@ -119,7 +119,9 @@ export default function TransactionListPage() {
                         <div>
                           <span
                             className={
-                              total >= 0 ? classes.positive : classes.negative
+                              total >= 0
+                                ? pageClasses.positive
+                                : pageClasses.negative
                             }
                           >
                             {total !== 0 ? total.toLocaleString() : ""}
@@ -145,7 +147,7 @@ export default function TransactionListPage() {
                         year={year}
                         transaction={transactionCategory}
                         rowKey={`${categoryKey}`}
-                        classes={classes.groupHeader}
+                        classes={pageClasses.groupHeader}
                       />
 
                       {openGroups[idx] &&
@@ -164,7 +166,7 @@ export default function TransactionListPage() {
                                 year={year}
                                 transaction={childTransaction}
                                 rowKey={rowKey}
-                                classes={classes.groupItem}
+                                classes={pageClasses.groupItem}
                               />
                             );
                           }
@@ -186,7 +188,7 @@ function OverviewRow(props: {
   year: number;
   transaction: TransactionMonthDetails;
   rowKey: string;
-  columnState: Record<string, boolean>
+  columnState: Record<string, boolean>;
   handleRowClick?: () => void;
   handleColumnClick?: (id: string) => void;
   classes?: string;
@@ -202,14 +204,44 @@ function OverviewRow(props: {
     classes,
   } = props;
   return (
-    <tr key={rowKey} onClick={handleRowClick} className={classes || ""}>
-      <td>
-        <CategoryTag id={categoryKey} />
-      </td>
-      {OverviewColumn(year, childTransaction, rowKey, columnState, handleColumnClick)}
-    </tr>
+    <>
+      <tr key={rowKey} onClick={handleRowClick} className={classes || ""}>
+        <td className={pageClasses.table__fixed}>
+          <CategoryTag id={categoryKey} />
+        </td>
+        {OverviewColumn(
+          year,
+          childTransaction,
+          rowKey,
+          columnState,
+          handleColumnClick
+        )}
+      </tr>
+      {/* TODO Implement row expansion for further details*/}
+      {/*_validateColumnState(rowKey, columnState, childTransaction)*/}
+    </>
   );
 }
+
+/*
+function _validateColumnState(
+  rowKey: string,
+  columnState: Record<string, boolean>,
+  childTransaction: TransactionMonthDetails
+) {
+  const columns = Object.keys(columnState).filter(
+    (key) => key.startsWith(rowKey) && columnState[key]
+  );
+
+  if (!!columns.length) {
+    return (
+      <tr>
+        <td colSpan={13}>Hay Data!</td>
+      </tr>
+    );
+  }
+}
+  */
 
 function OverviewColumn(
   year: number,
@@ -223,18 +255,24 @@ function OverviewColumn(
     const key = `${year}${month}`;
     const transaction = transactionCategory?.month?.[key];
     const colKey = `${rowKey}-${colId}`;
+    const expandedClass = isDetailsVisible?.[colKey]
+      ? pageClasses.overviewColumn__expanded
+      : "";
     // TODO Fix key
     return (
-      <td key={colKey} className={classes.overviewColumn}>
-        <span className={classes.transactionAmount}
-          onClick={
-            handleToggleDetails ? () => handleToggleDetails(colKey) : undefined
-          }
+      <td key={colKey} className={`${pageClasses.overviewColumn} ${expandedClass}`}>
+        <span
+          className={`${pageClasses.transactionAmount}`}
+          onClick={(e) => {
+            if (handleToggleDetails) handleToggleDetails(colKey);
+            // Prevent the click from propagating to the row
+            e.stopPropagation();
+          }}
         >
           {amountFormat(transaction)}
         </span>
         {isDetailsVisible && isDetailsVisible[colKey] && (
-          <div className={classes.transactionDetails}>
+          <div className={pageClasses.transactionDetails}>
             <CompactTransactionList
               transactionList={transaction?.transactionsByType.ALL}
             />

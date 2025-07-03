@@ -54,14 +54,14 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
     });
   };
 
-  useEffect(() => {
-    
-  }, [selectedRow, setValue]);
+  useEffect(() => {}, [selectedRow, setValue]);
 
   const handleUploadPageConfig = useCallback(
-    (data: Partial<FormState<UploadFileConfigFormValues>> & {
-    values: UploadFileConfigFormValues;
-}) => {
+    (
+      data: Partial<FormState<UploadFileConfigFormValues>> & {
+        values: UploadFileConfigFormValues;
+      }
+    ) => {
       onFormChange(data);
     },
     [onFormChange]
@@ -70,8 +70,8 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
   useEffect(() => {
     const callback = subscribe({
       formState: { values: true, isValid: true },
-      callback: (formState:UploadFileConfigFormState) => {
-        const debounceTime = formState.name === 'selectedRow' ? 0 : 500;
+      callback: (formState: UploadFileConfigFormState) => {
+        const debounceTime = formState.name === "selectedRow" ? 0 : 500;
         debounce(() => handleUploadPageConfig(formState), debounceTime)();
       },
     });
@@ -123,73 +123,68 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
   return (
     <div className={classes.form}>
       <form className={classes.form__container}>
-        <div>
-          <div className={classes.form__column}>
-            <div className={classes.form__item}>
-              <div className={classes.form__item}>
-                <label>Parse Starting Row</label>
-                <Controller
-                  name="selectedRow"
-                  control={control}
-                  rules={{
-                    required: "You have to select starting row from table",
+        <div className={classes.form__row}>
+          <div className={classes.form__item}>
+            <label>Parse Starting Row</label>
+            <Controller
+              name="selectedRow"
+              control={control}
+              rules={{
+                required: "You have to select starting row from table",
+              }}
+              render={({ field }) => (
+                <TextField
+                  className={classes.form__input}
+                  disabled={true}
+                  {...field}
+                />
+              )}
+            />
+            <ErrorMessage
+              errors={formState.errors}
+              name="selectedRow"
+              render={(error) => (
+                <div className="form__error">{error.message}</div>
+              )}
+            />
+          </div>
+          <div className={classes.form__item}>
+            <label>Account</label>
+            <Controller
+              name="account"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  className={classes.form__input}
+                  {...field}
+                  onChange={(e) => {
+                    field.onChange(e.target.value);
                   }}
-                  render={({ field }) => (
-                    <TextField
-                      className={classes.form__input}
-                      disabled={true}
-                      {...field}
-                    />
-                  )}
                 />
-                <ErrorMessage
-                  errors={formState.errors}
-                  name="selectedRow"
-                  render={(error) => (
-                    <div className="form__error">{error.message}</div>
-                  )}
-                />
-              </div>
-            </div>
-            <div className={classes.form__item}>
-              <label>Account</label>
-              <Controller
-                name="account"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    className={classes.form__input}
-                    {...field}
-                    onChange={(e) => {
-                      field.onChange(e.target.value);
-                    }}
-                  />
-                )}
-              />
-              <ErrorMessage
-                errors={formState.errors}
-                name="account"
-                render={(error) => (
-                  <div className="form__error">{error.message}</div>
-                )}
-              />
-            </div>
-            <div>
-              <label htmlFor="calculatedTransactionType">
-                Transaction type from amount sign
-              </label>
-              <Controller
-                name="calculatedTransactionType"
-                control={control}
-                render={({ field }) => (
-                  <Checkbox {...field} checked={field.value} disabled />
-                )}
-              />
-            </div>
+              )}
+            />
+            <ErrorMessage
+              errors={formState.errors}
+              name="account"
+              render={(error) => (
+                <div className="form__error">{error.message}</div>
+              )}
+            />
+          </div>
+          <div className={classes.form__item}>
+            <label htmlFor="calculatedTransactionType">
+              Transaction type from amount sign
+            </label>
+            <Controller
+              name="calculatedTransactionType"
+              control={control}
+              render={({ field }) => (
+                <Checkbox {...field} checked={field.value} disabled />
+              )}
+            />
           </div>
         </div>
         <div>
-          <h2>File Preview</h2>
           <div className={classes.previewContainer}>
             <table className={classes.table}>
               <caption>
