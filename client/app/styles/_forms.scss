@@ -4,6 +4,12 @@
   flex-direction: column;
   max-width: 75rem;
 
+  &__row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
   &__item {
     width: 100%;
   }
@@ -45,7 +51,7 @@
 }
 
 @media only screen and (max-width: 600px) {
-  .row {
+  .row, .form__row {
     flex-direction: column;
   }
 }

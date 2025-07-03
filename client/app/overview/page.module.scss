@@ -105,7 +105,7 @@
 
 .groupItem {
    td {
-    background-color: lighten(#22272f, 5%);
+    background-color: color-mix(in srgb, #22272f 95%, white 5%);
   }
   & :first-child {
     margin-left: 10px;
