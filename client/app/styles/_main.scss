@@ -17,14 +17,7 @@
   --componentBackground: #1a1f25; // We need default colors for a default theme
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --inputBackground: #1c2027;
-    --componentBackground: #1a1f25;
-  }
-}
+
 
 body {
   color: var(--foreground);
@@ -35,7 +28,9 @@ body {
 main {
   padding: 20px;
 }
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   color: var(--foreground);
 }
 
@@ -46,7 +41,22 @@ h1 {
 }
 
 h2 {
-font-size: 1.2rem;
+  font-size: 1.2rem;
   font-weight: 400;
   margin-bottom: 15px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+    --inputBackground: #1c2027;
+    --componentBackground: #1a1f25;
+  }
+}
+
+@media only screen and (max-width: 768px) {
+  main {
+    padding: 0.5rem;
+  }
 }
