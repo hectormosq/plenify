@@ -119,7 +119,9 @@ export default function TransactionListPage() {
                         <div>
                           <span
                             className={
-                              total >= 0 ? pageClasses.positive : pageClasses.negative
+                              total >= 0
+                                ? pageClasses.positive
+                                : pageClasses.negative
                             }
                           >
                             {total !== 0 ? total.toLocaleString() : ""}
@@ -186,7 +188,7 @@ function OverviewRow(props: {
   year: number;
   transaction: TransactionMonthDetails;
   rowKey: string;
-  columnState: Record<string, boolean>
+  columnState: Record<string, boolean>;
   handleRowClick?: () => void;
   handleColumnClick?: (id: string) => void;
   classes?: string;
@@ -202,14 +204,44 @@ function OverviewRow(props: {
     classes,
   } = props;
   return (
-    <tr key={rowKey} onClick={handleRowClick} className={classes || ""}>
-      <td className={pageClasses.table__fixed}>
-        <CategoryTag id={categoryKey} />
-      </td>
-      {OverviewColumn(year, childTransaction, rowKey, columnState, handleColumnClick)}
-    </tr>
+    <>
+      <tr key={rowKey} onClick={handleRowClick} className={classes || ""}>
+        <td className={pageClasses.table__fixed}>
+          <CategoryTag id={categoryKey} />
+        </td>
+        {OverviewColumn(
+          year,
+          childTransaction,
+          rowKey,
+          columnState,
+          handleColumnClick
+        )}
+      </tr>
+      {/* TODO Implement row expansion for further details*/}
+      {/*_validateColumnState(rowKey, columnState, childTransaction)*/}
+    </>
   );
 }
+
+/*
+function _validateColumnState(
+  rowKey: string,
+  columnState: Record<string, boolean>,
+  childTransaction: TransactionMonthDetails
+) {
+  const columns = Object.keys(columnState).filter(
+    (key) => key.startsWith(rowKey) && columnState[key]
+  );
+
+  if (!!columns.length) {
+    return (
+      <tr>
+        <td colSpan={13}>Hay Data!</td>
+      </tr>
+    );
+  }
+}
+  */
 
 function OverviewColumn(
   year: number,
@@ -223,18 +255,19 @@ function OverviewColumn(
     const key = `${year}${month}`;
     const transaction = transactionCategory?.month?.[key];
     const colKey = `${rowKey}-${colId}`;
+    const expandedClass = isDetailsVisible?.[colKey]
+      ? pageClasses.overviewColumn__expanded
+      : "";
     // TODO Fix key
     return (
-      <td key={colKey} className={pageClasses.overviewColumn}>
+      <td key={colKey} className={`${pageClasses.overviewColumn} ${expandedClass}`}>
         <span
-          className={`${pageClasses.transactionAmount} ${
-            isDetailsVisible && isDetailsVisible[colKey]
-              ? pageClasses.overviewColumn__expanded
-              : ''
-          }`}
-          onClick={
-            handleToggleDetails ? () => handleToggleDetails(colKey) : undefined
-          }
+          className={`${pageClasses.transactionAmount}`}
+          onClick={(e) => {
+            if (handleToggleDetails) handleToggleDetails(colKey);
+            // Prevent the click from propagating to the row
+            e.stopPropagation();
+          }}
         >
           {amountFormat(transaction)}
         </span>

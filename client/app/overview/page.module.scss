@@ -5,7 +5,6 @@
 }
 .tableContainer {
   padding: 10px;
-  height: 90vh;
   background-color: var(--componentBackground);
   border-radius: var(--componentRadius);
   overflow: auto;
@@ -20,6 +19,7 @@
     top: 0;
     left: 0;
     z-index: 1;
+    border: 1px solid var(--border);
   }
 
   & thead {
@@ -28,6 +28,17 @@
 
     & tr {
       & > th {
+        z-index: 4;
+        &:first-child {
+          z-index: 5;
+        }
+      }
+    }
+  }
+
+  & tfoot {
+    & tr {
+      & > td {
         z-index: 4;
         &:first-child {
           z-index: 5;
@@ -93,17 +104,24 @@
 }
 
 .groupItem {
-  background-color: #2c2f35;
+   td {
+    background-color: lighten(#22272f, 5%);
+  }
   & :first-child {
     margin-left: 10px;
   }
 }
 
 .overviewColumn {
+  vertical-align: top;
   text-align: right;
-  border: 1px solid var(--foreground);
+  
+
   &__expanded {
-    color: var(--highlightColor);
+    min-width: 15rem;
+    .transactionAmount {
+      color: var(--highlightColor);
+    }
   }
 }
 
@@ -112,5 +130,5 @@
 }
 
 .transactionDetails {
-  max-width: 200px;
+  width: 100%;
 }
