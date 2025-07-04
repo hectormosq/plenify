@@ -33,7 +33,7 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
         selectedRow: "",
         account: "",
         calculatedTransactionType: true,
-        dateFormat: "DD MM YYYY",
+        dateFormat: "DDMMYYYY",
       },
     });
 
