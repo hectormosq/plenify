@@ -222,7 +222,7 @@ function _proccessRow(
   const originalAmount = _getValue(formValues.amount, row) as number;
   // TODO Read format date in form and use it here
   
-  const datejs = _getDateValue(_getValue(formValues.date, row) as string, formValues.dateFormat || "DD MM YYYY");
+  const datejs = _getDateValue(_getValue(formValues.date, row) as string, formValues.dateFormat || "DDMMYYYY");
   const normalizedProps = {
     account: _getValue(formValues.account, row) as string,
     amount: Math.abs(originalAmount),
