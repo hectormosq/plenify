@@ -79,7 +79,7 @@ export default function UploadPage() {
 
     try {
       return file.arrayBuffer().then((buffer) => {
-        const workbook = read(buffer);
+        const workbook = read(buffer, {raw: true, cellDates: true});
         workbook.SheetNames.forEach((sheetName) => {
           const worksheet = workbook.Sheets[sheetName];
           const raw_data: string[][] = utils.sheet_to_json(worksheet, {

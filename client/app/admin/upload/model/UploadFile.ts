@@ -12,6 +12,7 @@ export type DynamicColumns = {
 
 export type UploadFileConfigFormValues = {
   date: string | FromIndex
+  dateFormat?: DateParseFormat;
   description: string | FromIndex
   amount: number | FromIndex
   account: string;
@@ -28,6 +29,15 @@ export function isFromIndex(value: unknown): value is FromIndex {
 }
 
 export type UploadFileConfigOptions = "date" | "description" | "amount";
+
+export type DateParseFormat = "DDMMYYYY" | "MMDDYYYY" | "YYYYMMDD";
+
+export const dateParseOptions: DateParseFormat[] = [
+  "DDMMYYYY",
+  "MMDDYYYY",
+  "YYYYMMDD",
+]
+
 
 export const columnOptions = [
     { key: "date", label: "Date" },
