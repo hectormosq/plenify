@@ -1,5 +1,5 @@
 import { plenifyService } from "@/app/services";
-import { isFromIndex, UploadFileConfigFormValues } from "../model/UploadFile";
+import { DateParseFormat, isFromIndex, UploadFileConfigFormValues } from "../model/UploadFile";
 import { Transaction, TransactionType } from "@/app/models/transaction";
 import dayjs from "dayjs";
 import classes from "./TransactionFormMapper.module.scss";
@@ -221,7 +221,8 @@ function _proccessRow(
 ): Transaction {
   const originalAmount = _getValue(formValues.amount, row) as number;
   // TODO Read format date in form and use it here
-  const datejs = dayjs(_getValue(formValues.date, row) as string, "DD/MM/YYYY");
+  
+  const datejs = _getDateValue(_getValue(formValues.date, row) as string, formValues.dateFormat || "DD MM YYYY");
   const normalizedProps = {
     account: _getValue(formValues.account, row) as string,
     amount: Math.abs(originalAmount),
@@ -243,6 +244,11 @@ function _getValue(prop: unknown, row: string[]) {
   } else {
     return prop;
   }
+}
+
+function _getDateValue(value: string, dateFormat: DateParseFormat) {
+
+    return dayjs(value, dateFormat);
 }
 
 function _getTransactionType(

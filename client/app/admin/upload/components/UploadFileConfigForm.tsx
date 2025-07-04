@@ -16,6 +16,8 @@ import {
   UploadFileConfigFormState,
   UploadFileConfigFormValues,
   UploadFileConfigOptions,
+  dateParseOptions,
+  FromIndex,
 } from "../model/UploadFile";
 
 export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
@@ -31,6 +33,7 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
         selectedRow: "",
         account: "",
         calculatedTransactionType: true,
+        dateFormat: "DD MM YYYY",
       },
     });
 
@@ -196,6 +199,8 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
                   {Array.from({ length: maxLength }, (_, i) => (
                     <th className={classes.form__item} key={i}>
                       <label>Parse as </label>
+                      <div className={classes.form__headerSelect}>
+
                       <StyledSelect
                         name={`column-${i}`}
                         options={formFields?.[`column-${i}`] || []}
@@ -226,6 +231,23 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
                           }
                         }}
                       />
+                      {isFromIndex(getValues("date")) &&
+                        (getValues("date") as FromIndex).fromIndex === i && (
+                          <Controller
+                            name="dateFormat"
+                            control={control}
+                            render={({ field }) => (
+                              <StyledSelect
+                                {...field}
+                                options={dateParseOptions.map((value) => ({
+                                  key: value,
+                                  label: value,
+                                }))}
+                              />
+                            )}
+                          />
+                        )}
+                      </div>
                     </th>
                   ))}
                 </tr>
