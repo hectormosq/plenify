@@ -1,6 +1,7 @@
 import { Transaction } from "@/app/models/transaction";
 import classes from "./CompactTransactionList.module.scss";
 import { TransactionService } from "@/app/services/transaction";
+import Link from "next/link";
 
 export default function CompactTransactionList(props: {
   transactionList: Transaction[];
@@ -11,7 +12,7 @@ export default function CompactTransactionList(props: {
       {transactionList && transactionList.length > 0 ? (
         transactionList.map((transaction) => (
           <div key={transaction.id} className={classes.row}>
-            <div className={classes.description}>{transaction.description}</div>
+            <Link href={`/admin/add/${transaction.id}`} className={classes.description}>{transaction.description}</Link>
             <div className={classes.amount}>
               {TransactionService.getAmount(transaction, false)}
             </div>

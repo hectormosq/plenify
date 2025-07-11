@@ -167,9 +167,24 @@ export default class OverviewService {
           if (child.month[yearMonthKey]) {
             childrenSum += child.month[yearMonthKey].amount || 0;
             // Merge transactionsByType of the child for this month into existingTransactionsByType
-            existingTransactionsByType[TransactionType.EXPENSE] = [...existingTransactionsByType[TransactionType.EXPENSE], ...child.month[yearMonthKey].transactionsByType[TransactionType.EXPENSE]]
-            existingTransactionsByType[TransactionType.INCOME] = [...existingTransactionsByType[TransactionType.INCOME], ...child.month[yearMonthKey].transactionsByType[TransactionType.EXPENSE]]
-            existingTransactionsByType[UtilsType.ALL] = [...existingTransactionsByType[UtilsType.ALL], ...child.month[yearMonthKey].transactionsByType[TransactionType.EXPENSE]]
+            existingTransactionsByType[TransactionType.EXPENSE] = [
+              ...existingTransactionsByType[TransactionType.EXPENSE],
+              ...child.month[yearMonthKey].transactionsByType[
+                TransactionType.EXPENSE
+              ],
+            ];
+            existingTransactionsByType[TransactionType.INCOME] = [
+              ...existingTransactionsByType[TransactionType.INCOME],
+              ...child.month[yearMonthKey].transactionsByType[
+                TransactionType.INCOME
+              ],
+            ];
+            existingTransactionsByType[UtilsType.ALL] = [
+              ...existingTransactionsByType[UtilsType.ALL],
+              ...child.month[yearMonthKey].transactionsByType[
+                UtilsType.ALL
+              ],
+            ];
           }
         });
       }
@@ -180,25 +195,49 @@ export default class OverviewService {
       // If there is a difference, add a special child to compensate
       if (diff !== 0) {
         if (!transactionDetails.children) transactionDetails.children = {};
-        transactionDetails.children[DIFF_CATEGORY] = {
-          month: {
-            [yearMonthKey]: {
-              ...parent,
-              amount: diff,
-              transactionsByType: {
-          [UtilsType.ALL]: diffTransactionsByType[UtilsType.ALL].filter(
-            x => !existingTransactionsByType[UtilsType.ALL].some(y => y.id === x.id)
-          ),
-          [TransactionType.EXPENSE]: diffTransactionsByType[TransactionType.EXPENSE].filter(
-            x => !existingTransactionsByType[TransactionType.EXPENSE].some(y => y.id === x.id)
-          ),
-          [TransactionType.INCOME]: diffTransactionsByType[TransactionType.INCOME].filter(
-            x => !existingTransactionsByType[TransactionType.INCOME].some(y => y.id === x.id)
-          ),
-              }
+        const month = {
+          [yearMonthKey]: {
+            ...parent,
+            amount: diff,
+            transactionsByType: {
+              [UtilsType.ALL]: diffTransactionsByType[UtilsType.ALL].filter(
+                (x) =>
+                  !existingTransactionsByType[UtilsType.ALL].some(
+                    (y) => y.id === x.id
+                  )
+              ),
+              [TransactionType.EXPENSE]: diffTransactionsByType[
+                TransactionType.EXPENSE
+              ].filter(
+                (x) =>
+                  !existingTransactionsByType[TransactionType.EXPENSE].some(
+                    (y) => y.id === x.id
+                  )
+              ),
+              [TransactionType.INCOME]: diffTransactionsByType[
+                TransactionType.INCOME
+              ].filter(
+                (x) =>
+                  !existingTransactionsByType[TransactionType.INCOME].some(
+                    (y) => y.id === x.id
+                  )
+              ),
             },
           },
-          children: {},
+        };
+
+        const mergedMonth = {
+          ...(transactionDetails.children[DIFF_CATEGORY]?.month || {}),
+          ...(month || {}),
+        };
+        const mergedChildren = {
+          ...(transactionDetails.children[DIFF_CATEGORY]?.children || {}),
+          ...{},
+        };
+
+        transactionDetails.children[DIFF_CATEGORY] = {
+          month: mergedMonth,
+          children: mergedChildren,
         };
       }
     });
