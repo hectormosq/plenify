@@ -88,6 +88,7 @@ export default function AdminPage() {
     reset(
       currentTransaction && currentTransaction.id
         ? {
+            account: currentTransaction.account,
             transactionType: currentTransaction.transactionType,
             date: currentTransaction.date,
             description: currentTransaction.description,

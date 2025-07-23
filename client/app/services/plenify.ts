@@ -168,7 +168,6 @@ export default class PlenifyService {
   }
 
   getTransaction(id: string): Transaction | undefined {
-    console.log("getTransaction");
     const transaction = this.persister
       .getStore()
       .getRow(Tables.transactions, id);
