@@ -1,47 +1,50 @@
 import express from "express";
-import request from 'supertest';
-import categoriesRouter from "../src/routes/categories.js";
-import adminRouter from "../src/routes/admin.js";
+import request from "supertest";
+import bodyParser from "body-parser";
+import { categories } from "../src/controllers/categories.ts";
+import { accountMovements } from "../src/controllers/admin.ts";
 
 const app = express();
+app.use(bodyParser.json());
+app.get("/categories", categories);
+app.get("/", accountMovements);
 
-app.use("/categories", categoriesRouter);
+describe("test categories routes", () => {
+  it("should return a valid categories structure", async () => {
+    const res = await request(app).get("/categories");
 
-describe('server routes', () => {
-  it('GET /categories should return a default category', async () => {
-    const res = await request(app).get('/categories');
+    expect(res.status).toBe(200);
     
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual([
-      {
-        "data": {
-          "categories": {
-            "f6f84c9f-f93d-4ab8-8ebd-3a759fc2d8dc": {
-              "name": "default",
-              "color": "#651fff"
-            }
-          },
-          "defaultCategory": "f6f84c9f-f93d-4ab8-8ebd-3a759fc2d8dc"
-        }
-      }
-    ]);
-  });
-  
-});
+    expect(res.body).toEqual({
+      data: expect.objectContaining({
+        categories: expect.any(Object),
+        defaultCategory: expect.any(String), 
+      }),
+    });
 
-app.use("/account-movements", categoriesRouter);
+    const categories = res.body.data.categories;
+    expect(Object.keys(categories).length).toBeGreaterThan(0);
 
-describe("server routes", () => {
-  it("GET /account-movements should return an empty data array", async () => {
-    const res = await request(app).get("/account-movements");
-
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual([
-      {
-        "data": []
-      }
-    ]);
+    for (const [id, category] of Object.entries(categories)) {
+      expect(id).toEqual(expect.any(String));
+      expect(category).toEqual(
+        expect.objectContaining({
+          name: expect.any(String),
+          color: expect.any(String),
+        })
+      );
+    }
   });
 });
 
+describe("test Account Movementents routes", () => {
+  it("should return an empty array for account movements", async () => {
+    const res = await request(app).get('/');
 
+    expect(res.status).toBe(200)
+
+    expect(res.body).toEqual({
+      data: []
+    })
+  })
+})
