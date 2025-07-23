@@ -53,6 +53,15 @@ export type SelectTransactionEvent = {
   type: "GET_TRANSACTION";
   transactionId: string;
 };
+export type DeleteTransactionEvent =
+  | {
+      type: "DELETE_TRANSACTION";
+    }
+  | {
+      type: "CONFIRM_DELETE";
+      transactionId: string;
+    }
+  | { type: "CANCEL_DELETE" };
 export type TransactionEvent = {
   type: "ADD_TRANSACTION" | "UPDATE_TRANSACTION";
   transaction: Transaction;
@@ -74,14 +83,15 @@ export function isSelectTransactionEvent(
 
 export type ControllerEvent =
   | SelectTransactionEvent
+  | DeleteTransactionEvent
   | TransactionEvent
   | {
       type: "RESET";
     }
-    | {
+  | {
       type: "RESET_CATEGORIES";
     }
   | ActiveDateEvent
   | {
       type: "EXIT_TRANSACTION";
-    }
+    };
