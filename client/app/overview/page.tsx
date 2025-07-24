@@ -91,7 +91,7 @@ export default function TransactionListPage() {
                   })}
                   <th >Total</th>
                   <th >
-                    Avg / {monthsCount}
+                    Avg YTD
                   </th>
                   <th >Avg / 12</th>
                 </tr>
