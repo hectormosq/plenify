@@ -1,0 +1,10 @@
+.categorySelector {
+    display: flex;
+
+    &__list {
+        display: flex; 
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        overflow: auto;
+    }
+} 

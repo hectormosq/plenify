@@ -1,0 +1,134 @@
+.summary {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+.tableContainer {
+  padding: 10px;
+  background-color: var(--componentBackground);
+  border-radius: var(--componentRadius);
+  overflow: auto;
+}
+
+.table {
+  width: 100%;
+
+  tr > th,
+  tr > td {
+    position: sticky;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    border: 1px solid var(--border);
+  }
+
+  & thead {
+    top: 0;
+    z-index: 2;
+
+    & tr {
+      & > th {
+        z-index: 4;
+        &:first-child {
+          z-index: 5;
+        }
+      }
+    }
+  }
+
+  & tfoot {
+    & tr {
+      & > td {
+        z-index: 4;
+        &:first-child {
+          z-index: 5;
+        }
+      }
+    }
+  }
+
+  tbody tr > td:first-child {
+    z-index: 3;
+  }
+
+  & th {
+    background-color: #22272f;
+    & :first-child {
+      border-top-left-radius: var(--componentRadius);
+      border-bottom-left-radius: var(--componentRadius);
+    }
+    & :last-child {
+      border-top-right-radius: var(--componentRadius);
+      border-bottom-right-radius: var(--componentRadius);
+    }
+  }
+
+  & td {
+    background-color: var(--componentBackground);
+  }
+
+  & th,
+  td {
+    width: 1%;
+    white-space: nowrap;
+    padding: 10px 10px;
+  }
+  & tr {
+    border-bottom: 1px solid #2c2f35;
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  & tfoot {
+    background-color: #22272f;
+
+    & td {
+      background-color: #22272f;
+      font-weight: bold;
+      text-align: right;
+    }
+  }
+}
+
+.positive {
+  color: var(--incomescolor);
+}
+.negative {
+  color: var(--expensescolor);
+}
+
+.groupHeader {
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.groupItem {
+   td {
+    background-color: color-mix(in srgb, #22272f 95%, white 5%);
+  }
+  & :first-child {
+    margin-left: 10px;
+  }
+}
+
+.overviewColumn {
+  vertical-align: top;
+  text-align: right;
+  
+
+  &__expanded {
+    min-width: 15rem;
+    .transactionAmount {
+      color: var(--highlightColor);
+    }
+  }
+}
+
+.transactionAmount {
+  cursor: pointer;
+}
+
+.transactionDetails {
+  width: 100%;
+}

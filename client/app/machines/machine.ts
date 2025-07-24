@@ -1,8 +1,21 @@
-import { assign, fromPromise, setup } from 'xstate';
-import { ControllerContext, ControllerEvent } from './types';
-import { DEFAULT_CONTEXT } from './defaults';
-import { plenifyService } from '../services';
-import { Transaction } from '../models/transaction';
+import { assign, fromPromise, setup } from "xstate";
+import {
+  ControllerContext,
+  ControllerEvent,
+  isActiveDateEvent,
+  SelectTransactionEvent,
+  TransactionEvent,
+  WithActiveDateRange,
+} from "./types";
+import { DEFAULT_CONTEXT } from "./defaults";
+import { plenifyService } from "../services";
+import {
+  Transaction,
+  TransactionByType,
+  TransactionType,
+  UtilsType,
+} from "../models/transaction";
+import dayjs from "dayjs";
 
 export const machine = setup({
   types: {
@@ -11,133 +24,338 @@ export const machine = setup({
     input: DEFAULT_CONTEXT,
   },
   actors: {
-    setup: fromPromise(
-      async () => {
-        return plenifyService.setup();
+    setup: fromPromise(async () => {
+      return plenifyService.setup();
+    }),
+    reset: fromPromise(async () => {
+      return plenifyService.reset();
+    }),
+    resetCategories: fromPromise(async () => {
+      return plenifyService.resetCategories();
+    }),
+    setActiveDates: fromPromise(
+      async ({ input }: { input: ControllerContext }) => {
+        return {
+          activeFromDate: input.activeFromDate,
+          activeToDate: input.activeToDate,
+        };
       }
     ),
-    reset: fromPromise(
-      async () => {
-        return plenifyService.reset();
-      }
-    ),
-    getCategories: fromPromise(
-      async () => {
-        return plenifyService.getCategories();
+    getCategories: fromPromise(async () => {
+      return plenifyService.getCategories();
+    }),
+    getTransaction: fromPromise(
+      async ({ input }: { input: { transactionId: string } }) => {
+        return plenifyService.getTransaction(input.transactionId);
       }
     ),
     getTransactions: fromPromise(
-      async () => {
-        return plenifyService.getTransactions();
+      async ({ input }: { input: { fromDate: string; toDate: string } }) => {
+        return plenifyService.getTransactionsByRangeDate(
+          input.fromDate,
+          input.toDate
+        );
       }
     ),
     addTransaction: fromPromise(
-      async ({ input: { transaction } }: { input: { transaction: Transaction } }) => {
+      async ({
+        input: { transaction },
+      }: {
+        input: { transaction: Transaction };
+      }) => {
         return plenifyService.addTransaction(transaction);
+      }
+    ),
+    updateTransaction: fromPromise(
+      async ({
+        input: { transaction },
+      }: {
+        input: { transaction: Transaction };
+      }) => {
+        return plenifyService.updateTransaction(transaction);
+      }
+    ),
+    deleteTransaction: fromPromise(
+      async ({
+        input: { transactionId },
+      }: {
+        input: { transactionId: string };
+      }) => {
+        return plenifyService.deleteTransaction(transactionId);
       }
     ),
   },
 }).createMachine({
-  id: 'plenify',
-  initial: 'initializing',
+  id: "plenify",
+  initial: "initializing",
   context: ({ input }) => ({
     ...input,
   }),
   states: {
     initializing: {
       invoke: {
-        src: 'setup',
+        src: "setup",
         onDone: {
-          target: 'initialized',
-        }
+          target: "initialized",
+        },
       },
     },
+
     initialized: {
-      type: 'parallel',
+      type: "parallel",
       states: {
         transactions: {
-          initial: 'loading',
+          type: "parallel",
           states: {
-            loading: {
-              invoke: {
-                src: 'getTransactions',
-                onDone: {
-                  target: 'loaded',
-                  actions: assign({
-                    transactions: ({ event }) => {
-                      return 'output' in event
-                        ? event.output
-                        : [];
-                    }
-                  }),
+            list: {
+              initial: "activeDates",
+              states: {
+                activeDates: {
+                  invoke: {
+                    src: "setActiveDates",
+                    input: ({
+                      event,
+                    }): { activeFromDate: string; activeToDate: string } => {
+                      if (isActiveDateEvent(event)) {
+                        return {
+                          activeFromDate: dayjs(event.activeDate)
+                            .startOf("month")
+                            .toISOString(),
+                          activeToDate: dayjs(event.activeDate)
+                            .endOf("month")
+                            .toISOString(),
+                        };
+                      }
+                      return {
+                        activeFromDate: dayjs().startOf("month").toISOString(),
+                        activeToDate: dayjs().endOf("month").toISOString(),
+                      };
+                    },
+                    onDone: {
+                      actions: assign({
+                        activeFromDate: ({ event }) => {
+                          return event.output.activeFromDate;
+                        },
+                        activeToDate: ({ event }) => {
+                          return event.output.activeToDate;
+                        },
+                      }),
+                      target: "loading",
+                    },
+                  },
                 },
-                onError: 'loaded',
-              }
+                loading: {
+                  invoke: {
+                    src: "getTransactions",
+                    input: ({ context }) => {
+                      return {
+                        fromDate: (context as WithActiveDateRange)
+                          .activeFromDate,
+                        toDate: (context as WithActiveDateRange).activeToDate,
+                      };
+                    },
+                    onDone: {
+                      target: "loaded",
+                      actions: assign({
+                        transactions: ({ event }) => {
+                          return "output" in event
+                            ? (event.output as TransactionByType)
+                            : ({
+                                [TransactionType.EXPENSE]: [] as Transaction[],
+                                [TransactionType.INCOME]: [] as Transaction[],
+                                [UtilsType.ALL]: [] as Transaction[],
+                              } as TransactionByType);
+                        },
+                      }),
+                    },
+                    onError: "loaded",
+                  },
+                },
+
+                loaded: {
+                  type: "final",
+                },
+              },
             },
-            loaded: {
-              type: 'final',
-            }
-          }
+          },
         },
+
         categories: {
-          initial: 'loading',
+          initial: "loading",
           states: {
             loading: {
               invoke: {
-                src: 'getCategories',
+                src: "getCategories",
                 onDone: {
-                  target: 'loaded',
+                  target: "loaded",
                   actions: assign({
                     categories: ({ event }) => {
-                      return 'output' in event
-                        ? event.output
-                        : {};
-                    }
+                      return "output" in event ? event.output : {};
+                    },
                   }),
-                }
+                },
               },
             },
             loaded: {
-              type: 'final',
-            }
-          }
+              type: "final",
+            },
+          },
         },
       },
       onDone: {
-        target: '#plenify.loaded'
-      }
+        target: "#plenify.loaded",
+      },
     },
+
     transaction: {
-      invoke: {
-        src: 'addTransaction',
-        input: () => ({
-          transaction: {
-            date: new Date(),
-            description: `Test ${new Date().toLocaleDateString()}`,
-            amount: new Date().getTime(),
-          }
-        }),
-        onDone: {
-          target: '#plenify.initialized.transactions',
-        }
-      }
+      initial: "get",
+      states: {
+        loaded: {
+          on: {
+            EXIT_TRANSACTION: {
+              actions: assign({
+                currentTransaction: () => undefined,
+              }),
+              target: "#plenify.loaded",
+            },
+          },
+        },
+        get: {
+          initial: "loading",
+          states: {
+            loading: {
+              invoke: {
+                src: "getTransaction",
+                input: ({ event }) => {
+                  const { transactionId } = event as SelectTransactionEvent;
+                  return {
+                    transactionId: transactionId,
+                  };
+                },
+                onDone: {
+                  actions: assign({
+                    currentTransaction: ({ event }) => {
+                      return "output" in event
+                        ? (event.output as Transaction)
+                        : undefined;
+                    },
+                  }),
+                  target: "#plenify.transaction.loaded",
+                },
+              },
+            },
+          },
+        },
+        update: {
+          initial: "saving",
+          states: {
+            saving: {
+              invoke: {
+                src: "updateTransaction",
+                input: ({ event }) => {
+                  const { transaction } = event as TransactionEvent;
+                  return {
+                    transaction,
+                  };
+                },
+                onDone: {
+                  target: "success",
+                },
+              },
+            },
+            success: {
+              after: {
+                100: "#plenify.initialized.transactions",
+              },
+            },
+          },
+        },
+
+        add: {
+          invoke: {
+            src: "addTransaction",
+            input: ({ event }) => {
+              const { transaction } = event as TransactionEvent;
+              return {
+                transaction,
+              };
+            },
+            onDone: {
+              target: "#plenify.initialized.transactions",
+            },
+          },
+        },
+        delete: {
+          initial: "confirm",
+          states: {
+            confirm: {
+              on: {
+                CONFIRM_DELETE: "deleting",
+                CANCEL_DELETE: "#plenify.transaction.loaded",
+              },
+            },
+            deleting: {
+              invoke: {
+                src: "deleteTransaction",
+                input: ({ event }) => {
+                  const { transactionId } = event as SelectTransactionEvent;
+                  return {
+                    transactionId,
+                  };
+                },
+                onDone: {
+                  target: "#plenify.initialized.transactions",
+                },
+              },
+            },
+          },
+        },
+      },
+      onDone: {
+        target: "#plenify.loaded",
+      },
     },
+
     loaded: {},
+
     reset: {
       invoke: {
-        src: 'reset',
+        src: "reset",
         onDone: {
-          target: '#plenify.initialized',
-        }
+          target: "#plenify.initialized",
+        },
       },
-    }
+    },
+    resetCategories: {
+      invoke: {
+        src: "resetCategories",
+        onDone: {
+          target: "#plenify",
+        },
+      },
+    },
   },
   on: {
     ADD_TRANSACTION: {
-      target: '.transaction'
+      target: ".transaction.add",
+    },
+    DELETE_TRANSACTION: {
+      target: ".transaction.delete",
+    },
+    GET_TRANSACTION: {
+      target: ".transaction.get",
+    },
+    UPDATE_TRANSACTION: {
+      target: "#plenify.transaction.update",
     },
     RESET: {
-      target: '.reset'
-    }
-  }
+      target: ".reset",
+    },
+    RESET_CATEGORIES: {
+      target: ".resetCategories",
+    },
+    SET_ACTIVE_DATE: {
+      target: "#plenify.initialized.transactions",
+    },
+  },
 });

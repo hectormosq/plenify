@@ -1,0 +1,62 @@
+@use "@styles/forms";
+
+.form {
+  display: flex;
+  width: 100%;
+}
+
+.formMapperRow {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid #454952;
+}
+
+.transactionRow {
+  padding: 1rem;
+  flex-direction: row;
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-radius: var(--componentRadius);
+  background-color: var(--componentBackground);
+}
+
+.transaction {
+  align-items: center;
+  flex: 1;
+  display: flex;
+  gap: 0.5rem;
+
+  &__itemTitle {
+    font-weight: bold;
+  }
+}
+
+.transactionActions {
+  flex: 1;
+  padding-top: 0;
+  padding-left: 1rem;
+  border-top: none;
+  border-left: 1px solid #454952;
+}
+
+@media (max-width: 768px) {
+  .transactionRow {
+    flex-direction: column;
+  }
+
+  .transaction {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    flex: 1;
+    gap: 0.5rem;
+  }
+
+  .transactionActions {
+    padding-top: 1rem;
+    padding-left: 0;
+    border-left: none;
+    border-top: 1px solid #454952;
+  }
+}

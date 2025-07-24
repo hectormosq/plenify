@@ -1,9 +1,13 @@
-import { Categories } from '../models/categories';
-import { Transaction } from '../models/transaction';
+import { Categories } from "../models/categories";
+import { Transaction, TransactionByType } from "../models/transaction";
 
 export interface WithDefaultControllerState {
-  transactions?: Transaction[];
+  transactions?: TransactionByType;
+  currentTransaction?: Transaction;
   categories?: Categories;
+  activeFromDate?: string;
+  activeToDate?: string;
+  selectedTransactionId?: string;
 }
 
 export interface WithCategories {
@@ -11,31 +15,83 @@ export interface WithCategories {
 }
 
 export interface WithTransactions {
-  transactions: Transaction[];
+  transactions: TransactionByType;
+}
+
+export interface WithActiveDateRange {
+  activeFromDate: string;
+  activeToDate: string;
+}
+
+export interface WithSelectedTransaction {
+  currentTransaction?: Transaction;
 }
 
 export type DefaultContext = WithDefaultControllerState;
 
 export type ControllerTypeState =
   | {
-      value: 'initializing'
-        | 'initialized.transactions.loading'
-        | 'initialized.categories'
-        | 'transaction'
+      value:
+        | "initializing"
+        | "initialized.transactions.loading"
+        | "initialized.categories"
+        | "transaction";
       context: WithDefaultControllerState;
     }
   | {
-      value: 'loaded',
-      context: WithDefaultControllerState & WithCategories & WithTransactions;
+      value: "loaded";
+      context: WithDefaultControllerState &
+        WithCategories &
+        WithTransactions &
+        WithActiveDateRange &
+        WithSelectedTransaction;
     };
 
-export type ControllerContext =
-  ControllerTypeState['context'];
+export type ControllerContext = ControllerTypeState["context"];
 
-export type ControllerEvent =
+export type SelectTransactionEvent = {
+  type: "GET_TRANSACTION";
+  transactionId: string;
+};
+export type DeleteTransactionEvent =
   | {
-      type: 'ADD_TRANSACTION';
+      type: "DELETE_TRANSACTION";
     }
   | {
-      type: 'RESET';
+      type: "CONFIRM_DELETE";
+      transactionId: string;
+    }
+  | { type: "CANCEL_DELETE" };
+export type TransactionEvent = {
+  type: "ADD_TRANSACTION" | "UPDATE_TRANSACTION";
+  transaction: Transaction;
+};
+
+export type ActiveDateEvent = { type: "SET_ACTIVE_DATE"; activeDate?: string };
+
+export function isActiveDateEvent(
+  event: ControllerEvent
+): event is ActiveDateEvent {
+  return event.type === "SET_ACTIVE_DATE";
+}
+
+export function isSelectTransactionEvent(
+  event: ControllerEvent
+): event is SelectTransactionEvent {
+  return event.type === "GET_TRANSACTION";
+}
+
+export type ControllerEvent =
+  | SelectTransactionEvent
+  | DeleteTransactionEvent
+  | TransactionEvent
+  | {
+      type: "RESET";
+    }
+  | {
+      type: "RESET_CATEGORIES";
+    }
+  | ActiveDateEvent
+  | {
+      type: "EXIT_TRANSACTION";
     };
