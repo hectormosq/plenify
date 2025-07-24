@@ -89,7 +89,7 @@ export default function TransactionListPage() {
                       </th>
                     );
                   })}
-                  <th >Total</th>
+                  <th >Total YTD</th>
                   <th >
                     Avg YTD
                   </th>
