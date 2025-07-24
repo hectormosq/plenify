@@ -51,7 +51,10 @@ export const machine = setup({
     ),
     getTransactions: fromPromise(
       async ({ input }: { input: { fromDate: string; toDate: string } }) => {
-        return plenifyService.getTransactionsByRangeDate(input.fromDate, input.toDate);
+        return plenifyService.getTransactionsByRangeDate(
+          input.fromDate,
+          input.toDate
+        );
       }
     ),
     addTransaction: fromPromise(
@@ -70,6 +73,15 @@ export const machine = setup({
         input: { transaction: Transaction };
       }) => {
         return plenifyService.updateTransaction(transaction);
+      }
+    ),
+    deleteTransaction: fromPromise(
+      async ({
+        input: { transactionId },
+      }: {
+        input: { transactionId: string };
+      }) => {
+        return plenifyService.deleteTransaction(transactionId);
       }
     ),
   },
@@ -148,11 +160,11 @@ export const machine = setup({
                         transactions: ({ event }) => {
                           return "output" in event
                             ? (event.output as TransactionByType)
-                            : {
+                            : ({
                                 [TransactionType.EXPENSE]: [] as Transaction[],
                                 [TransactionType.INCOME]: [] as Transaction[],
                                 [UtilsType.ALL]: [] as Transaction[],
-                              } as TransactionByType;
+                              } as TransactionByType);
                         },
                       }),
                     },
@@ -205,8 +217,8 @@ export const machine = setup({
                 currentTransaction: () => undefined,
               }),
               target: "#plenify.loaded",
-            }
-          }
+            },
+          },
         },
         get: {
           initial: "loading",
@@ -215,7 +227,7 @@ export const machine = setup({
               invoke: {
                 src: "getTransaction",
                 input: ({ event }) => {
-                   const { transactionId } = event as SelectTransactionEvent;
+                  const { transactionId } = event as SelectTransactionEvent;
                   return {
                     transactionId: transactionId,
                   };
@@ -232,7 +244,6 @@ export const machine = setup({
                 },
               },
             },
-            
           },
         },
         update: {
@@ -274,6 +285,31 @@ export const machine = setup({
             },
           },
         },
+        delete: {
+          initial: "confirm",
+          states: {
+            confirm: {
+              on: {
+                CONFIRM_DELETE: "deleting",
+                CANCEL_DELETE: "#plenify.transaction.loaded",
+              },
+            },
+            deleting: {
+              invoke: {
+                src: "deleteTransaction",
+                input: ({ event }) => {
+                  const { transactionId } = event as SelectTransactionEvent;
+                  return {
+                    transactionId,
+                  };
+                },
+                onDone: {
+                  target: "#plenify.initialized.transactions",
+                },
+              },
+            },
+          },
+        },
       },
       onDone: {
         target: "#plenify.loaded",
@@ -302,6 +338,9 @@ export const machine = setup({
   on: {
     ADD_TRANSACTION: {
       target: ".transaction.add",
+    },
+    DELETE_TRANSACTION: {
+      target: ".transaction.delete",
     },
     GET_TRANSACTION: {
       target: ".transaction.get",

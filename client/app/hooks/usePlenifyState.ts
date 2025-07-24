@@ -32,7 +32,7 @@ export const usePlenifyState = () => {
   );
 
   const categories = useSelector(actor, (state) =>
-    state.matches("loaded") || state.matches({transaction: "loaded"})
+    state.matches("loaded") || state.matches({transaction: "loaded"}) || state.matches({transaction: { delete: "confirm" }})
       ? (state.context.categories as Categories)
       : ({} as Categories)
   );
@@ -42,20 +42,54 @@ export const usePlenifyState = () => {
   });
 
   const loading = useSelector(actor, (state) => {
-    return !state.matches("loaded") && !state.matches({transaction: "loaded"}) ? true : false;
+    return !state.matches("loaded") && !state.matches({transaction: "loaded"}) && !state.matches({transaction: { delete: "confirm" }}) ? true : false;
   });
 
   const currentTransaction = useSelector(actor, (state) => {
-    return state.matches({transaction: "loaded"})
+    return state.matches({transaction: "loaded"}) || state.matches({transaction: { delete: "confirm" }})
       ? (state.context.currentTransaction as Transaction)
       : undefined;
   });
+
+  const deleteConfirmation = useSelector(actor, (state) => {
+    return state.matches({transaction: { delete: "confirm" }
+})
+  });
+
 
   const selectTransaction = useCallback(
     (transactionId: string) => {
       actor.send({
         type: "GET_TRANSACTION",
         transactionId: transactionId,
+      });
+    },
+    [actor]
+  );
+
+  const deleteTransaction = useCallback(
+    () => {
+      actor.send({
+        type: "DELETE_TRANSACTION",
+      });
+    },
+    [actor]
+  );
+
+  const confirmDelete = useCallback(
+    (transactionId: string) => {
+      actor.send({
+        type: "CONFIRM_DELETE",
+        transactionId: transactionId,
+      });
+    },
+    [actor]
+  );
+
+  const cancelDelete = useCallback(
+    () => {
+      actor.send({
+        type: "CANCEL_DELETE"
       });
     },
     [actor]
@@ -98,6 +132,7 @@ export const usePlenifyState = () => {
       type: "RESET_CATEGORIES",
     });
   }, [actor]);
+  
 
   const setActiveDate = useCallback(
     (activeDate: string) => {
@@ -117,6 +152,10 @@ export const usePlenifyState = () => {
     activeToDate,
     categories,
     currentTransaction,
+    deleteConfirmation,
+    confirmDelete,
+    cancelDelete,
+    deleteTransaction,
     selectTransaction,
     addTransaction,
     updateTransaction,

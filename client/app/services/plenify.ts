@@ -97,6 +97,11 @@ export default class PlenifyService {
     return this.addTransaction(transaction);
   }
 
+  deleteTransaction(transactionId: string) {
+    this.persister.getStore().delRow(Tables.transactions, transactionId);
+    this.deleteTransactionCategories(transactionId);
+  }
+
   deleteTransactionCategories(transactionId: string) {
     const store = this.persister.getStore();
 
@@ -163,7 +168,6 @@ export default class PlenifyService {
   }
 
   getTransaction(id: string): Transaction | undefined {
-    console.log("getTransaction");
     const transaction = this.persister
       .getStore()
       .getRow(Tables.transactions, id);
