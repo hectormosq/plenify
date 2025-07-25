@@ -104,7 +104,7 @@
 }
 
 .groupItem {
-   td {
+  td {
     background-color: color-mix(in srgb, #22272f 95%, white 5%);
   }
   & :first-child {
@@ -112,10 +112,13 @@
   }
 }
 
+.overviewRow:hover > td {
+  background: color-mix(in srgb, #22272f 75%, white 25%);
+}
+
 .overviewColumn {
   vertical-align: top;
   text-align: right;
-  
 
   &__expanded {
     min-width: 15rem;

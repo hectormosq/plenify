@@ -1,6 +1,7 @@
 import {
   categoryKey,
   hashItem,
+  TotalsByYearMonth,
   Transaction,
   TransactionByType,
   TransactionMonthDetails,
@@ -16,7 +17,7 @@ import { DIFF_CATEGORY } from "../models/categories";
 
 export default class OverviewService {
   _transactions: Transaction[];
-  _transactionsByMonth: Record<string, TransactionsByMonth> = {};
+  _transactionsByMonth: TotalsByYearMonth = {};
   _transactionsByCategoryAndMonth: TransactionsByCategoryAndMonth = {};
   _totalIncome: number = 0;
   _totalExpense: number = 0;
@@ -34,7 +35,7 @@ export default class OverviewService {
     });
   }
 
-  getTransactionsByMonth(): Record<string, TransactionsByMonth> {
+  getTransactionsByMonth(): TotalsByYearMonth {
     return this._transactionsByMonth;
   }
 
@@ -50,7 +51,7 @@ export default class OverviewService {
     return this._totalExpense;
   }
 
-  private _groupByMonth(): Record<string, TransactionsByMonth> {
+  private _groupByMonth(): TotalsByYearMonth {
     return this._transactions.reduce((acc, transaction) => {
       const date = dayjs(transaction.date);
       const year = date.year();
@@ -67,7 +68,7 @@ export default class OverviewService {
       acc[yearMonth] = this._recalculateMonthData(acc[yearMonth], transaction);
       this._calculateGrandTotals(transaction);
       return acc;
-    }, {} as Record<string, TransactionsByMonth>);
+    }, {} as TotalsByYearMonth);
   }
 
   private _recalculateMonthData(

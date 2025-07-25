@@ -46,8 +46,10 @@ export interface TransactionsByMonth {
 }
 export type categoryKey = string;
 export type YearMontkKey = string; // e.g., "202510" for October 2025
+export type YearMonthRecord = Record<YearMontkKey, hashItem>;
+export type TotalsByYearMonth = Record<string, TransactionsByMonth>
 export interface TransactionMonthDetails {
-  month: Record<YearMontkKey, hashItem>;
+  month: YearMonthRecord;
   children: TransactionsByCategoryAndMonth;
 }
 export type TransactionsByCategoryAndMonth = Record<
