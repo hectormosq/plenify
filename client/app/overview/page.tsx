@@ -258,7 +258,7 @@ function OverviewRow(props: {
   } = props;
   return (
     <>
-      <tr key={rowKey} onClick={handleRowClick} className={classes || ""}>
+      <tr key={rowKey} onClick={handleRowClick} className={`${pageClasses.overviewRow} ${classes || ""}`}>
         <td className={pageClasses.table__fixed}>
           <CategoryTag id={categoryKey} />
         </td>

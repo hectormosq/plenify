@@ -1,5 +1,5 @@
 export class Formats {
     static amount(amount: number): string {
-        return amount.toLocaleString()
+        return amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 }
