@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { accountMovements } from "../controllers/admin.ts";
+import { accountMovements } from "../controllers/admin.js";
 
 const router = Router();
 
