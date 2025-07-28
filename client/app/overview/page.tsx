@@ -9,8 +9,21 @@ import pageClasses from "./page.module.scss";
 import GrandTotalCard from "../components/Card/GrandTotalCard";
 import CategoryTag from "../components/categories/CategoryTag";
 import { useState } from "react";
-import { hashItem, TransactionMonthDetails } from "../models/transaction";
+import {
+  hashItem,
+  TotalsByYearMonth,
+  TransactionMonthDetails,
+  YearMonthRecord,
+} from "../models/transaction";
 import CompactTransactionList from "../components/transactions/CompactTransactionList";
+import { Formats } from "../services/formats";
+
+// TODO this variables should be dependent on the current year
+const monthsCount = dayjs().month() + 1;
+const today = dayjs();
+const year = today.year();
+const firstDayOfYear = today.startOf("year").toISOString();
+const lastDayOfYear = today.endOf("year").toISOString();
 
 export default function TransactionListPage() {
   const [openGroups, setOpenGroups] = useState(() => {
@@ -30,10 +43,6 @@ export default function TransactionListPage() {
     setOpenDetails((prev) => ({ ...prev, [index]: !prev[index] }));
   };
   const { loading } = usePlenifyState();
-  const today = dayjs();
-  const year = today.year();
-  const firstDayOfYear = today.startOf("year").toISOString();
-  const lastDayOfYear = today.endOf("year").toISOString();
 
   const yearTransactions = plenifyService.getTransactionsByRangeDate(
     firstDayOfYear,
@@ -55,11 +64,11 @@ export default function TransactionListPage() {
           <div className={pageClasses.summary}>
             <GrandTotalCard
               title="Total Income"
-              description={overviewService.getTotalIncome().toLocaleString()}
+              description={Formats.amount(overviewService.getTotalIncome())}
             />
             <GrandTotalCard
               title="Total Expense"
-              description={overviewService.getTotalExpense().toLocaleString()}
+              description={Formats.amount(overviewService.getTotalExpense())}
             />
           </div>
 
@@ -69,6 +78,7 @@ export default function TransactionListPage() {
               <thead>
                 <tr>
                   <th className={pageClasses.table__fixed}>Category</th>
+
                   {Array.from({ length: 12 }, (_, i) => {
                     const month = dayjs().month(i).format("MM");
                     const monthName = dayjs().month(i).format("MMM");
@@ -79,6 +89,11 @@ export default function TransactionListPage() {
                       </th>
                     );
                   })}
+                  <th >Total YTD</th>
+                  <th >
+                    Avg YTD
+                  </th>
+                  <th >Avg / 12</th>
                 </tr>
               </thead>
               <tfoot>
@@ -90,10 +105,11 @@ export default function TransactionListPage() {
                     const total = transactionsByMonth[key]?.totalIncome || 0;
                     return (
                       <td key={key}>
-                        <div>{total !== 0 ? total.toLocaleString() : ""}</div>
+                        <div>{total !== 0 ? Formats.amount(total) : ""}</div>
                       </td>
                     );
                   })}
+                  {totalsAvg(transactionsByMonth, "totalIncome")}
                 </tr>
                 <tr>
                   <td className={pageClasses.table__fixed}>Total Expense</td>
@@ -103,10 +119,11 @@ export default function TransactionListPage() {
                     const total = transactionsByMonth[key]?.totalExpense || 0;
                     return (
                       <td key={key}>
-                        <div>{total !== 0 ? total.toLocaleString() : ""}</div>
+                        <div>{total !== 0 ? Formats.amount(total) : ""}</div>
                       </td>
                     );
                   })}
+                  {totalsAvg(transactionsByMonth, "totalExpense")}
                 </tr>
                 <tr>
                   <td className={pageClasses.table__fixed}>Total</td>
@@ -124,12 +141,13 @@ export default function TransactionListPage() {
                                 : pageClasses.negative
                             }
                           >
-                            {total !== 0 ? total.toLocaleString() : ""}
+                            {total !== 0 ? Formats.amount(total) : ""}
                           </span>
                         </div>
                       </td>
                     );
                   })}
+                  {totalsAvg(transactionsByMonth, "total")}
                 </tr>
               </tfoot>
               {Object.keys(transactionsByCategoryAndMonth).map(
@@ -183,6 +201,41 @@ export default function TransactionListPage() {
   );
 }
 
+function totalsAvg(
+  transactionsByMonth: TotalsByYearMonth,
+  totalType: "total" | "totalExpense" | "totalIncome"
+) {
+  const monthValues = Object.values(transactionsByMonth);
+  // Calculate total income for each month
+  const total = monthValues.reduce(
+    (acc, month) => acc + (month[totalType] || 0),
+    0
+  );
+
+  return printTotalColumns(total);
+}
+
+function totalsPerCategory(yearMonth: YearMonthRecord) {
+  const monthValues = Object.values(yearMonth);
+
+  if (!monthValues.length) return "0.00";
+  const total = monthValues.reduce(
+    (acc, month) => acc + (month.amount || 0),
+    0
+  );
+  return printTotalColumns(total);
+}
+
+function printTotalColumns(total: number) {
+   return (
+    <>
+      <td className={`${pageClasses.overviewColumn}`}>{Formats.amount(total)}</td>
+      <td className={`${pageClasses.overviewColumn}`}>{Formats.amount(total / monthsCount)}</td>
+      <td className={`${pageClasses.overviewColumn}`}>{Formats.amount(total / 12)}</td>
+    </>
+  );
+}
+
 function OverviewRow(props: {
   categoryKey: string;
   year: number;
@@ -205,7 +258,7 @@ function OverviewRow(props: {
   } = props;
   return (
     <>
-      <tr key={rowKey} onClick={handleRowClick} className={classes || ""}>
+      <tr key={rowKey} onClick={handleRowClick} className={`${pageClasses.overviewRow} ${classes || ""}`}>
         <td className={pageClasses.table__fixed}>
           <CategoryTag id={categoryKey} />
         </td>
@@ -216,6 +269,7 @@ function OverviewRow(props: {
           columnState,
           handleColumnClick
         )}
+        {totalsPerCategory(childTransaction.month)}
       </tr>
       {/* TODO Implement row expansion for further details*/}
       {/*_validateColumnState(rowKey, columnState, childTransaction)*/}
@@ -260,7 +314,10 @@ function OverviewColumn(
       : "";
     // TODO Fix key
     return (
-      <td key={colKey} className={`${pageClasses.overviewColumn} ${expandedClass}`}>
+      <td
+        key={colKey}
+        className={`${pageClasses.overviewColumn} ${expandedClass}`}
+      >
         <span
           className={`${pageClasses.transactionAmount}`}
           onClick={(e) => {
@@ -284,5 +341,5 @@ function OverviewColumn(
 }
 
 function amountFormat(transaction: hashItem) {
-  return transaction ? transaction.amount.toLocaleString() : "";
+  return transaction ? Formats.amount(transaction.amount) : "";
 }
