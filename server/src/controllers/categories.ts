@@ -116,11 +116,15 @@ const restCategories = {
 }
 
 export const categories: RequestHandler = (req, res, next) => {
-  res.status(200).json({ data: {
-    categories: {
-      ...defaultCategory,
-      ...restCategories
-    },
-    defaultCategory: defaultCategoryId,
-  } });
+  try {
+    res.status(200).json({ data: {
+      categories: {
+        ...defaultCategory,
+        ...restCategories
+      },
+      defaultCategory: defaultCategoryId,
+    } });
+  } catch (error) {
+    next(error);
+  }
 };
