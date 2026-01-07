@@ -135,3 +135,18 @@
 .transactionDetails {
   width: 100%;
 }
+
+.yearSelector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+
+  & button {
+    color: var(--inputLabel);
+  }
+
+  & h1 {
+    margin-bottom: 0;
+  }
+}

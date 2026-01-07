@@ -17,15 +17,19 @@ import {
 } from "../models/transaction";
 import CompactTransactionList from "../components/transactions/CompactTransactionList";
 import { Formats } from "../services/formats";
+import { IconButton } from "@mui/material";
+import { ArrowLeftIcon, ArrowRightIcon } from "@mui/x-date-pickers";
 
 // TODO this variables should be dependent on the current year
 const monthsCount = dayjs().month() + 1;
-const today = dayjs();
-const year = today.year();
-const firstDayOfYear = today.startOf("year").toISOString();
-const lastDayOfYear = today.endOf("year").toISOString();
 
 export default function TransactionListPage() {
+  const today = dayjs();
+  const currentYear = today.year();
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const firstDayOfYear = dayjs().year(selectedYear).startOf("year").toISOString();
+  const lastDayOfYear = dayjs().year(selectedYear).endOf("year").toISOString();
+
   const [openGroups, setOpenGroups] = useState(() => {
     const state: Record<number, boolean> = {};
     return state;
@@ -42,6 +46,17 @@ export default function TransactionListPage() {
   const toggleDetails = (index: string) => {
     setOpenDetails((prev) => ({ ...prev, [index]: !prev[index] }));
   };
+
+  const handlePreviousYear = () => {
+    setSelectedYear((prev) => prev - 1);
+  };
+
+  const handleNextYear = () => {
+    if (selectedYear < currentYear) {
+      setSelectedYear((prev) => prev + 1);
+    }
+  };
+
   const { loading } = usePlenifyState();
 
   const yearTransactions = plenifyService.getTransactionsByRangeDate(
@@ -59,7 +74,20 @@ export default function TransactionListPage() {
         <Loader />
       ) : (
         <div>
-          <h1>Overview for {year}</h1>
+          <div className={pageClasses.yearSelector}>
+            <h1>Overview for</h1>
+            <IconButton onClick={handlePreviousYear} aria-label="previous year">
+              <ArrowLeftIcon />
+            </IconButton>
+            <h1>{selectedYear}</h1>
+            <IconButton
+              onClick={handleNextYear}
+              disabled={selectedYear >= currentYear}
+              aria-label="next year"
+            >
+              <ArrowRightIcon />
+            </IconButton>
+          </div>
           <h2 className={pageClasses.subHeading}>Yearly Summary</h2>
           <div className={pageClasses.summary}>
             <GrandTotalCard
@@ -82,7 +110,7 @@ export default function TransactionListPage() {
                   {Array.from({ length: 12 }, (_, i) => {
                     const month = dayjs().month(i).format("MM");
                     const monthName = dayjs().month(i).format("MMM");
-                    const key = `${year}${month}`;
+                    const key = `${selectedYear}${month}`;
                     return (
                       <th className={pageClasses.table__fixed} key={key}>
                         <div>{monthName}</div>
@@ -101,7 +129,7 @@ export default function TransactionListPage() {
                   <td className={pageClasses.table__fixed}>Total Income</td>
                   {Array.from({ length: 12 }, (_, i) => {
                     const month = dayjs().month(i).format("MM");
-                    const key = `${year}${month}`;
+                    const key = `${selectedYear}${month}`;
                     const total = transactionsByMonth[key]?.totalIncome || 0;
                     return (
                       <td key={key}>
@@ -115,7 +143,7 @@ export default function TransactionListPage() {
                   <td className={pageClasses.table__fixed}>Total Expense</td>
                   {Array.from({ length: 12 }, (_, i) => {
                     const month = dayjs().month(i).format("MM");
-                    const key = `${year}${month}`;
+                    const key = `${selectedYear}${month}`;
                     const total = transactionsByMonth[key]?.totalExpense || 0;
                     return (
                       <td key={key}>
@@ -129,7 +157,7 @@ export default function TransactionListPage() {
                   <td className={pageClasses.table__fixed}>Total</td>
                   {Array.from({ length: 12 }, (_, i) => {
                     const month = dayjs().month(i).format("MM");
-                    const key = `${year}${month}`;
+                    const key = `${selectedYear}${month}`;
                     const total = transactionsByMonth[key]?.total || 0;
                     return (
                       <td key={key}>
@@ -162,7 +190,7 @@ export default function TransactionListPage() {
                         handleColumnClick={toggleDetails}
                         columnState={openDetails}
                         categoryKey={categoryKey}
-                        year={year}
+                        year={selectedYear}
                         transaction={transactionCategory}
                         rowKey={`${categoryKey}`}
                         classes={pageClasses.groupHeader}
@@ -181,7 +209,7 @@ export default function TransactionListPage() {
                                 categoryKey={childCategoryKey}
                                 handleColumnClick={toggleDetails}
                                 columnState={openDetails}
-                                year={year}
+                                year={selectedYear}
                                 transaction={childTransaction}
                                 rowKey={rowKey}
                                 classes={pageClasses.groupItem}
