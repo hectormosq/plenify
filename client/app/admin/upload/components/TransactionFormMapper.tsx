@@ -3,10 +3,10 @@ import { DateParseFormat, isFromIndex, UploadFileConfigFormValues } from "../mod
 import { Transaction, TransactionType } from "@/app/models/transaction";
 import dayjs from "dayjs";
 import classes from "./TransactionFormMapper.module.scss";
-import { Controller, useFieldArray, useForm } from "react-hook-form";
+import { Control, Controller, UseFormRegister, useFieldArray, useForm } from "react-hook-form";
 import CategorySelector from "@/app/components/categories/CategorySelector";
 import { Checkbox, Snackbar, TextField } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 
 type TransactionFormMapperProps = {
@@ -14,6 +14,7 @@ type TransactionFormMapperProps = {
   formValues: UploadFileConfigFormValues;
   onValidityChange?: (isValid: boolean) => void;
   submitTrigger: boolean;
+  onSubmissionComplete?: () => void;
 };
 export default function TransactionFormMapper(
   props: TransactionFormMapperProps
@@ -25,38 +26,39 @@ export default function TransactionFormMapper(
   });
 
   const { fileRows, formValues } = props;
-  const dataset = [];
-
-  for (let i = formValues.selectedRow as number; i < fileRows.length; i++) {
-    const row = fileRows[i];
-    const proccessedRow = _proccessRow(row, formValues);
-    const transactionsByType =
-      plenifyService.getTransactionByProps(proccessedRow);
-    dataset.push({
-      fileRow: i,
-      rawRow: row,
-      proccessedRow: proccessedRow,
-      transactions: transactionsByType.ALL,
-      formDefault: {
-        tags: [],
-        skip: transactionsByType.ALL.length ? true : false,
-        account: proccessedRow.account,
-        amount: proccessedRow.amount,
-        transactionType: proccessedRow.transactionType,
-        date: proccessedRow.date,
-        description: proccessedRow.description,
-        notes: proccessedRow.notes,
-      },
-    });
-    console.log('Getting Transactions', transactionsByType);
-  }
+  const dataset = useMemo(() => {
+    const data = [];
+    for (let i = formValues.selectedRow as number; i < fileRows.length; i++) {
+      const row = fileRows[i];
+      const proccessedRow = _proccessRow(row, formValues);
+      const transactionsByType =
+        plenifyService.getTransactionByProps(proccessedRow);
+      data.push({
+        fileRow: i,
+        rawRow: row,
+        proccessedRow: proccessedRow,
+        transactions: transactionsByType.ALL,
+        formDefault: {
+          tags: [],
+          skip: transactionsByType.ALL.length ? true : false,
+          account: proccessedRow.account,
+          amount: proccessedRow.amount,
+          transactionType: proccessedRow.transactionType,
+          date: proccessedRow.date,
+          description: proccessedRow.description,
+          notes: proccessedRow.notes,
+        },
+      });
+    }
+    return data;
+  }, [fileRows, formValues]);
 
 
   const { control, handleSubmit, register, formState } = useForm({
     defaultValues: {
       transactionRow: dataset.map((item) => item.formDefault),
     },
-    mode: "onChange",
+    mode: "onBlur",
   });
   const { fields } = useFieldArray({ control, name: "transactionRow" });
 
@@ -66,7 +68,11 @@ export default function TransactionFormMapper(
   useEffect(() => {
     if (props.submitTrigger) {
       handleSubmit(async (data) => {
-        await onSubmit(data);
+        try {
+          await onSubmit(data);
+        } finally {
+          props.onSubmissionComplete?.();
+        }
       })();
     }
   }, [props.submitTrigger]);
@@ -75,12 +81,19 @@ export default function TransactionFormMapper(
     props.onValidityChange?.(formState.isValid);
   }, [formState.isValid, props.onValidityChange]);
 
-  function _transactionRowTpl(
-    transaction: Transaction,
-    index: number,
-    actions = false
-  ) {
-    const field = fields[index];
+  function TransactionRowItem({
+    transaction,
+    index,
+    actions = false,
+    control,
+    register,
+  }: {
+    transaction: Transaction;
+    index: number;
+    actions?: boolean;
+    control: Control<any>;
+    register: UseFormRegister<any>;
+  }) {
     return (
       <div className={classes.transactionRow}>
         <div className={classes.transaction}>
@@ -128,7 +141,6 @@ export default function TransactionFormMapper(
                 Skip Transaction ?
               </label>
               <Controller
-                key={field.id}
                 name={`transactionRow.${index}.skip`}
                 control={control}
                 render={({ field }) => (
@@ -136,7 +148,6 @@ export default function TransactionFormMapper(
                 )}
               />
             </div>
-            {/* TODO Fix display on skip false*/}
             {
               <>
                 <div>
@@ -144,7 +155,6 @@ export default function TransactionFormMapper(
                     Categories
                   </label>
                   <Controller
-                    key={field.id}
                     name={`transactionRow.${index}.tags`}
                     control={control}
                     render={({ field }) => <CategorySelector {...field} />}
@@ -153,7 +163,6 @@ export default function TransactionFormMapper(
                 <div>
                   <label htmlFor={`transactionRow.${index}.notes`}>Notes</label>
                   <Controller
-                    key={field.id}
                     name={`transactionRow.${index}.notes`}
                     control={control}
                     render={({ field }) => (
@@ -207,7 +216,13 @@ export default function TransactionFormMapper(
           <div key={idx} className={classes.formMapperRow}>
             <div>From File Row {item.fileRow}</div>
             <div>
-              {_transactionRowTpl(item.proccessedRow as Transaction, idx, true)}
+              <TransactionRowItem
+                transaction={item.proccessedRow as Transaction}
+                index={idx}
+                actions={true}
+                control={control}
+                register={register}
+              />
             </div>
             <div>
               {item.transactions.length > 0 && (
@@ -216,7 +231,12 @@ export default function TransactionFormMapper(
                   {item.transactions.map(
                     (transaction: Transaction, tIdx: number) => (
                       <div key={tIdx}>
-                        {_transactionRowTpl(transaction as Transaction, idx)}
+                        <TransactionRowItem
+                          transaction={transaction as Transaction}
+                          index={idx}
+                          control={control}
+                          register={register}
+                        />
                       </div>
                     )
                   )}

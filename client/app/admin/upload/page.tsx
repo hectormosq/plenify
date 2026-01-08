@@ -175,6 +175,7 @@ export default function UploadPage() {
             formValues={formState.values}
             onValidityChange={setIsTransactionFormValid}
             submitTrigger={submitTrigger}
+            onSubmissionComplete={() => setIsSubmitting(false)}
           />
         </div>
       )}
