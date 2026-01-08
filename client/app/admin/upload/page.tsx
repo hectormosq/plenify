@@ -7,8 +7,8 @@ import { Button, Step, StepLabel } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import UploadFileConfigForm from "./components/UploadFileConfigForm";
 import { UploadFileConfigFormState } from "./model/UploadFile";
-import TransactionFormMapper from "./components/TransactionFormMapper";
 import { StyledStepper } from "@/app/components/Stepper/StyledStepper";
+import TransactionFormMapper from "./components/TransactionFormMapper";
 export default function UploadPage() {
   const [rows, setRows] = useState<string[][]>([]);
   const [maxLength, setMaxLength] = useState(0);
@@ -18,6 +18,10 @@ export default function UploadPage() {
   const [formState, setFormState] = useState<UploadFileConfigFormState>({
     isValid: false,
   } as UploadFileConfigFormState);
+
+  const [isTransactionFormValid, setIsTransactionFormValid] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitTrigger, setSubmitTrigger] = useState(false);
 
   const steps = [
     { title: "Upload File" },
@@ -36,13 +40,20 @@ export default function UploadPage() {
     const stepValidation: Record<number, () => boolean> = {
       0: () => true,
       1: () => !_formIsValid(),
+      2: () => !isTransactionFormValid || isSubmitting,
     };
 
     return stepValidation[step] ? stepValidation[step]() : true; // Default to true if no validation is defined for the step
   }
 
-  function nextStep() {
-    setStep(step + 1);
+  async function nextStep() {
+    if (step === 2) {
+      if (isSubmitting) return;
+      setIsSubmitting(true);
+      setSubmitTrigger(true);
+    } else {
+      setStep(step + 1);
+    }
   }
 
   function prevStep() {
@@ -85,8 +96,9 @@ export default function UploadPage() {
           const raw_data: string[][] = utils.sheet_to_json(worksheet, {
             header: 1,
           });
-          setRows(raw_data);
-          setMaxLength(Math.max(...raw_data.map((arr) => arr.length)));
+          const clearData = raw_data.filter((arr) => arr.length > 0);
+          setRows(clearData);
+          setMaxLength(Math.max(...clearData.map((arr) => arr.length)));
         });
         return true;
       });
@@ -111,13 +123,14 @@ export default function UploadPage() {
       <div className={classes.buttonContainer}>
         <Button
           onClick={prevStep}
-          disabled={_validatePreviousState()}>
+          disabled={_validatePreviousState() || isSubmitting}>
           Previous
         </Button>
         <Button variant="outlined"
           onClick={nextStep}
+          loading={isSubmitting}
           disabled={_validateNextState()}>
-          Next
+          {step === 2 ? "Submit" : "Next"}
         </Button>
       </div>
 
@@ -160,6 +173,8 @@ export default function UploadPage() {
           <TransactionFormMapper
             fileRows={rows}
             formValues={formState.values}
+            onValidityChange={setIsTransactionFormValid}
+            submitTrigger={submitTrigger}
           />
         </div>
       )}

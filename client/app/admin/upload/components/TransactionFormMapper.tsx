@@ -6,12 +6,14 @@ import classes from "./TransactionFormMapper.module.scss";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import CategorySelector from "@/app/components/categories/CategorySelector";
 import { Checkbox, Snackbar, TextField } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type TransactionFormMapperProps = {
   fileRows: string[][];
   formValues: UploadFileConfigFormValues;
+  onValidityChange?: (isValid: boolean) => void;
+  submitTrigger: boolean;
 };
 export default function TransactionFormMapper(
   props: TransactionFormMapperProps
@@ -46,14 +48,32 @@ export default function TransactionFormMapper(
         notes: proccessedRow.notes,
       },
     });
+    console.log('Getting Transactions', transactionsByType);
   }
 
-  const { control, handleSubmit, register } = useForm({
+
+  const { control, handleSubmit, register, formState } = useForm({
     defaultValues: {
       transactionRow: dataset.map((item) => item.formDefault),
     },
+    mode: "onChange",
   });
   const { fields } = useFieldArray({ control, name: "transactionRow" });
+
+  /*
+   * Watch for submit trigger from parent
+   */
+  useEffect(() => {
+    if (props.submitTrigger) {
+      handleSubmit(async (data) => {
+        await onSubmit(data);
+      })();
+    }
+  }, [props.submitTrigger]);
+
+  useEffect(() => {
+    props.onValidityChange?.(formState.isValid);
+  }, [formState.isValid, props.onValidityChange]);
 
   function _transactionRowTpl(
     transaction: Transaction,
@@ -85,7 +105,7 @@ export default function TransactionFormMapper(
             </div>
           </div>
           <div className={classes.transactionItem}>
-            <div  className={classes.transaction__itemTitle}>Description</div>
+            <div className={classes.transaction__itemTitle}>Description</div>
             <div>{transaction.description}</div>
           </div>
         </div>
@@ -155,21 +175,23 @@ export default function TransactionFormMapper(
     );
   }
 
-  function onSubmit(data: {
+  async function onSubmit(data: {
     transactionRow: (Transaction & { skip: boolean })[];
   }) {
     const summary = {};
     try {
-      data.transactionRow.forEach((transaction) => {
-        if (!transaction.skip) {
-          const result = plenifyService.addTransaction(transaction);
-          Object.assign(summary, result);
-        }
-      });
+      await Promise.all(
+        data.transactionRow.map(async (transaction) => {
+          if (!transaction.skip) {
+            const result = await plenifyService.addTransaction(transaction);
+            Object.assign(summary, result);
+          }
+        })
+      );
       const totalAdded = Object.entries(summary).length + 1;
       setSnackState({ state: true, message: `Added ${totalAdded}` });
       // Use Next.js router for navigation
-      
+
       router.push("/overview");
     } catch (e) {
       console.error(e);
@@ -181,7 +203,6 @@ export default function TransactionFormMapper(
     <>
       <form className={classes.form} onSubmit={handleSubmit(onSubmit)}>
         <div>Total Transactions: {dataset.length + 1}</div>
-        <button type="submit">Submit</button>
         {dataset.map((item, idx) => (
           <div key={idx} className={classes.formMapperRow}>
             <div>From File Row {item.fileRow}</div>
@@ -221,7 +242,7 @@ function _proccessRow(
 ): Transaction {
   const originalAmount = _getValue(formValues.amount, row) as number;
   // TODO Read format date in form and use it here
-  
+
   const datejs = _getDateValue(_getValue(formValues.date, row) as string, formValues.dateFormat || "DDMMYYYY");
   const normalizedProps = {
     account: _getValue(formValues.account, row) as string,
@@ -248,7 +269,7 @@ function _getValue(prop: unknown, row: string[]) {
 
 function _getDateValue(value: string, dateFormat: DateParseFormat) {
 
-    return dayjs(value, dateFormat);
+  return dayjs(value, dateFormat);
 }
 
 function _getTransactionType(
