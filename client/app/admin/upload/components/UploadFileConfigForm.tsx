@@ -57,7 +57,7 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
     });
   };
 
-  useEffect(() => {}, [selectedRow, setValue]);
+  useEffect(() => { }, [selectedRow, setValue]);
 
   const handleUploadPageConfig = useCallback(
     (
@@ -195,58 +195,58 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
                 how columns should be parsed
               </caption>
               <thead>
-                <tr>
+                <tr className={`${classes.row}`}>
                   {Array.from({ length: maxLength }, (_, i) => (
-                    <th className={classes.form__item} key={i}>
+                    <th className={classes.column} key={i}>
                       <label>Parse as </label>
                       <div className={classes.form__headerSelect}>
 
-                      <StyledSelect
-                        name={`column-${i}`}
-                        options={formFields?.[`column-${i}`] || []}
-                        emptyLabel="Ignore"
-                        onChange={(event: SelectChangeEvent<unknown>) => {
-                          const selectedValue = event.target
-                            .value as UploadFileConfigOptions;
-                          // Remove any previous selection that had { fromIndex: i }
-                          const currentFormValue: UploadFileConfigFormValues =
-                            getValues();
-                          Object.keys(currentFormValue).forEach((key) => {
-                            const currentValue =
-                              currentFormValue[
+                        <StyledSelect
+                          name={`column-${i}`}
+                          options={formFields?.[`column-${i}`] || []}
+                          emptyLabel="Ignore"
+                          onChange={(event: SelectChangeEvent<unknown>) => {
+                            const selectedValue = event.target
+                              .value as UploadFileConfigOptions;
+                            // Remove any previous selection that had { fromIndex: i }
+                            const currentFormValue: UploadFileConfigFormValues =
+                              getValues();
+                            Object.keys(currentFormValue).forEach((key) => {
+                              const currentValue =
+                                currentFormValue[
                                 key as keyof UploadFileConfigFormValues
-                              ];
-                            if (
-                              isFromIndex(currentValue) &&
-                              currentValue.fromIndex === i
-                            ) {
-                              setValue(
-                                key as keyof UploadFileConfigFormValues,
-                                ""
-                              );
+                                ];
+                              if (
+                                isFromIndex(currentValue) &&
+                                currentValue.fromIndex === i
+                              ) {
+                                setValue(
+                                  key as keyof UploadFileConfigFormValues,
+                                  ""
+                                );
+                              }
+                            });
+                            if (selectedValue) {
+                              setValue(selectedValue, { fromIndex: i });
                             }
-                          });
-                          if (selectedValue) {
-                            setValue(selectedValue, { fromIndex: i });
-                          }
-                        }}
-                      />
-                      {isFromIndex(getValues("date")) &&
-                        (getValues("date") as FromIndex).fromIndex === i && (
-                          <Controller
-                            name="dateFormat"
-                            control={control}
-                            render={({ field }) => (
-                              <StyledSelect
-                                {...field}
-                                options={dateParseOptions.map((value) => ({
-                                  key: value,
-                                  label: value,
-                                }))}
-                              />
-                            )}
-                          />
-                        )}
+                          }}
+                        />
+                        {isFromIndex(getValues("date")) &&
+                          (getValues("date") as FromIndex).fromIndex === i && (
+                            <Controller
+                              name="dateFormat"
+                              control={control}
+                              render={({ field }) => (
+                                <StyledSelect
+                                  {...field}
+                                  options={dateParseOptions.map((value) => ({
+                                    key: value,
+                                    label: value,
+                                  }))}
+                                />
+                              )}
+                            />
+                          )}
                       </div>
                     </th>
                   ))}
@@ -257,12 +257,11 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
                   rows.map((row, index) => (
                     <tr
                       key={index}
-                      className={`${classes.row} ${
-                        selectedRow === index ? classes.selectedRow : ""
-                      }`}
+                      className={`${classes.row} ${selectedRow === index ? classes.selectedRow : ""
+                        }`}
                     >
                       {row.map((cell: string, cellIndex: number) => (
-                        <td key={cellIndex} className="border px-4 py-2">
+                        <td key={cellIndex} className={classes.column}>
                           <div onClick={() => toggleSelectedRow(index)}>
                             {cell}
                           </div>

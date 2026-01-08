@@ -79,7 +79,7 @@ export default function UploadPage() {
 
     try {
       return file.arrayBuffer().then((buffer) => {
-        const workbook = read(buffer, {raw: true, cellDates: true});
+        const workbook = read(buffer, { raw: true, cellDates: true });
         workbook.SheetNames.forEach((sheetName) => {
           const worksheet = workbook.Sheets[sheetName];
           const raw_data: string[][] = utils.sheet_to_json(worksheet, {
@@ -106,6 +106,19 @@ export default function UploadPage() {
             </Step>
           ))}
         </StyledStepper>
+      </div>
+
+      <div className={classes.buttonContainer}>
+        <Button
+          onClick={prevStep}
+          disabled={_validatePreviousState()}>
+          Previous
+        </Button>
+        <Button variant="outlined"
+          onClick={nextStep}
+          disabled={_validateNextState()}>
+          Next
+        </Button>
       </div>
 
       {step === 0 && (
@@ -150,14 +163,6 @@ export default function UploadPage() {
           />
         </div>
       )}
-      <div>
-        <Button onClick={prevStep} disabled={_validatePreviousState()}>
-          Previous
-        </Button>
-        <Button onClick={nextStep} disabled={_validateNextState()}>
-          Next
-        </Button>
-      </div>
     </div>
   );
 }
