@@ -3,6 +3,9 @@
 .form {
   display: flex;
   width: 100%;
+  align-items: center;
+  max-height: 75vh;
+  overflow-y: scroll;
 }
 
 .formMapperRow {
@@ -19,6 +22,64 @@
   margin-bottom: 0.5rem;
   border-radius: var(--componentRadius);
   background-color: var(--componentBackground);
+}
+
+.transactionCard {
+  background-color: var(--componentBackground) !important;
+  border: 1px solid var(--border);
+  width: 100%;
+  margin: 0 auto;
+
+  @media screen and (min-width: 900px) {
+    width: 900px;
+  }
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.cardTitle {
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.sectionTitle {
+  color: var(--foreground);
+  margin-bottom: 0px;
+  display: block; // Typography component defaults to span or p, ensure display block if needed
+}
+
+.skipContainer {
+  display: flex;
+  align-items: center;
+}
+
+.amount {
+  &--expense {
+    color: var(--expensescolor);
+  }
+
+  &--income {
+    color: var(--incomescolor);
+  }
+}
+
+.accordion {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border-top: 1px solid var(--border);
+
+  &:before {
+    display: none !important;
+  }
+
+  &Summary {
+    color: var(--foreground) !important;
+  }
 }
 
 .transaction {
@@ -59,4 +120,14 @@
     border-left: none;
     border-top: 1px solid #454952;
   }
+}
+
+.columnTitle {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  font-family: "Montserrat", sans-serif;
+  text-transform: uppercase;
+  color: #b3aea5;
+  font-weight: bold;
 }

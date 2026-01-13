@@ -36,7 +36,7 @@ export default function CategorySelector({
   const [pendingValue, setPendingValue] = useState<string[]>([]);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  const maxCategories = 2;
+  const maxCategories = 3;
   const open = Boolean(anchorEl);
 
   const handleDeleteCategory = (category: string) => {
@@ -169,13 +169,13 @@ export default function CategorySelector({
               ai =
                 ai === -1
                   ? selectedCategories.length +
-                    Object.keys(categories).indexOf(a)
+                  Object.keys(categories).indexOf(a)
                   : ai;
               let bi = selectedCategories.indexOf(b);
               bi =
                 bi === -1
                   ? selectedCategories.length +
-                    Object.keys(categories).indexOf(b)
+                  Object.keys(categories).indexOf(b)
                   : bi;
               return ai - bi;
             })}
@@ -269,9 +269,9 @@ const StyledAutocompletePopper = styled("div")(({ theme }) => ({
         backgroundColor: "var(--inputBackground)",
       },
       [`&.${autocompleteClasses.focused}, &.${autocompleteClasses.focused}[aria-selected="true"]`]:
-        {
-          backgroundColor: "var(--foreground)",
-        },
+      {
+        backgroundColor: "var(--foreground)",
+      },
     },
   },
   [`&.${autocompleteClasses.popperDisablePortal}`]: {
