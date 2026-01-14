@@ -1,9 +1,9 @@
 import { plenifyService } from "@/app/services";
-import { DateParseFormat, isFromIndex, UploadFileConfigFormValues } from "../model/UploadFile";
+import { DateParseFormat, isFromIndex, TransactionFormValues, UploadFileConfigFormValues } from "../model/UploadFile";
 import { Transaction, TransactionType } from "@/app/models/transaction";
 import dayjs from "dayjs";
 import classes from "./TransactionFormMapper.module.scss";
-import { Control, Controller, UseFormRegister, useFieldArray, useForm, useWatch } from "react-hook-form";
+import { Control, Controller, UseFormRegister, useForm, useWatch } from "react-hook-form";
 import CategorySelector from "@/app/components/categories/CategorySelector";
 import {
   Accordion,
@@ -33,6 +33,7 @@ type TransactionFormMapperProps = {
   submitTrigger: boolean;
   onSubmissionComplete?: () => void;
 };
+
 export default function TransactionFormMapper(
   props: TransactionFormMapperProps
 ) {
@@ -57,7 +58,7 @@ export default function TransactionFormMapper(
         proccessedRow: proccessedRow,
         transactions: transactionsByType.ALL,
         formDefault: {
-          tags: [],
+          tags: [] as string[],
           skip: transactionsByType.ALL.length ? true : false,
           account: proccessedRow.account,
           amount: proccessedRow.amount,
@@ -72,13 +73,12 @@ export default function TransactionFormMapper(
   }, [fileRows, formValues]);
 
 
-  const { control, handleSubmit, register, formState } = useForm({
+  const { control, handleSubmit, register, formState } = useForm<TransactionFormValues>({
     defaultValues: {
       transactionRow: dataset.map((item) => item.formDefault),
     },
     mode: "onBlur",
   });
-  const { fields } = useFieldArray({ control, name: "transactionRow" });
 
   /*
    * Watch for submit trigger from parent
@@ -109,8 +109,8 @@ export default function TransactionFormMapper(
     transaction: Transaction;
     index: number;
     actions?: boolean;
-    control: Control<any>;
-    register: UseFormRegister<any>;
+    control: Control<TransactionFormValues>;
+    register: UseFormRegister<TransactionFormValues>;
   }) {
     const isSkipped = useWatch({
       control,

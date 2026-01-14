@@ -1,3 +1,4 @@
+import { Transaction } from "@/app/models/transaction";
 import { FormState } from "react-hook-form";
 
 export type UploadFileConfigFormProps = {
@@ -31,6 +32,10 @@ export function isFromIndex(value: unknown): value is FromIndex {
 export type UploadFileConfigOptions = "date" | "description" | "amount";
 
 export type DateParseFormat = "DDMMYYYY" | "MMDDYYYY" | "YYYYMMDD";
+
+export type TransactionFormValues = {
+  transactionRow: (Transaction & { skip: boolean })[];
+};
 
 export const dateParseOptions: DateParseFormat[] = [
   "DDMMYYYY",
