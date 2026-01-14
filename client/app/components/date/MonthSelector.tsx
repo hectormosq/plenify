@@ -22,14 +22,14 @@ export function MonthSelector({
       >
         <ArrowLeftIcon />
       </IconButton>
-      <button>{currentMonth.format("MMMM")}</button>
-    <IconButton
-      disabled={currentMonth.isSame(dayjs(), "month")}
-      onClick={() => onChange(currentMonth.add(1, "month"))}
-      aria-label="next month"
-    >
-      <ArrowRightIcon />
-    </IconButton>
+      <button>{currentMonth.format("MMMM YYYY")}</button>
+      <IconButton
+        disabled={currentMonth.isSame(dayjs(), "month")}
+        onClick={() => onChange(currentMonth.add(1, "month"))}
+        aria-label="next month"
+      >
+        <ArrowRightIcon />
+      </IconButton>
     </div>
   );
 }

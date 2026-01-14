@@ -3,29 +3,30 @@
 import Loader from "../components/loader";
 import TransactionList from "../components/transactions/transaction-list";
 import { usePlenifyState } from "../hooks/usePlenifyState";
+import { MonthSelector } from "../components/date/MonthSelector";
+import dayjs, { Dayjs } from "dayjs";
+import classes from "../dashboard/dashboard.module.css";
 
 export default function TransactionListPage() {
-  const { loading, transactions, reset } = usePlenifyState();
+  const { loading, transactions, setActiveDate, activeFromDate } = usePlenifyState();
+
+  const handleSetActiveDate = (date: Dayjs) => {
+    setActiveDate(date.toString());
+  };
 
   return (
     <>
       {loading ? (
         <Loader />
       ) : (
-        <TransactionList transactionList={transactions.ALL} />
+        <div className={classes.dashboardContainer}>
+          <MonthSelector
+            value={dayjs(activeFromDate)}
+            onChange={handleSetActiveDate}
+          />
+          <TransactionList transactionList={transactions.ALL} />
+        </div>
       )}
-      <div style={{ display: "flex", gap: "10px" }}>
-        <button
-          style={{
-            padding: ".75rem 2rem",
-            background: "grey",
-            margin: "10px 0",
-          }}
-          onClick={reset}
-        >
-          Delete data
-        </button>
-      </div>
     </>
   );
 }
