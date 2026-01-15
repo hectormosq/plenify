@@ -1,7 +1,14 @@
 .stepper {
   margin-bottom: 2rem;
 }
+
 .stepContainer {
   display: flex;
   justify-content: center;
+}
+
+.buttonContainer {
+  gap: 1rem;
+  display: flex;
+  justify-content: end;
 }

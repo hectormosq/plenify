@@ -6,7 +6,7 @@ import {
   SelectChangeEvent,
   TextField,
 } from "@mui/material";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { ErrorMessage } from "@hookform/error-message";
 import StyledSelect from "@/app/components/inputs/StyledSelect";
 import {
@@ -24,8 +24,7 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
   const { maxLength, onFormChange, rows } = props;
   const [selectedRow, setSelectedRow] = useState<number | "">("");
 
-  const [formFields, setFormFields] =
-    useState<Record<string, { key: string; label: string }[]>>();
+
 
   const { control, formState, subscribe, setValue, getValues } =
     useForm<UploadFileConfigFormValues>({
@@ -57,7 +56,7 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
     });
   };
 
-  useEffect(() => {}, [selectedRow, setValue]);
+
 
   const handleUploadPageConfig = useCallback(
     (
@@ -82,46 +81,126 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
     return () => callback();
   }, [subscribe, handleUploadPageConfig]);
 
-  const _calculateParseColumnOptions = useCallback(
-    (data: UploadFileConfigFormValues) => {
-      const selectedColumns = columnOptions
-        .filter(({ key }) =>
-          isFromIndex(data[key as keyof UploadFileConfigFormValues])
-        )
-        .map(({ key }) => {
-          const value = data[key as keyof UploadFileConfigFormValues];
-          return isFromIndex(value)
-            ? { key: key, col: value.fromIndex }
-            : { key: key, col: undefined };
-        });
+  const formFields = useMemo(() => {
+    const data = watchedData as UploadFileConfigFormValues;
+    const selectedColumns = columnOptions
+      .filter(({ key }) =>
+        isFromIndex(data[key as keyof UploadFileConfigFormValues])
+      )
+      .map(({ key }) => {
+        const value = data[key as keyof UploadFileConfigFormValues];
+        return isFromIndex(value)
+          ? { key: key, col: value.fromIndex }
+          : { key: key, col: undefined };
+      });
 
-      // For each form field, create an options list excluding those selected by other columns
-      const updatedFormFields: Record<
-        string,
-        { key: string; label: string }[]
-      > = {};
-      for (let i = 0; i < maxLength; i++) {
-        updatedFormFields[`column-${i}`] = columnOptions
-          .filter(({ key }) => {
-            if (!selectedColumns.length) {
-              return true;
-            }
-            // Only filter out keys that are selected in other columns (col !== i)
-            return !selectedColumns.some(
-              (col) => col.key === key && col.col !== i
-            );
-          })
-          .map(({ key, label }) => ({ key, label }));
-      }
+    // For each form field, create an options list excluding those selected by other columns
+    const updatedFormFields: Record<
+      string,
+      { key: string; label: string }[]
+    > = {};
+    for (let i = 0; i < maxLength; i++) {
+      updatedFormFields[`column-${i}`] = columnOptions
+        .filter(({ key }) => {
+          if (!selectedColumns.length) {
+            return true;
+          }
+          // Only filter out keys that are selected in other columns (col !== i)
+          return !selectedColumns.some(
+            (col) => col.key === key && col.col !== i
+          );
+        })
+        .map(({ key, label }) => ({ key, label }));
+    }
+    return updatedFormFields;
+  }, [watchedData, maxLength]);
 
-      setFormFields(updatedFormFields);
+  const ConfigTableHeader = useMemo(() => {
+    return (
+      <thead>
+        <tr className={`${classes.row}`}>
+          {Array.from({ length: maxLength }, (_, i) => (
+            <th className={classes.column} key={i}>
+              <label>Parse as </label>
+              <div className={classes.form__headerSelect}>
+                <StyledSelect
+                  name={`column-${i}`}
+                  options={formFields?.[`column-${i}`] || []}
+                  emptyLabel="Ignore"
+                  onChange={(event: SelectChangeEvent<unknown>) => {
+                    const selectedValue = event.target
+                      .value as UploadFileConfigOptions;
+                    // Remove any previous selection that had { fromIndex: i }
+                    const currentFormValue: UploadFileConfigFormValues =
+                      getValues();
+                    Object.keys(currentFormValue).forEach((key) => {
+                      const currentValue =
+                        currentFormValue[
+                        key as keyof UploadFileConfigFormValues
+                        ];
+                      if (
+                        isFromIndex(currentValue) &&
+                        currentValue.fromIndex === i
+                      ) {
+                        setValue(
+                          key as keyof UploadFileConfigFormValues,
+                          ""
+                        );
+                      }
+                    });
+                    if (selectedValue) {
+                      setValue(selectedValue, { fromIndex: i });
+                    }
+                  }}
+                />
+                {isFromIndex(getValues("date")) &&
+                  (getValues("date") as FromIndex).fromIndex === i && (
+                    <Controller
+                      name="dateFormat"
+                      control={control}
+                      render={({ field }) => (
+                        <StyledSelect
+                          {...field}
+                          options={dateParseOptions.map((value) => ({
+                            key: value,
+                            label: value,
+                          }))}
+                        />
+                      )}
+                    />
+                  )}
+              </div>
+            </th>
+          ))}
+        </tr>
+      </thead>
+    );
+  }, [maxLength, formFields, getValues, setValue, control]);
+
+  const ConfigTableRow = useCallback(
+    ({
+      row,
+      index,
+      isSelected,
+    }: {
+      row: string[];
+      index: number;
+      isSelected: boolean;
+    }) => {
+      return (
+        <tr
+          className={`${classes.row} ${isSelected ? classes.selectedRow : ""}`}
+        >
+          {row.map((cell: string, cellIndex: number) => (
+            <td key={cellIndex} className={classes.column}>
+              <div onClick={() => toggleSelectedRow(index)}>{cell}</div>
+            </td>
+          ))}
+        </tr>
+      );
     },
-    []
+    [toggleSelectedRow]
   );
-
-  useEffect(() => {
-    _calculateParseColumnOptions(watchedData as UploadFileConfigFormValues);
-  }, [watchedData, _calculateParseColumnOptions]);
 
   return (
     <div className={classes.form}>
@@ -194,81 +273,16 @@ export default function UploadFileConfigForm(props: UploadFileConfigFormProps) {
                 Select the starting row to parse the uploaded file and choose
                 how columns should be parsed
               </caption>
-              <thead>
-                <tr>
-                  {Array.from({ length: maxLength }, (_, i) => (
-                    <th className={classes.form__item} key={i}>
-                      <label>Parse as </label>
-                      <div className={classes.form__headerSelect}>
-
-                      <StyledSelect
-                        name={`column-${i}`}
-                        options={formFields?.[`column-${i}`] || []}
-                        emptyLabel="Ignore"
-                        onChange={(event: SelectChangeEvent<unknown>) => {
-                          const selectedValue = event.target
-                            .value as UploadFileConfigOptions;
-                          // Remove any previous selection that had { fromIndex: i }
-                          const currentFormValue: UploadFileConfigFormValues =
-                            getValues();
-                          Object.keys(currentFormValue).forEach((key) => {
-                            const currentValue =
-                              currentFormValue[
-                                key as keyof UploadFileConfigFormValues
-                              ];
-                            if (
-                              isFromIndex(currentValue) &&
-                              currentValue.fromIndex === i
-                            ) {
-                              setValue(
-                                key as keyof UploadFileConfigFormValues,
-                                ""
-                              );
-                            }
-                          });
-                          if (selectedValue) {
-                            setValue(selectedValue, { fromIndex: i });
-                          }
-                        }}
-                      />
-                      {isFromIndex(getValues("date")) &&
-                        (getValues("date") as FromIndex).fromIndex === i && (
-                          <Controller
-                            name="dateFormat"
-                            control={control}
-                            render={({ field }) => (
-                              <StyledSelect
-                                {...field}
-                                options={dateParseOptions.map((value) => ({
-                                  key: value,
-                                  label: value,
-                                }))}
-                              />
-                            )}
-                          />
-                        )}
-                      </div>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
+              {ConfigTableHeader}
               <tbody>
                 {rows &&
                   rows.map((row, index) => (
-                    <tr
+                    <ConfigTableRow
                       key={index}
-                      className={`${classes.row} ${
-                        selectedRow === index ? classes.selectedRow : ""
-                      }`}
-                    >
-                      {row.map((cell: string, cellIndex: number) => (
-                        <td key={cellIndex} className="border px-4 py-2">
-                          <div onClick={() => toggleSelectedRow(index)}>
-                            {cell}
-                          </div>
-                        </td>
-                      ))}
-                    </tr>
+                      row={row}
+                      index={index}
+                      isSelected={selectedRow === index}
+                    />
                   ))}
               </tbody>
             </table>
