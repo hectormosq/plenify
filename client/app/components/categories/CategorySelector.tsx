@@ -36,7 +36,7 @@ export default function CategorySelector({
   const [pendingValue, setPendingValue] = useState<string[]>([]);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  const maxCategories = 2;
+  const maxCategories = 3;
   const open = Boolean(anchorEl);
 
   const handleDeleteCategory = (category: string) => {

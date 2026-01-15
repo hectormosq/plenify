@@ -30,18 +30,12 @@ export default function TransactionListPage() {
   const firstDayOfYear = dayjs().year(selectedYear).startOf("year").toISOString();
   const lastDayOfYear = dayjs().year(selectedYear).endOf("year").toISOString();
 
-  const [openGroups, setOpenGroups] = useState(() => {
-    const state: Record<number, boolean> = {};
-    return state;
-  });
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
-  const [openDetails, setOpenDetails] = useState(() => {
-    const state: Record<string, boolean> = {};
-    return state;
-  });
+  const [openDetails, setOpenDetails] = useState<Record<string, boolean>>({});
 
-  const toggleGroup = (index: number) => {
-    setOpenGroups((prev) => ({ ...prev, [index]: !prev[index] }));
+  const toggleGroup = (id: string) => {
+    setOpenGroups((prev) => ({ ...prev, [id]: !prev[id] }));
   };
   const toggleDetails = (index: string) => {
     setOpenDetails((prev) => ({ ...prev, [index]: !prev[index] }));
@@ -179,44 +173,21 @@ export default function TransactionListPage() {
                 </tr>
               </tfoot>
               {Object.keys(transactionsByCategoryAndMonth).map(
-                (categoryKey, idx) => {
+                (categoryKey) => {
                   const transactionCategory =
                     transactionsByCategoryAndMonth[categoryKey];
 
                   return (
                     <tbody key={categoryKey} role="rowgroup">
-                      <OverviewRow
-                        handleRowClick={() => toggleGroup(idx)}
-                        handleColumnClick={toggleDetails}
-                        columnState={openDetails}
+                      <RecursiveOverviewRow
                         categoryKey={categoryKey}
                         year={selectedYear}
                         transaction={transactionCategory}
-                        rowKey={`${categoryKey}`}
-                        classes={pageClasses.groupHeader}
+                        openGroups={openGroups}
+                        toggleGroup={toggleGroup}
+                        openDetails={openDetails}
+                        toggleDetails={toggleDetails}
                       />
-
-                      {openGroups[idx] &&
-                        transactionCategory?.children &&
-                        Object.keys(transactionCategory.children).map(
-                          (childCategoryKey, idx) => {
-                            const rowKey = `${categoryKey}-${idx}`;
-                            const childTransaction =
-                              transactionCategory.children[childCategoryKey];
-                            return (
-                              <OverviewRow
-                                key={rowKey}
-                                categoryKey={childCategoryKey}
-                                handleColumnClick={toggleDetails}
-                                columnState={openDetails}
-                                year={selectedYear}
-                                transaction={childTransaction}
-                                rowKey={rowKey}
-                                classes={pageClasses.groupItem}
-                              />
-                            );
-                          }
-                        )}
                     </tbody>
                   );
                 }
@@ -264,6 +235,61 @@ function printTotalColumns(total: number) {
   );
 }
 
+function RecursiveOverviewRow({
+  categoryKey,
+  year,
+  transaction,
+  openGroups,
+  toggleGroup,
+  openDetails,
+  toggleDetails,
+  depth = 0,
+}: {
+  categoryKey: string;
+  year: number;
+  transaction: TransactionMonthDetails;
+  openGroups: Record<string, boolean>;
+  toggleGroup: (id: string) => void;
+  openDetails: Record<string, boolean>;
+  toggleDetails: (id: string) => void;
+  depth?: number;
+}) {
+  const isOpen = openGroups[categoryKey];
+  const hasChildren =
+    transaction.children && Object.keys(transaction.children).length > 0;
+
+  return (
+    <>
+      <OverviewRow
+        categoryKey={categoryKey}
+        year={year}
+        transaction={transaction}
+        rowKey={categoryKey}
+        columnState={openDetails}
+        handleRowClick={() => toggleGroup(categoryKey)}
+        handleColumnClick={toggleDetails}
+        classes={depth === 0 ? pageClasses.groupHeader : ""}
+        depth={depth}
+      />
+      {isOpen &&
+        hasChildren &&
+        Object.keys(transaction.children).map((childCategoryKey) => (
+          <RecursiveOverviewRow
+            key={childCategoryKey}
+            categoryKey={childCategoryKey}
+            year={year}
+            transaction={transaction.children[childCategoryKey]}
+            openGroups={openGroups}
+            toggleGroup={toggleGroup}
+            openDetails={openDetails}
+            toggleDetails={toggleDetails}
+            depth={depth + 1}
+          />
+        ))}
+    </>
+  );
+}
+
 function OverviewRow(props: {
   categoryKey: string;
   year: number;
@@ -273,21 +299,40 @@ function OverviewRow(props: {
   handleRowClick?: () => void;
   handleColumnClick?: (id: string) => void;
   classes?: string;
+  depth?: number;
 }) {
   const {
     categoryKey,
     year,
     transaction: childTransaction,
     rowKey,
-    handleRowClick: handleRowClick,
-    handleColumnClick: handleColumnClick,
-    columnState: columnState,
+    handleRowClick,
+    handleColumnClick,
+    columnState,
     classes,
+    depth = 0,
   } = props;
+
+  const rowStyle = {
+    backgroundColor:
+      depth > 0
+        ? `color-mix(in srgb, var(--componentBackground), white ${depth * 4}%)`
+        : undefined,
+    cursor: "pointer",
+  };
+
   return (
     <>
-      <tr key={rowKey} onClick={handleRowClick} className={`${pageClasses.overviewRow} ${classes || ""}`}>
-        <td className={pageClasses.table__fixed}>
+      <tr
+        key={rowKey}
+        onClick={handleRowClick}
+        className={`${pageClasses.overviewRow} ${classes || ""}`}
+        style={rowStyle}
+      >
+        <td
+          className={pageClasses.table__fixed}
+          style={{ paddingLeft: `${depth * 15 + 10}px` }}
+        >
           <CategoryTag id={categoryKey} />
         </td>
         {OverviewColumn(

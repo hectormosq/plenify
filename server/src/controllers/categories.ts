@@ -101,9 +101,13 @@ const restCategories = {
     name: 'Hipoteca',
     color: '#ff9800',
   },
+  '9c0d1e2f-3g4h-5i6j-7k8l-9m0n1o2p3q4r': {
+    name: 'Alquiler',
+    color: '#aea439ff',
+  },
   '4x5y6z7a-8b9c-0d1e-2f3g-4h5i6j7k8l9m': {
     name: 'Comunidad',
-    color: '#673ab7',
+    color: '#3a8db7ff',
   },
   '5y6z7a8b-9c0d-1e2f-3g4h-5i6j7k8l9m0n': {
     name: 'Prestamos',
@@ -113,6 +117,19 @@ const restCategories = {
     name: 'Seguros',
     color: '#607d8b',
   },
+  '7a8b9c0d-1e2f-3g4h-5i6j-7k8l9m0n1o2p': {
+    name: 'Necesidad',
+    color: '#228b22',
+  },
+  '8b9c0d1e-2f3g-4h5i-6j7k-8l9m0n1o2p3q': {
+    name: 'Capricho',
+    color: '#6e419bff',
+  },
+  'f47ac10b-58cc-4372-a567-0e02b2c3d479': {
+    name: 'Compras Hogar',
+    color: '#aea439ff',
+  },
+
 }
 
 export const categories: RequestHandler = (req, res, next) => {
