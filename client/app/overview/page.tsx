@@ -226,7 +226,7 @@ function totalsPerCategory(yearMonth: YearMonthRecord) {
 }
 
 function printTotalColumns(total: number) {
-   return (
+  return (
     <>
       <td className={`${pageClasses.overviewColumn}`}>{Formats.amount(total)}</td>
       <td className={`${pageClasses.overviewColumn}`}>{Formats.amount(total / monthsCount)}</td>
@@ -243,6 +243,7 @@ function RecursiveOverviewRow({
   toggleGroup,
   openDetails,
   toggleDetails,
+  parentPath = "",
   depth = 0,
 }: {
   categoryKey: string;
@@ -252,9 +253,11 @@ function RecursiveOverviewRow({
   toggleGroup: (id: string) => void;
   openDetails: Record<string, boolean>;
   toggleDetails: (id: string) => void;
+  parentPath?: string;
   depth?: number;
 }) {
-  const isOpen = openGroups[categoryKey];
+  const uniqueKey = parentPath ? `${parentPath}-${categoryKey}` : categoryKey;
+  const isOpen = openGroups[uniqueKey];
   const hasChildren =
     transaction.children && Object.keys(transaction.children).length > 0;
 
@@ -264,9 +267,9 @@ function RecursiveOverviewRow({
         categoryKey={categoryKey}
         year={year}
         transaction={transaction}
-        rowKey={categoryKey}
+        rowKey={uniqueKey}
         columnState={openDetails}
-        handleRowClick={() => toggleGroup(categoryKey)}
+        handleRowClick={() => toggleGroup(uniqueKey)}
         handleColumnClick={toggleDetails}
         classes={depth === 0 ? pageClasses.groupHeader : ""}
         depth={depth}
@@ -275,7 +278,7 @@ function RecursiveOverviewRow({
         hasChildren &&
         Object.keys(transaction.children).map((childCategoryKey) => (
           <RecursiveOverviewRow
-            key={childCategoryKey}
+            key={`${uniqueKey}-${childCategoryKey}`}
             categoryKey={childCategoryKey}
             year={year}
             transaction={transaction.children[childCategoryKey]}
@@ -283,6 +286,7 @@ function RecursiveOverviewRow({
             toggleGroup={toggleGroup}
             openDetails={openDetails}
             toggleDetails={toggleDetails}
+            parentPath={uniqueKey}
             depth={depth + 1}
           />
         ))}
