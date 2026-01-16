@@ -313,6 +313,77 @@ export default class PlenifyService {
     link.click();
   }
 
+  async importDb(json: string) {
+    const data = JSON.parse(json);
+    
+    this._validateSchema(data);
+
+    this.persister.getStore().setJson(json);
+    // Ensure persistence
+    await this.persister.save();
+  }
+
+  private _validateSchema(data: any) {
+    // 1. Validate General Structure (TinyBase JSON is [Tables, Values])
+    if (!Array.isArray(data) || data.length < 1) {
+       throw new Error("Invalid backup file: Expected TinyBase JSON format [Tables, Values].");
+    }
+
+    const tables = data[0]; 
+
+    // 2. Validate Table Existence
+    const expectedTables = Object.values(Tables);
+    if (!tables || typeof tables !== 'object') {
+       throw new Error("Invalid backup file: Missing tables object."); 
+    }
+    const hasAllTables = expectedTables.every(table => Object.prototype.hasOwnProperty.call(tables, table));
+
+    if (!hasAllTables) {
+      throw new Error("Invalid backup file: Missing required database tables.");
+    }
+
+    // 3. Validate Row Data Types against Schema
+    for (const [tableName, tableData] of Object.entries(tables)) {
+      // Validate if tableName is a valid Table
+      if (!Object.values(Tables).includes(tableName as Tables)) {
+         continue; // strict: could throw error for unknown tables too
+      }
+      
+      const tableKey = tableName as Tables;
+      // Use type assertion to help TS understand we are indexing with a valid key
+      const schema = tablesSchema[tableKey] as Record<string, { type: string }>;
+
+      // If it's a known table, validate its rows
+      if (schema) {
+         if (typeof tableData !== 'object' || tableData === null) {
+            throw new Error(`Invalid table format: '${tableName}' is not an object.`);
+         }
+         
+         Object.entries(tableData).forEach(([rowId, row]) => {
+            if (typeof row !== 'object' || row === null) {
+               throw new Error(`Invalid row format in table '${tableName}', row '${rowId}'.`);
+            }
+            
+            Object.entries(row).forEach(([colName, colValue]) => {
+               // Check if column exists in schema
+               if (Object.prototype.hasOwnProperty.call(schema, colName)) {
+                 const colSchema = schema[colName];
+                 const expectedType = colSchema.type;
+                 const actualType = typeof colValue;
+
+                 if (expectedType !== actualType) {
+                   throw new Error(
+                     `Schema Validation Error - Table: '${tableName}', Row: '${rowId}', Column: '${colName}'. ` +
+                     `Expected type '${expectedType}', got '${actualType}'.`
+                   );
+                 }
+               }
+            });
+         });
+      }
+    }
+  }
+
   private _buildTransactionFromRow(
     id: string,
     transaction: Row,
