@@ -323,7 +323,7 @@ export default class PlenifyService {
     await this.persister.save();
   }
 
-  private _validateSchema(data: any) {
+  private _validateSchema(data: unknown) {
     // 1. Validate General Structure (TinyBase JSON is [Tables, Values])
     if (!Array.isArray(data) || data.length < 1) {
        throw new Error("Invalid backup file: Expected TinyBase JSON format [Tables, Values].");
