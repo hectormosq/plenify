@@ -5,6 +5,10 @@ import MenuIcon from "@mui/icons-material/Menu";
 import SettingsIcon from "@mui/icons-material/Settings";
 import DownloadIcon from "@mui/icons-material/Download";
 import UploadIcon from "@mui/icons-material/Upload";
+import LoginIcon from "@mui/icons-material/Login";
+import LogoutIcon from "@mui/icons-material/Logout";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import PersonIcon from "@mui/icons-material/Person";
 import {
   Box,
   Divider,
@@ -19,10 +23,13 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
-  Button
+  Button,
+  Avatar,
+  Tooltip
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { plenifyService } from "../../services";
+import { signIn, signOut, useSession } from "next-auth/react";
 
 const darkTheme = createTheme({
   palette: {
@@ -38,31 +45,43 @@ const darkTheme = createTheme({
 });
 
 export default function Header() {
+  const { data: session } = useSession();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [userMenuAnchorEl, setUserMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
-  const open = Boolean(anchorEl);
+
+  const settingsOpen = Boolean(anchorEl);
+  const userMenuOpen = Boolean(userMenuAnchorEl);
 
   const handleDrawerToggle = () => {
     setMobileOpen((prevState) => !prevState);
   };
 
-  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+  const handleSettingsMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
 
-  const handleMenuClose = () => {
+  const handleSettingsMenuClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleUserMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    setUserMenuAnchorEl(event.currentTarget);
+  };
+
+  const handleUserMenuClose = () => {
+    setUserMenuAnchorEl(null);
   };
 
   const handleDownloadDb = () => {
     plenifyService.downloadDb();
-    handleMenuClose();
+    handleSettingsMenuClose();
   };
 
   const handleImportClick = () => {
-    handleMenuClose();
+    handleSettingsMenuClose();
     // Trigger hidden input click or open dialog directly
     const input = document.createElement('input');
     input.type = 'file';
@@ -145,23 +164,24 @@ export default function Header() {
             </li>
           </ul>
         </nav>
-        <Box>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          {/* Settings Menu */}
           <IconButton
-            onClick={handleMenuClick}
+            onClick={handleSettingsMenuClick}
             size="small"
-            sx={{ ml: 2 }}
-            aria-controls={open ? "account-menu" : undefined}
+            sx={{ ml: 1 }}
+            aria-controls={settingsOpen ? "settings-menu" : undefined}
             aria-haspopup="true"
-            aria-expanded={open ? "true" : undefined}
+            aria-expanded={settingsOpen ? "true" : undefined}
           >
             <SettingsIcon sx={{ color: "white" }} />
           </IconButton>
           <Menu
             anchorEl={anchorEl}
-            id="account-menu"
-            open={open}
-            onClose={handleMenuClose}
-            onClick={handleMenuClose}
+            id="settings-menu"
+            open={settingsOpen}
+            onClose={handleSettingsMenuClose}
+            onClick={handleSettingsMenuClose}
             transformOrigin={{ horizontal: "right", vertical: "top" }}
             anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
           >
@@ -178,6 +198,62 @@ export default function Header() {
               <ListItemText>Import / Restore DB</ListItemText>
             </MenuItem>
           </Menu>
+
+          {/* User Menu / Sign In */}
+          {session ? (
+            <>
+              <Tooltip title={session.user?.name || "User"}>
+                <IconButton
+                  onClick={handleUserMenuClick}
+                  size="small"
+                  sx={{ ml: 1 }}
+                  aria-controls={userMenuOpen ? "user-menu" : undefined}
+                  aria-haspopup="true"
+                  aria-expanded={userMenuOpen ? "true" : undefined}
+                >
+                  <Avatar
+                    sx={{ width: 32, height: 32 }}
+                    alt={session.user?.name || "User"}
+                    src={session.user?.image || undefined}
+                  >
+                    {!session.user?.image && <AccountCircleIcon />}
+                  </Avatar>
+                </IconButton>
+              </Tooltip>
+              <Menu
+                anchorEl={userMenuAnchorEl}
+                id="user-menu"
+                open={userMenuOpen}
+                onClose={handleUserMenuClose}
+                onClick={handleUserMenuClose}
+                transformOrigin={{ horizontal: "right", vertical: "top" }}
+                anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+              >
+                <MenuItem component={Link} href="/profile" onClick={handleUserMenuClose}>
+                   <ListItemIcon>
+                      <PersonIcon fontSize="small" />
+                   </ListItemIcon>
+                   <ListItemText>Profile</ListItemText>
+                </MenuItem>
+                <Divider />
+                <MenuItem onClick={() => signOut()}>
+                  <ListItemIcon>
+                    <LogoutIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>Sign Out</ListItemText>
+                </MenuItem>
+              </Menu>
+            </>
+          ) : (
+            <Button
+              color="inherit"
+              startIcon={<LoginIcon />}
+              onClick={() => signIn("google")}
+              sx={{ ml: 1, textTransform: 'none' }}
+            >
+              Sign In
+            </Button>
+          )}
         </Box>
       </Box>
 
@@ -265,6 +341,35 @@ export default function Header() {
             >
               Import DB
             </Link>
+            <Divider sx={{ my: 1, bgcolor: 'rgba(255,255,255,0.1)' }} />
+            {session ? (
+              <>
+                 <Link className={classes.linkItem} href="/profile">
+                  Profile
+                </Link>
+                <Link
+                  className={classes.linkItem}
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    signOut();
+                  }}
+                >
+                  Sign Out
+                </Link>
+              </>
+            ) : (
+              <Link
+                className={classes.linkItem}
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  signIn("google");
+                }}
+              >
+                Sign In
+              </Link>
+            )}
           </div>
         </Drawer>
       </nav>

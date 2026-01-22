@@ -1,0 +1,24 @@
+.textField {
+  /* Override default MUI label colors for dark mode */
+  :global(.MuiInputLabel-root) {
+      color: var(--secondary);
+  }
+  
+  :global(.MuiInputLabel-root.Mui-focused) {
+      color: var(--primary); /* Or specific accent color */
+  }
+
+  /* Input text color */
+  :global(.MuiInputBase-input) {
+      color: var(--foreground);
+  }
+
+  /* Border colors */
+  :global(.MuiOutlinedInput-notchedOutline) {
+      border-color: rgba(255, 255, 255, 0.23);
+  }
+
+  :global(.MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline) {
+      border-color: var(--foreground);
+  }
+}
