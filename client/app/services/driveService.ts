@@ -22,10 +22,10 @@ export class DriveService {
    * Search for the backup file on Google Drive.
    * Returns metadata if found, null otherwise.
    */
-  async findBackupFile(accessToken: string): Promise<{ id: string; modifiedTime: string } | null> {
+  async findBackupFile(accessToken: string): Promise<{ id: string; modifiedTime: string; appProperties?: { lastUpdated?: string } } | null> {
     const q = encodeURIComponent(`name = '${FILE_NAME}' and trashed = false`);
     const response = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id, modifiedTime)&spaces=drive`,
+      `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id, modifiedTime, appProperties)&spaces=drive`,
       {
         headers: { Authorization: `Bearer ${accessToken}` },
       }
@@ -46,10 +46,14 @@ export class DriveService {
   async uploadBackup(accessToken: string, fileId?: string): Promise<string> {
     // 1. Get current data
     const rawData = plenifyService.exportDb(); 
+    const lastUpdated = plenifyService.getSetting("lastUpdated") || Date.now();
 
     const metadata = {
       name: FILE_NAME,
       mimeType: "application/json",
+      appProperties: {
+        lastUpdated: lastUpdated.toString()
+      }
     };
 
     const form = new FormData();

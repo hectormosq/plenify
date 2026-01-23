@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession, signIn, signOut } from "next-auth/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -16,6 +16,7 @@ import CloudIcon from "@mui/icons-material/Cloud";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
 import GoogleIcon from "@mui/icons-material/Google";
+import dayjs from "dayjs";
 
 import classes from "./profile.module.scss";
 import Card from "../components/Card/Card";
@@ -29,18 +30,55 @@ export default function ProfilePage() {
   const { data: session } = useSession();
   const [autoSync, setAutoSync] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("unknown");
+  const [lastSyncedDate, setLastSyncedDate] = useState<string | null>(null);
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Load initial settings
+  const checkSyncStatus = useCallback(async () => {
+    if (!session?.accessToken) return;
+    try {
+        const cloudFile = await driveService.findBackupFile(session.accessToken);
+        const localLastUpdated = plenifyService.getSetting("lastUpdated") || 0;
+
+        if (!cloudFile) {
+            setSyncStatus("local_ahead"); // Assuming we have local data to push
+            setLastSyncedDate("Never");
+            return;
+        }
+
+        const cloudLastUpdated = parseInt(cloudFile.appProperties?.lastUpdated || "0");
+        
+        // Display nice date from modifiedTime
+        if (cloudFile.modifiedTime) {
+           setLastSyncedDate(dayjs(cloudFile.modifiedTime).format("DD MMM YYYY HH:mm"));
+        }
+
+        if (cloudLastUpdated > localLastUpdated) {
+            setSyncStatus("local_behind");
+        } else if (localLastUpdated > cloudLastUpdated) {
+             setSyncStatus("local_ahead");
+        } else {
+            setSyncStatus("synced");
+        }
+
+    } catch (err) {
+        console.error("Failed to check sync status:", err);
+        setSyncStatus("unknown");
+    }
+  }, [session?.accessToken]);
+
+  // Load initial settings and status
   useEffect(() => {
+    if (session) {
+        checkSyncStatus();
+    }
     const savedAutoSync = plenifyService.getSetting("autoSync");
     if (savedAutoSync !== undefined) {
       setAutoSync(savedAutoSync);
     }
-  }, []);
+  }, [session, checkSyncStatus]);
 
   const handleAutoSyncChange = (checked: boolean) => {
     setAutoSync(checked);
@@ -81,7 +119,7 @@ export default function ProfilePage() {
           // 2. Upload (Create or Update)
           await driveService.uploadBackup(session.accessToken, existingFile?.id);
           
-          setSyncStatus("synced");
+          await checkSyncStatus(); // Refresh status
           setSuccessMsg("Successfully pushed data to Google Drive.");
       } catch (err: any) {
           console.error(err);
@@ -108,7 +146,7 @@ export default function ProfilePage() {
           // 2. Download and Restore
           await driveService.downloadBackup(session.accessToken, existingFile.id);
           
-          setSyncStatus("synced");
+          await checkSyncStatus(); // Refresh status
           setSuccessMsg("Successfully pulled and restored data from Google Drive.");
       } catch (err: any) {
           console.error(err);
@@ -117,6 +155,24 @@ export default function ProfilePage() {
           setLoading(false);
       }
   };
+
+  const getStatusLabel = (status: SyncStatus) => {
+      switch (status) {
+          case "synced": return "Synced";
+          case "local_ahead": return "Local Changes (Push Needed)";
+          case "local_behind": return "Cloud Newer (Pull Needed)";
+          default: return "Unknown";
+      }
+  }
+
+  const getStatusColor = (status: SyncStatus) => {
+      switch (status) {
+          case "synced": return "success";
+          case "local_ahead": 
+          case "local_behind": return "warning";
+          default: return "default";
+      }
+  }
 
   return (
     <Box className={classes.container}>
@@ -153,8 +209,8 @@ export default function ProfilePage() {
         title="Cloud Sync"
         action={
              <Chip 
-                label={syncStatus === "unknown" ? "Unknown Status" : syncStatus.replace("_", " ").toUpperCase()} 
-                color={syncStatus === "synced" ? "success" : "warning"} 
+                label={getStatusLabel(syncStatus)} 
+                color={getStatusColor(syncStatus) as any} 
                 variant="outlined" 
                 size="small" 
              />
@@ -162,6 +218,12 @@ export default function ProfilePage() {
         description={
             <Typography variant="body2" sx={{ mb: 1 }}>
                 Backup your data to Google Drive to access it from other devices or restore it later.
+                <br/>
+                {lastSyncedDate && (
+                    <Typography component="span" variant="caption" color="text.secondary">
+                        Last Synced: <strong>{lastSyncedDate}</strong>
+                    </Typography>
+                )}
             </Typography>
         }
       >
@@ -173,7 +235,7 @@ export default function ProfilePage() {
               variant="contained"
               startIcon={loading ? <CircularProgress size={20} color="inherit"/> : <CloudUploadIcon />}
               onClick={handlePushToCloud}
-              disabled={loading}
+              disabled={loading} // || syncStatus === 'synced' ? maybe not, allow force push
               fullWidth
             >
               {loading ? "Syncing..." : "Push to Cloud"}
@@ -182,7 +244,7 @@ export default function ProfilePage() {
               variant="outlined"
               startIcon={loading ? <CircularProgress size={20} color="inherit"/> : <CloudDownloadIcon />}
               onClick={handlePullFromCloud}
-              disabled={loading}
+              disabled={loading} // || syncStatus === 'synced'
               fullWidth
             >
               {loading ? "Syncing..." : "Pull from Cloud"}

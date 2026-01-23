@@ -52,6 +52,7 @@ const tablesSchema = {
 
 const valuesSchema = {
   autoSync: { type: "boolean", default: false },
+  lastUpdated: { type: "number", default: 0 },
 } as const;
 
 export default class PlenifyService {
@@ -67,6 +68,10 @@ export default class PlenifyService {
 
   setSetting(key: keyof typeof valuesSchema, value: any) {
     this.store.setValue(key, value);
+    // Setting a setting shouldn't necessarily update "lastUpdated" for data sync purposes?
+    // Actually, settings are synced too (in the JSON), so maybe yes?
+    // Let's stick to data changes primarily, but since settings are in the DB, they affect the hash.
+    // For now, let's keep it manual in data mutation methods.
   }
 
   getSetting(key: keyof typeof valuesSchema): any {
@@ -97,6 +102,7 @@ export default class PlenifyService {
     this.persister.getStore().delTable(Tables.categories);
     const categories = await this.fetchCategories();
     this.persister.getStore().setTable(Tables.categories, categories);
+    this.updateLastUpdated();
   }
 
   updateTransaction(transaction: Transaction) {
@@ -112,6 +118,7 @@ export default class PlenifyService {
   deleteTransaction(transactionId: string) {
     this.persister.getStore().delRow(Tables.transactions, transactionId);
     this.deleteTransactionCategories(transactionId);
+    this.updateLastUpdated();
   }
 
   deleteTransactionCategories(transactionId: string) {
@@ -174,6 +181,7 @@ export default class PlenifyService {
           category: category,
         });
       }
+      this.updateLastUpdated();
     });
 
     return { [transactionId]: transaction };
@@ -310,6 +318,11 @@ export default class PlenifyService {
   async reset() {
     this.persister.getStore().delTable(Tables.transactionCategories);
     this.persister.getStore().delTable(Tables.transactions);
+    this.updateLastUpdated();
+  }
+
+  updateLastUpdated() {
+    this.store.setValue("lastUpdated", Date.now());
   }
 
   exportDb(): string {
