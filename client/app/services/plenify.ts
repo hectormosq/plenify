@@ -50,6 +50,10 @@ const tablesSchema = {
   },
 } as const;
 
+const valuesSchema = {
+  autoSync: { type: "boolean", default: false },
+} as const;
+
 export default class PlenifyService {
   store: MergeableStore;
   persister: IndexedDbPersister;
@@ -57,8 +61,16 @@ export default class PlenifyService {
   categoryList: Categories = {};
 
   constructor() {
-    this.store = createMergeableStore().setSchema(tablesSchema);
+    this.store = createMergeableStore().setSchema(tablesSchema, valuesSchema);
     this.persister = createIndexedDbPersister(this.store, STORE);
+  }
+
+  setSetting(key: keyof typeof valuesSchema, value: any) {
+    this.store.setValue(key, value);
+  }
+
+  getSetting(key: keyof typeof valuesSchema): any {
+    return this.store.getValue(key);
   }
 
   private async fetchCategories() {
@@ -300,8 +312,12 @@ export default class PlenifyService {
     this.persister.getStore().delTable(Tables.transactions);
   }
 
+  exportDb(): string {
+    return this.persister.getStore().getJson();
+  }
+
   downloadDb() {
-    const values = this.persister.getStore().getJson();
+    const values = this.exportDb();
     const jsonString = `data:text/json;chatset=utf-8,${encodeURIComponent(
       values
     )}`;

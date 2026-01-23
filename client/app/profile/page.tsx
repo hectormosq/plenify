@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession, signIn, signOut } from "next-auth/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -9,27 +9,43 @@ import {
   Divider,
   Stack,
   Alert,
-  Chip
+  Chip,
+  CircularProgress
 } from "@mui/material";
 import CloudIcon from "@mui/icons-material/Cloud";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
-import LockIcon from "@mui/icons-material/Lock";
-import LockOpenIcon from "@mui/icons-material/LockOpen";
 import GoogleIcon from "@mui/icons-material/Google";
 
 import classes from "./profile.module.scss";
 import Card from "../components/Card/Card";
 import Button from "../components/buttons/Button";
-import TextField from "../components/inputs/TextField";
 import Switch from "../components/inputs/Switch";
+
+import { driveService, SyncStatus } from "../services/driveService";
+import { plenifyService } from "../services/index";
 
 export default function ProfilePage() {
   const { data: session } = useSession();
-  const [passphrase, setPassphrase] = useState("");
-  const [isEncrypted, setIsEncrypted] = useState(false); // Placeholder for session state
   const [autoSync, setAutoSync] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<"synced" | "local_ahead" | "local_behind" | "unknown">("unknown");
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>("unknown");
+  
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Load initial settings
+  useEffect(() => {
+    const savedAutoSync = plenifyService.getSetting("autoSync");
+    if (savedAutoSync !== undefined) {
+      setAutoSync(savedAutoSync);
+    }
+  }, []);
+
+  const handleAutoSyncChange = (checked: boolean) => {
+    setAutoSync(checked);
+    plenifyService.setSetting("autoSync", checked);
+  };
 
   if (!session) {
     return (
@@ -52,12 +68,54 @@ export default function ProfilePage() {
     );
   }
 
-  const handleSavePassphrase = () => {
-    // TODO: Implement passphrase saving logic (Phase 4)
-    if (passphrase.length > 0) {
-      setIsEncrypted(true);
-      alert("Passphrase saved for this session!");
-    }
+  const handlePushToCloud = async () => {
+      if (!session?.accessToken) return;
+      setLoading(true);
+      setError(null);
+      setSuccessMsg(null);
+
+      try {
+          // 1. Check for existing file
+          const existingFile = await driveService.findBackupFile(session.accessToken);
+          
+          // 2. Upload (Create or Update)
+          await driveService.uploadBackup(session.accessToken, existingFile?.id);
+          
+          setSyncStatus("synced");
+          setSuccessMsg("Successfully pushed data to Google Drive.");
+      } catch (err: any) {
+          console.error(err);
+          setError(err.message || "Failed to push to cloud.");
+      } finally {
+          setLoading(false);
+      }
+  };
+
+  const handlePullFromCloud = async () => {
+      if (!session?.accessToken) return;
+      setLoading(true);
+      setError(null);
+      setSuccessMsg(null);
+
+      try {
+          // 1. Check for existing file
+          const existingFile = await driveService.findBackupFile(session.accessToken);
+          
+          if (!existingFile) {
+              throw new Error("No backup file found on Google Drive.");
+          }
+
+          // 2. Download and Restore
+          await driveService.downloadBackup(session.accessToken, existingFile.id);
+          
+          setSyncStatus("synced");
+          setSuccessMsg("Successfully pulled and restored data from Google Drive.");
+      } catch (err: any) {
+          console.error(err);
+          setError(err.message || "Failed to pull from cloud.");
+      } finally {
+          setLoading(false);
+      }
   };
 
   return (
@@ -89,33 +147,6 @@ export default function ProfilePage() {
           </Button>
       </Card>
 
-      {/* Encryption Settings */}
-      <Card
-        icon={isEncrypted ? <LockOpenIcon color="success" /> : <LockIcon color="action" />}
-        title="Encryption"
-        description="Enter a passphrase to secure your data before syncing to the cloud. This passphrase is never stored and must be entered each time you start a new session."
-      >
-          {!isEncrypted ? (
-             <Stack direction="row" spacing={2} alignItems="center">
-                <TextField
-                  label="Encryption Passphrase"
-                  type="password"
-                  value={passphrase}
-                  onChange={(e) => setPassphrase(e.target.value)}
-                  size="small"
-                  fullWidth
-                />
-                <Button variant="contained" onClick={handleSavePassphrase} disabled={!passphrase}>
-                  Unlock
-                </Button>
-             </Stack>
-          ) : (
-            <Alert severity="success">
-              Session unlocked. Ready to sync.
-            </Alert>
-          )}
-      </Card>
-
       {/* Cloud Sync Status */}
       <Card
         icon={<CloudIcon color="primary" />}
@@ -130,26 +161,31 @@ export default function ProfilePage() {
         }
         description={
             <Typography variant="body2" sx={{ mb: 1 }}>
-                Last Synced: <strong>Never</strong> {/* TODO: dynamic date */}
-              </Typography>
+                Backup your data to Google Drive to access it from other devices or restore it later.
+            </Typography>
         }
       >
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          {successMsg && <Alert severity="success" sx={{ mb: 2 }}>{successMsg}</Alert>}
+          
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} className={classes.actionStack}>
             <Button
               variant="contained"
-              startIcon={<CloudUploadIcon />}
-              disabled={!isEncrypted}
+              startIcon={loading ? <CircularProgress size={20} color="inherit"/> : <CloudUploadIcon />}
+              onClick={handlePushToCloud}
+              disabled={loading}
               fullWidth
             >
-              Push to Cloud
+              {loading ? "Syncing..." : "Push to Cloud"}
             </Button>
             <Button
               variant="outlined"
-              startIcon={<CloudDownloadIcon />}
-              disabled={!isEncrypted}
+              startIcon={loading ? <CircularProgress size={20} color="inherit"/> : <CloudDownloadIcon />}
+              onClick={handlePullFromCloud}
+              disabled={loading}
               fullWidth
             >
-              Pull from Cloud
+              {loading ? "Syncing..." : "Pull from Cloud"}
             </Button>
           </Stack>
 
@@ -157,8 +193,7 @@ export default function ProfilePage() {
 
           <Switch
             checked={autoSync}
-            onChange={(e, checked) => setAutoSync(checked)}
-            disabled={!isEncrypted}
+            onChange={(e, checked) => handleAutoSyncChange(checked)}
             label={
               <Box>
                 <Typography variant="body1">Enable Auto-Sync</Typography>

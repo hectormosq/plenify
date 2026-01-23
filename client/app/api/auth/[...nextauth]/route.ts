@@ -27,8 +27,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       // Send properties to the client, like an access_token and user id from a provider.
       if (session) {
-         // @ts-expect-error extending session types
-        session.accessToken = token.accessToken;
+        session.accessToken = token.accessToken as string | undefined;
       }
       return session;
     },
