@@ -1,4 +1,4 @@
-import { Switch as MuiSwitch, SwitchProps as MuiSwitchProps, FormControlLabel, FormControlLabelProps, styled } from "@mui/material";
+import { Switch as MuiSwitch, FormControlLabel, FormControlLabelProps, styled } from "@mui/material";
 import { ReactNode } from "react";
 
 interface SwitchProps extends Omit<FormControlLabelProps, 'control' | 'label' | 'onChange'> {
