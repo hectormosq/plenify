@@ -86,6 +86,10 @@ export class DriveService {
     }
 
     const data = await response.json();
+    
+    // Success: Update anchor timestamp
+    plenifyService.setSetting("lastSyncedRemoteVersion", lastUpdated);
+    
     return data.id;
   }
 
@@ -93,6 +97,12 @@ export class DriveService {
    * Download and restore the backup file.
    */
   async downloadBackup(accessToken: string, fileId: string): Promise<void> {
+    // 1. Get file metadata first to get lastUpdated
+    const fileMetadata = await this.findBackupFile(accessToken);
+    const remoteLastUpdated = fileMetadata?.appProperties?.lastUpdated 
+        ? parseInt(fileMetadata.appProperties.lastUpdated) 
+        : 0;
+
     const response = await fetch(
       `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
       {
@@ -106,6 +116,9 @@ export class DriveService {
     
     // RESTORE DB
     await plenifyService.importDb(content);
+    
+    // Success: Update anchor timestamp to match the downloaded file
+    plenifyService.setSetting("lastSyncedRemoteVersion", remoteLastUpdated);
   }
 
   // --- SYNC LOGIC ---

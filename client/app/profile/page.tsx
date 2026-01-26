@@ -116,7 +116,17 @@ export default function ProfilePage() {
           // 1. Check for existing file
           const existingFile = await driveService.findBackupFile(session.accessToken);
           
-          // 2. Upload (Create or Update)
+          // 2. Safety Check: Optimistic Locking
+          if (existingFile) {
+             const remoteVersion = parseInt(existingFile.appProperties?.lastUpdated || "0");
+             const localAnchor = plenifyService.getSetting("lastSyncedRemoteVersion") || 0;
+
+             if (remoteVersion > localAnchor) {
+                 throw new Error("Cloud has newer changes. Please pull from cloud first.");
+             }
+          }
+
+          // 3. Upload (Create or Update)
           await driveService.uploadBackup(session.accessToken, existingFile?.id);
           
           await checkSyncStatus(); // Refresh status

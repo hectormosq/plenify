@@ -8,6 +8,7 @@ import SessionProvider from "./components/SessionProvider";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import "./styles/styles.scss";
+import AutoSyncHandler from "./components/AutoSyncHandler";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,6 +31,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <SessionProvider>
+          <AutoSyncHandler />
           <Header />
           <main>
             <PlenifyContext.Provider value={actor}>

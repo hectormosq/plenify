@@ -53,6 +53,7 @@ const tablesSchema = {
 const valuesSchema = {
   autoSync: { type: "boolean", default: false },
   lastUpdated: { type: "number", default: 0 },
+  lastSyncedRemoteVersion: { type: "number", default: 0 },
 } as const;
 
 export default class PlenifyService {
