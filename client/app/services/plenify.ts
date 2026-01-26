@@ -1,9 +1,11 @@
 import {
   createMergeableStore,
   createQueries,
+  MapValue,
   MergeableStore,
   ResultTable,
   Row,
+  Value,
   Where,
 } from "tinybase";
 import {
@@ -67,7 +69,7 @@ export default class PlenifyService {
     this.persister = createIndexedDbPersister(this.store, STORE);
   }
 
-  setSetting(key: keyof typeof valuesSchema, value: any) {
+  setSetting(key: keyof typeof valuesSchema, value: Value | MapValue) {
     this.store.setValue(key, value);
     // Setting a setting shouldn't necessarily update "lastUpdated" for data sync purposes?
     // Actually, settings are synced too (in the JSON), so maybe yes?
@@ -75,7 +77,7 @@ export default class PlenifyService {
     // For now, let's keep it manual in data mutation methods.
   }
 
-  getSetting(key: keyof typeof valuesSchema): any {
+  getSetting(key: keyof typeof valuesSchema): unknown {
     return this.store.getValue(key);
   }
 

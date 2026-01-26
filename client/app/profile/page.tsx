@@ -10,6 +10,7 @@ import {
   Stack,
   Alert,
   Chip,
+  ChipProps,
   CircularProgress
 } from "@mui/material";
 import CloudIcon from "@mui/icons-material/Cloud";
@@ -40,7 +41,7 @@ export default function ProfilePage() {
     if (!session?.accessToken) return;
     try {
         const cloudFile = await driveService.findBackupFile(session.accessToken);
-        const localLastUpdated = plenifyService.getSetting("lastUpdated") || 0;
+        const localLastUpdated = plenifyService.getSetting("lastUpdated") as number || 0;
 
         if (!cloudFile) {
             setSyncStatus("local_ahead"); // Assuming we have local data to push
@@ -76,7 +77,7 @@ export default function ProfilePage() {
     }
     const savedAutoSync = plenifyService.getSetting("autoSync");
     if (savedAutoSync !== undefined) {
-      setAutoSync(savedAutoSync);
+      setAutoSync(savedAutoSync as boolean);
     }
   }, [session, checkSyncStatus]);
 
@@ -119,7 +120,7 @@ export default function ProfilePage() {
           // 2. Safety Check: Optimistic Locking
           if (existingFile) {
              const remoteVersion = parseInt(existingFile.appProperties?.lastUpdated || "0");
-             const localAnchor = plenifyService.getSetting("lastSyncedRemoteVersion") || 0;
+             const localAnchor = plenifyService.getSetting("lastSyncedRemoteVersion") as number || 0;
 
              if (remoteVersion > localAnchor) {
                  throw new Error("Cloud has newer changes. Please pull from cloud first.");
@@ -131,9 +132,10 @@ export default function ProfilePage() {
           
           await checkSyncStatus(); // Refresh status
           setSuccessMsg("Successfully pushed data to Google Drive.");
-      } catch (err: any) {
+      } catch (err: unknown) {
           console.error(err);
-          setError(err.message || "Failed to push to cloud.");
+          const errorMessage = err instanceof Error ? err.message : "Failed to push to cloud.";
+          setError(errorMessage);
       } finally {
           setLoading(false);
       }
@@ -158,9 +160,10 @@ export default function ProfilePage() {
           
           await checkSyncStatus(); // Refresh status
           setSuccessMsg("Successfully pulled and restored data from Google Drive.");
-      } catch (err: any) {
+      } catch (err: unknown) {
           console.error(err);
-          setError(err.message || "Failed to pull from cloud.");
+          const errorMessage = err instanceof Error ? err.message : "Failed to pull from cloud.";
+          setError(errorMessage);
       } finally {
           setLoading(false);
       }
@@ -175,7 +178,7 @@ export default function ProfilePage() {
       }
   }
 
-  const getStatusColor = (status: SyncStatus) => {
+  const getStatusColor = (status: SyncStatus): ChipProps['color'] => {
       switch (status) {
           case "synced": return "success";
           case "local_ahead": 
@@ -220,7 +223,7 @@ export default function ProfilePage() {
         action={
              <Chip 
                 label={getStatusLabel(syncStatus)} 
-                color={getStatusColor(syncStatus) as any} 
+                color={getStatusColor(syncStatus)} 
                 variant="outlined" 
                 size="small" 
              />

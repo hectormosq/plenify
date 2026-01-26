@@ -1,3 +1,4 @@
+import { Value } from "tinybase";
 import { plenifyService } from "./index";
 
 const FILE_NAME = "plenify_backup.json.enc";
@@ -88,7 +89,7 @@ export class DriveService {
     const data = await response.json();
     
     // Success: Update anchor timestamp
-    plenifyService.setSetting("lastSyncedRemoteVersion", lastUpdated);
+    plenifyService.setSetting("lastSyncedRemoteVersion", lastUpdated as Value);
     
     return data.id;
   }
