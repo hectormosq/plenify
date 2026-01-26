@@ -20,7 +20,7 @@ export default function AutoSyncHandler() {
       // 2. Safety Check: Optimistic Locking
       if (file) {
           const remoteVersion = parseInt(file.appProperties?.lastUpdated || "0");
-          const localAnchor = plenifyService.getSetting("lastSyncedRemoteVersion") || 0;
+          const localAnchor = plenifyService.getSetting("lastSyncedRemoteVersion") as number || 0;
 
           if (remoteVersion > localAnchor) {
               console.warn("[AutoSync] CONFLICT DETECTED: Cloud has newer changes. Aborting auto-sync.");
