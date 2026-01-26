@@ -1,9 +1,11 @@
 import {
   createMergeableStore,
   createQueries,
+  MapValue,
   MergeableStore,
   ResultTable,
   Row,
+  Value,
   Where,
 } from "tinybase";
 import {
@@ -50,6 +52,12 @@ const tablesSchema = {
   },
 } as const;
 
+const valuesSchema = {
+  autoSync: { type: "boolean", default: false },
+  lastUpdated: { type: "number", default: 0 },
+  lastSyncedRemoteVersion: { type: "number", default: 0 },
+} as const;
+
 export default class PlenifyService {
   store: MergeableStore;
   persister: IndexedDbPersister;
@@ -57,8 +65,20 @@ export default class PlenifyService {
   categoryList: Categories = {};
 
   constructor() {
-    this.store = createMergeableStore().setSchema(tablesSchema);
+    this.store = createMergeableStore().setSchema(tablesSchema, valuesSchema);
     this.persister = createIndexedDbPersister(this.store, STORE);
+  }
+
+  setSetting(key: keyof typeof valuesSchema, value: Value | MapValue) {
+    this.store.setValue(key, value);
+    // Setting a setting shouldn't necessarily update "lastUpdated" for data sync purposes?
+    // Actually, settings are synced too (in the JSON), so maybe yes?
+    // Let's stick to data changes primarily, but since settings are in the DB, they affect the hash.
+    // For now, let's keep it manual in data mutation methods.
+  }
+
+  getSetting(key: keyof typeof valuesSchema): unknown {
+    return this.store.getValue(key);
   }
 
   private async fetchCategories() {
@@ -85,6 +105,7 @@ export default class PlenifyService {
     this.persister.getStore().delTable(Tables.categories);
     const categories = await this.fetchCategories();
     this.persister.getStore().setTable(Tables.categories, categories);
+    this.updateLastUpdated();
   }
 
   updateTransaction(transaction: Transaction) {
@@ -100,6 +121,7 @@ export default class PlenifyService {
   deleteTransaction(transactionId: string) {
     this.persister.getStore().delRow(Tables.transactions, transactionId);
     this.deleteTransactionCategories(transactionId);
+    this.updateLastUpdated();
   }
 
   deleteTransactionCategories(transactionId: string) {
@@ -162,6 +184,7 @@ export default class PlenifyService {
           category: category,
         });
       }
+      this.updateLastUpdated();
     });
 
     return { [transactionId]: transaction };
@@ -298,10 +321,19 @@ export default class PlenifyService {
   async reset() {
     this.persister.getStore().delTable(Tables.transactionCategories);
     this.persister.getStore().delTable(Tables.transactions);
+    this.updateLastUpdated();
+  }
+
+  updateLastUpdated() {
+    this.store.setValue("lastUpdated", Date.now());
+  }
+
+  exportDb(): string {
+    return this.persister.getStore().getJson();
   }
 
   downloadDb() {
-    const values = this.persister.getStore().getJson();
+    const values = this.exportDb();
     const jsonString = `data:text/json;chatset=utf-8,${encodeURIComponent(
       values
     )}`;
