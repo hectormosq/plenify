@@ -25,7 +25,7 @@ export const restCategories = {
     color: '#A1887F', // Pale Brown
   },
   '9c0d1e2f-3g4h-5i6j-7k8l-9m0n1o2p3q4r': {
-    name: 'Compras Hogar',
+    name: 'Gastos Hogar',
     color: '#FF7043', // Deep Orange
   },
   '0d1e2f3g-4h5i-6j7k-8l9m-0n1o2p3q4r5s': {
@@ -137,5 +137,9 @@ export const restCategories = {
   '5y6z7a8b-9c0d-1e2f-3g4h-5i6j7k8l9m0n': {
     name: 'Prestamos',
     color: '#455A64', // Dark Blue Grey
+  },
+  '9a8b7c6d-5e4f-3g2h-1i0j-9k8l7m6n5o4p': {
+    name: 'Necesidades',
+    color: '#78909C', // Blue Grey
   },
 }

@@ -1,0 +1,80 @@
+.container {
+  padding: 1.5rem;
+  max-width: 800px;
+  margin: 0 auto;
+  color: var(--foreground);
+}
+
+.title {
+  margin-bottom: 2rem;
+  font-weight: 500;
+}
+
+.signInWrapper {
+  padding: 1.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80vh;
+}
+
+.signInCard {
+  max-width: 400px;
+  width: 100%;
+  padding: 1rem;
+  text-align: center;
+  background-color: var(--componentBackground) !important;
+  color: var(--foreground) !important;
+}
+
+.card {
+  margin-bottom: 2rem;
+  background-color: var(--componentBackground) !important;
+  color: var(--foreground) !important;
+
+  /* Ensure text inside content is readable */
+  .MuiTypography-colorTextSecondary {
+    color: var(--secondary) !important;
+  }
+}
+
+.cardHeader {
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.userInfo {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.userDetails {
+  display: flex;
+  flex-direction: column;
+}
+
+.syncHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.syncTitle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.actionStack {
+  margin-bottom: 1.5rem;
+}
+
+.divider {
+    margin: 1rem 0;
+    background-color: rgba(255, 255, 255, 0.12);
+}
