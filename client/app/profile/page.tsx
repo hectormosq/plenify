@@ -6,7 +6,6 @@ import {
   Box,
   Typography,
   Avatar,
-  Divider,
   Stack,
   Alert,
   Chip,
