@@ -22,14 +22,12 @@ import dayjs from "dayjs";
 import classes from "./profile.module.scss";
 import Card from "../components/Card/Card";
 import Button from "../components/buttons/Button";
-import Switch from "../components/inputs/Switch";
 
 import { driveService, SyncStatus } from "../services/driveService";
 import { plenifyService } from "../services/index";
 
 export default function ProfilePage() {
   const { data: session } = useSession();
-  const [autoSync, setAutoSync] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("unknown");
   const [lastSyncedDate, setLastSyncedDate] = useState<string | null>(null);
   
@@ -75,16 +73,7 @@ export default function ProfilePage() {
     if (session) {
         checkSyncStatus();
     }
-    const savedAutoSync = plenifyService.getSetting("autoSync");
-    if (savedAutoSync !== undefined) {
-      setAutoSync(savedAutoSync as boolean);
-    }
   }, [session, checkSyncStatus]);
-
-  const handleAutoSyncChange = (checked: boolean) => {
-    setAutoSync(checked);
-    plenifyService.setSetting("autoSync", checked);
-  };
 
   if (!session) {
     return (
@@ -264,20 +253,6 @@ export default function ProfilePage() {
             </Button>
           </Stack>
 
-          <Divider className={classes.divider} />
-
-          <Switch
-            checked={autoSync}
-            onChange={(e, checked) => handleAutoSyncChange(checked)}
-            label={
-              <Box>
-                <Typography variant="body1">Enable Auto-Sync</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Automatically upload changes when online
-                </Typography>
-              </Box>
-            }
-          />
       </Card>
     </Box>
   );
