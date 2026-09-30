@@ -1,121 +1,205 @@
 import { plenifyService } from "@/app/services";
-import { DateParseFormat, isFromIndex, TransactionFormValues, UploadFileConfigFormValues } from "../model/UploadFile";
+import { DateParseFormat, isFromIndex, UploadFileConfigFormValues } from "../model/UploadFile";
+import { RowState, computeDraftKey, loadDraft, saveDraft, clearDraft } from "../model/uploadDraft";
+import { FileSignature } from "../model/fileSignature";
 import { Transaction, TransactionType } from "@/app/models/transaction";
 import dayjs from "dayjs";
 import classes from "./TransactionFormMapper.module.scss";
-import { Control, Controller, UseFormRegister, useForm, useWatch } from "react-hook-form";
 import CategorySelector from "@/app/components/categories/CategorySelector";
 import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Box,
+  Button,
   Card,
   CardContent,
   Checkbox,
   Chip,
+  Collapse,
+  Divider,
   Grid,
+  LinearProgress,
   Snackbar,
   TextField,
   Typography,
-  Box,
-  Divider,
-  Collapse,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePlenifyState } from "@/app/hooks/usePlenifyState";
 
 type TransactionFormMapperProps = {
   fileRows: string[][];
   formValues: UploadFileConfigFormValues;
-  onValidityChange?: (isValid: boolean) => void;
-  submitTrigger: boolean;
-  onSubmissionComplete?: () => void;
+  maxLength: number;
+  fileName: string;
+  fileSignature: FileSignature;
 };
+
+const emptyRowState: RowState = { skip: false, tags: [], notes: "" };
 
 export default function TransactionFormMapper(
   props: TransactionFormMapperProps
 ) {
   const router = useRouter();
   const { categories } = usePlenifyState();
+  const { fileRows, formValues, maxLength, fileName, fileSignature } = props;
+
   const [snackState, setSnackState] = useState({
     state: false,
     message: "",
   });
 
-  const { fileRows, formValues } = props;
-  const dataset = useMemo(() => {
-    const data = [];
-    for (let i = formValues.selectedRow as number; i < fileRows.length; i++) {
-      const row = fileRows[i];
-      const proccessedRow = _proccessRow(row, formValues);
-      const transactionsByType =
-        plenifyService.getTransactionByProps(proccessedRow);
-      data.push({
-        fileRow: i,
-        rawRow: row,
-        proccessedRow: proccessedRow,
-        transactions: transactionsByType.ALL,
-        formDefault: {
-          tags: [] as string[],
-          skip: transactionsByType.ALL.length ? true : false,
-          account: proccessedRow.account,
-          amount: proccessedRow.amount,
-          transactionType: proccessedRow.transactionType,
-          date: proccessedRow.date,
-          description: proccessedRow.description,
-          notes: proccessedRow.notes,
-        },
+  const draftKey = useMemo(
+    () => computeDraftKey(fileSignature, fileRows),
+    [fileSignature, fileRows]
+  );
+
+  const totalRows = fileRows.length - (formValues.selectedRow as number);
+
+  const [initialized, setInitialized] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [rowStates, setRowStates] = useState<Record<number, RowState>>({});
+  const [rowForm, setRowForm] = useState<RowState>(emptyRowState);
+  const draftCreatedAtRef = useRef<number>(Date.now());
+
+  // Load a previously paused review for this exact file, or start a fresh one.
+  useEffect(() => {
+    const existing = loadDraft(draftKey);
+    if (existing) {
+      if (existing.currentIndex >= totalRows) {
+        clearDraft(draftKey);
+        router.push("/overview");
+        return;
+      }
+      draftCreatedAtRef.current = existing.createdAt;
+      setCurrentIndex(existing.currentIndex);
+      setRowStates(existing.rowStates);
+    } else {
+      draftCreatedAtRef.current = Date.now();
+      saveDraft({
+        draftKey,
+        label: fileSignature.label,
+        createdAt: draftCreatedAtRef.current,
+        fileName,
+        rows: fileRows,
+        maxLength,
+        formValues,
+        currentIndex: 0,
+        rowStates: {},
       });
     }
-    return data;
-  }, [fileRows, formValues]);
+    setInitialized(true);
+    // Only re-run if we're looking at a different file/draft.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftKey]);
 
+  const currentItem = useMemo(() => {
+    const fileRowIndex = (formValues.selectedRow as number) + currentIndex;
+    const row = fileRows[fileRowIndex];
+    if (!row) return null;
+    const proccessedRow = _proccessRow(row, formValues);
+    const transactions = plenifyService.getTransactionByProps(proccessedRow).ALL;
+    return { fileRowIndex, proccessedRow, transactions };
+  }, [fileRows, formValues, currentIndex]);
 
-  const { control, handleSubmit, register, formState } = useForm<TransactionFormValues>({
-    defaultValues: {
-      transactionRow: dataset.map((item) => item.formDefault),
-    },
-    mode: "onBlur",
-  });
-
-  /*
-   * Watch for submit trigger from parent
-   */
+  // Seed the on-screen form when the current row changes: restore a previous decision,
+  // or default to skipping when possible duplicates already exist.
   useEffect(() => {
-    if (props.submitTrigger) {
-      handleSubmit(async (data) => {
-        try {
-          await onSubmit(data);
-        } finally {
-          props.onSubmissionComplete?.();
-        }
-      })();
+    if (!currentItem) return;
+    const existing = rowStates[currentIndex];
+    setRowForm(
+      existing ?? {
+        skip: currentItem.transactions.length > 0,
+        tags: [],
+        notes: "",
+      }
+    );
+  }, [currentIndex, currentItem, rowStates]);
+
+  function updateRowForm(patch: Partial<RowState>) {
+    setRowForm((prev) => ({ ...prev, ...patch }));
+  }
+
+  function saveCurrentAndAdvance() {
+    if (!currentItem) return;
+
+    const existingId = rowStates[currentIndex]?.transactionId;
+    let transactionId = existingId;
+
+    try {
+      if (!rowForm.skip) {
+        const payload: Transaction = {
+          ...currentItem.proccessedRow,
+          tags: rowForm.tags,
+          notes: rowForm.notes,
+          ...(existingId ? { id: existingId } : {}),
+        };
+        const result = existingId
+          ? plenifyService.updateTransaction(payload)
+          : plenifyService.addTransaction(payload);
+        transactionId = existingId ?? Object.keys(result)[0];
+      } else if (existingId) {
+        plenifyService.deleteTransaction(existingId);
+        transactionId = undefined;
+      }
+    } catch (e) {
+      console.error(e);
+      setSnackState({ state: true, message: "Error saving transaction" });
+      return;
     }
-  }, [props.submitTrigger]);
 
-  useEffect(() => {
-    props.onValidityChange?.(formState.isValid);
-  }, [formState.isValid, props.onValidityChange]);
+    const nextRowStates = {
+      ...rowStates,
+      [currentIndex]: { ...rowForm, transactionId },
+    };
+    setRowStates(nextRowStates);
+
+    if (currentIndex + 1 >= totalRows) {
+      clearDraft(draftKey);
+      router.push("/overview");
+    } else {
+      saveDraft({
+        draftKey,
+        label: fileSignature.label,
+        createdAt: draftCreatedAtRef.current,
+        fileName,
+        rows: fileRows,
+        maxLength,
+        formValues,
+        currentIndex: currentIndex + 1,
+        rowStates: nextRowStates,
+      });
+      setCurrentIndex(currentIndex + 1);
+    }
+  }
+
+  function goPrevious() {
+    if (currentIndex > 0) setCurrentIndex(currentIndex - 1);
+  }
+
+  function cancelImport() {
+    clearDraft(draftKey);
+    router.push("/overview");
+  }
 
   function TransactionRowItem({
     transaction,
-    index,
     actions = false,
-    control,
-    register,
+    rowForm,
+    onTagsChange,
+    onNotesChange,
+    onSkipChange,
   }: {
     transaction: Transaction;
-    index: number;
     actions?: boolean;
-    control: Control<TransactionFormValues>;
-    register: UseFormRegister<TransactionFormValues>;
+    rowForm?: RowState;
+    onTagsChange?: (tags: string[]) => void;
+    onNotesChange?: (notes: string) => void;
+    onSkipChange?: (skip: boolean) => void;
   }) {
-    const isSkipped = useWatch({
-      control,
-      name: `transactionRow.${index}.skip`,
-    });
+    const isSkipped = !!rowForm?.skip;
 
     return (
       <Card
@@ -136,24 +220,9 @@ export default function TransactionFormMapper(
                 <Typography variant="body2" sx={{ mr: 1, color: 'var(--foreground)' }}>
                   Skip?
                 </Typography>
-                <Controller
-                  name={`transactionRow.${index}.skip`}
-                  control={control}
-                  render={({ field }) => (
-                    <Checkbox {...field} checked={field.value} />
-                  )}
-                />
-                {/* Hidden inputs to keep form state */}
-                <input hidden {...register(`transactionRow.${index}.account`)} />
-                <input hidden {...register(`transactionRow.${index}.amount`)} />
-                <input
-                  hidden
-                  {...register(`transactionRow.${index}.transactionType`)}
-                />
-                <input hidden {...register(`transactionRow.${index}.date`)} />
-                <input
-                  hidden
-                  {...register(`transactionRow.${index}.description`)}
+                <Checkbox
+                  checked={isSkipped}
+                  onChange={(e) => onSkipChange?.(e.target.checked)}
                 />
               </div>
             )}
@@ -170,21 +239,13 @@ export default function TransactionFormMapper(
               </Box>
               {actions && (
                 <Collapse in={!isSkipped}>
-                  <Controller
-                    name={`transactionRow.${index}.notes`}
-                    control={control}
-                    render={({ field }) => (
-                      <TextField
-                        fullWidth
-                        placeholder="Add notes..."
-                        variant="outlined"
-                        size="small"
-                        {...field}
-                        onChange={(e) => {
-                          field.onChange(e.target.value);
-                        }}
-                      />
-                    )}
+                  <TextField
+                    fullWidth
+                    placeholder="Add notes..."
+                    variant="outlined"
+                    size="small"
+                    value={rowForm?.notes ?? ""}
+                    onChange={(e) => onNotesChange?.(e.target.value)}
                   />
                 </Collapse>
               )}
@@ -197,12 +258,9 @@ export default function TransactionFormMapper(
               </Typography>
               {actions ? (
                 <Collapse in={!isSkipped}>
-                  <Controller
-                    name={`transactionRow.${index}.tags`}
-                    control={control}
-                    render={({ field }) => (
-                      <CategorySelector {...field} />
-                    )}
+                  <CategorySelector
+                    value={rowForm?.tags ?? []}
+                    onChange={(tags) => onTagsChange?.(tags)}
                   />
                 </Collapse>
               ) : (
@@ -268,76 +326,66 @@ export default function TransactionFormMapper(
     );
   }
 
-  async function onSubmit(data: {
-    transactionRow: (Transaction & { skip: boolean })[];
-  }) {
-    const summary = {};
-    try {
-      await Promise.all(
-        data.transactionRow.map(async (transaction) => {
-          if (!transaction.skip) {
-            const result = await plenifyService.addTransaction(transaction);
-            Object.assign(summary, result);
-          }
-        })
-      );
-      const totalAdded = Object.entries(summary).length + 1;
-      setSnackState({ state: true, message: `Added ${totalAdded}` });
-      // Use Next.js router for navigation
-
-      router.push("/overview");
-    } catch (e) {
-      console.error(e);
-      setSnackState({ state: true, message: `Error While Adding ` });
-    }
+  if (!initialized || !currentItem) {
+    return null;
   }
+
+  const progress = totalRows > 0 ? (currentIndex / totalRows) * 100 : 100;
 
   return (
     <>
-      <form className={classes.form} onSubmit={handleSubmit(onSubmit)}>
-        <Box sx={{ mb: 1 }}>
-          <Typography variant="h6">
-            Total Transactions: {dataset.length}
-          </Typography>
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="h6">
+          Reviewing {currentIndex + 1} of {totalRows}
+          {fileSignature.label !== "Unlabeled import" && ` — ${fileSignature.label}`}
+        </Typography>
+        <LinearProgress variant="determinate" value={progress} sx={{ mt: 1 }} />
+      </Box>
+
+      <TransactionRowItem
+        transaction={currentItem.proccessedRow as Transaction}
+        actions
+        rowForm={rowForm}
+        onTagsChange={(tags) => updateRowForm({ tags })}
+        onNotesChange={(notes) => updateRowForm({ notes })}
+        onSkipChange={(skip) => updateRowForm({ skip })}
+      />
+
+      {currentItem.transactions.length > 0 && (
+        <Accordion className={classes.accordion}>
+          <AccordionSummary className={classes.accordionSummary} expandIcon={<ExpandMoreIcon />}>
+            <Typography className={classes.sectionTitle}>
+              Possible Matches ({currentItem.transactions.length})
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            {currentItem.transactions.map(
+              (transaction: Transaction, tIdx: number) => (
+                <Box key={tIdx} sx={{ mb: 1 }}>
+                  <TransactionRowItem transaction={transaction} />
+                </Box>
+              )
+            )}
+          </AccordionDetails>
+        </Accordion>
+      )}
+
+      <Divider sx={{ my: 2 }} />
+
+      <Box display="flex" justifyContent="space-between" gap={1}>
+        <Button onClick={cancelImport} color="inherit">
+          Cancel import
+        </Button>
+        <Box display="flex" gap={1}>
+          <Button onClick={goPrevious} disabled={currentIndex === 0}>
+            Previous
+          </Button>
+          <Button variant="contained" onClick={saveCurrentAndAdvance}>
+            {currentIndex + 1 >= totalRows ? "Save & Finish" : "Save & Next"}
+          </Button>
         </Box>
-        <Grid container spacing={0.5} direction="column" >
-          {dataset.map((item, idx) => (
-            <Grid key={idx}>
-              <TransactionRowItem
-                transaction={item.proccessedRow as Transaction}
-                index={idx}
-                actions={true}
-                control={control}
-                register={register}
-              />
-              {item.transactions.length > 0 && (
-                <Accordion className={classes.accordion}>
-                  <AccordionSummary className={classes.accordionSummary} expandIcon={<ExpandMoreIcon />}>
-                    <Typography className={classes.sectionTitle}>
-                      Possible Matches ({item.transactions.length})
-                    </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    {item.transactions.map(
-                      (transaction: Transaction, tIdx: number) => (
-                        <Box key={tIdx} sx={{ mb: 1 }}>
-                          <TransactionRowItem
-                            transaction={transaction as Transaction}
-                            index={idx}
-                            control={control}
-                            register={register}
-                          />
-                        </Box>
-                      )
-                    )}
-                  </AccordionDetails>
-                </Accordion>
-              )}
-              <Divider sx={{ my: 1 }} />
-            </Grid>
-          ))}
-        </Grid>
-      </form>
+      </Box>
+
       <Snackbar
         open={snackState.state}
         autoHideDuration={6000}
@@ -366,6 +414,7 @@ function _proccessRow(
     // Use dayjs's toDate() but strip time zone by constructing a new Date from formatted string
     date: dayjs(datejs.format()).toDate(),
     description: _getValue(formValues.description, row) as string,
+    notes: "",
     tags: [],
   };
   return normalizedProps;

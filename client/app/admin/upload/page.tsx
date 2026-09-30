@@ -7,21 +7,19 @@ import { Button, Step, StepLabel } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import UploadFileConfigForm from "./components/UploadFileConfigForm";
 import { UploadFileConfigFormState } from "./model/UploadFile";
+import { extractFileSignature, FileSignature } from "./model/fileSignature";
 import { StyledStepper } from "@/app/components/Stepper/StyledStepper";
 import TransactionFormMapper from "./components/TransactionFormMapper";
 export default function UploadPage() {
   const [rows, setRows] = useState<string[][]>([]);
   const [maxLength, setMaxLength] = useState(0);
   const [files, setFiles] = useState<File[]>([]);
+  const [fileSignature, setFileSignature] = useState<FileSignature>({ label: "" });
 
   const [step, setStep] = useState(0);
   const [formState, setFormState] = useState<UploadFileConfigFormState>({
     isValid: false,
   } as UploadFileConfigFormState);
-
-  const [isTransactionFormValid, setIsTransactionFormValid] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitTrigger, setSubmitTrigger] = useState(false);
 
   const steps = [
     { title: "Upload File" },
@@ -40,20 +38,13 @@ export default function UploadPage() {
     const stepValidation: Record<number, () => boolean> = {
       0: () => true,
       1: () => !_formIsValid(),
-      2: () => !isTransactionFormValid || isSubmitting,
     };
 
     return stepValidation[step] ? stepValidation[step]() : true; // Default to true if no validation is defined for the step
   }
 
-  async function nextStep() {
-    if (step === 2) {
-      if (isSubmitting) return;
-      setIsSubmitting(true);
-      setSubmitTrigger(true);
-    } else {
-      setStep(step + 1);
-    }
+  function nextStep() {
+    setStep(step + 1);
   }
 
   function prevStep() {
@@ -99,6 +90,7 @@ export default function UploadPage() {
           const clearData = raw_data.filter((arr) => arr.length > 0);
           setRows(clearData);
           setMaxLength(Math.max(...clearData.map((arr) => arr.length)));
+          setFileSignature(extractFileSignature(clearData));
         });
         return true;
       });
@@ -120,19 +112,20 @@ export default function UploadPage() {
         </StyledStepper>
       </div>
 
-      <div className={classes.buttonContainer}>
-        <Button
-          onClick={prevStep}
-          disabled={_validatePreviousState() || isSubmitting}>
-          Previous
-        </Button>
-        <Button variant="outlined"
-          onClick={nextStep}
-          loading={isSubmitting}
-          disabled={_validateNextState()}>
-          {step === 2 ? "Submit" : "Next"}
-        </Button>
-      </div>
+      {step !== 2 && (
+        <div className={classes.buttonContainer}>
+          <Button
+            onClick={prevStep}
+            disabled={_validatePreviousState()}>
+            Previous
+          </Button>
+          <Button variant="outlined"
+            onClick={nextStep}
+            disabled={_validateNextState()}>
+            Next
+          </Button>
+        </div>
+      )}
 
       {step === 0 && (
         <div className={classes.stepContainer}>
@@ -173,9 +166,9 @@ export default function UploadPage() {
           <TransactionFormMapper
             fileRows={rows}
             formValues={formState.values}
-            onValidityChange={setIsTransactionFormValid}
-            submitTrigger={submitTrigger}
-            onSubmissionComplete={() => setIsSubmitting(false)}
+            maxLength={maxLength}
+            fileName={files[0]?.name ?? ""}
+            fileSignature={fileSignature}
           />
         </div>
       )}

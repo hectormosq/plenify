@@ -131,3 +131,6 @@ dist
 
 # Generated session artifacts (screenshots, exports, notes) - never a deliverable
 artifacts/
+
+# Playwright MCP output (console logs, page snapshots, screenshots)
+.playwright-mcp/
