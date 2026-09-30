@@ -6,6 +6,7 @@ import { Transaction, TransactionType } from "@/app/models/transaction";
 import dayjs from "dayjs";
 import classes from "./TransactionFormMapper.module.scss";
 import CategorySelector from "@/app/components/categories/CategorySelector";
+import ReviewQueueSidebar, { RowSummary } from "./ReviewQueueSidebar";
 import {
   Accordion,
   AccordionDetails,
@@ -25,6 +26,7 @@ import {
   Typography,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import CreditCardIcon from "@mui/icons-material/CreditCard";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePlenifyState } from "@/app/hooks/usePlenifyState";
@@ -188,6 +190,34 @@ export default function TransactionFormMapper(
     if (currentIndex > 0) setCurrentIndex(currentIndex - 1);
   }
 
+  function jumpToRow(index: number) {
+    if (index >= 0 && index < totalRows) setCurrentIndex(index);
+  }
+
+  // Cheap summary for every row, for the sidebar list - only _proccessRow (pure parsing,
+  // no I/O). Deliberately does NOT call getTransactionByProps here: that TinyBase query
+  // is what made the old all-rows-at-once review freeze the tab, and it stays scoped to
+  // only the single currently-open row (see currentItem below), same as before.
+  const rowSummaries: RowSummary[] = useMemo(() => {
+    const selectedRow = formValues.selectedRow as number;
+    const summaries: RowSummary[] = [];
+    for (let fileRowIndex = selectedRow; fileRowIndex < fileRows.length; fileRowIndex++) {
+      const row = fileRows[fileRowIndex];
+      if (!row) continue;
+      const processed = _proccessRow(row, effectiveFormValues);
+      const index = fileRowIndex - selectedRow;
+      summaries.push({
+        index,
+        description: processed.description,
+        amount: processed.amount,
+        transactionType: processed.transactionType,
+        date: processed.date,
+        tags: rowStates[index]?.tags ?? [],
+      });
+    }
+    return summaries;
+  }, [fileRows, formValues, effectiveFormValues, rowStates]);
+
   function cancelImport() {
     clearDraft(draftKey);
     router.push("/overview");
@@ -342,17 +372,20 @@ export default function TransactionFormMapper(
                 Date
               </Typography>
               {transaction.date && dayjs(transaction.date).isValid() ? (
-                <Typography variant="body2" className={classes.mutedText}>
-                  {dayjs(transaction.date).format("DD/MM/YYYY")}
-                </Typography>
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  label={dayjs(transaction.date).format("DD/MM/YYYY")}
+                  className={classes.dateChip}
+                />
               ) : (
-                <Typography
-                  variant="body2"
-                  className={classes.parseError}
+                <Chip
+                  size="small"
+                  variant="outlined"
+                  color="error"
+                  label="Invalid date"
                   title="No Date column was selected in Step 1, or this row's date value couldn't be read"
-                >
-                  Invalid date
-                </Typography>
+                />
               )}
             </Grid>
 
@@ -404,85 +437,105 @@ export default function TransactionFormMapper(
   const progress = totalRows > 0 ? (currentIndex / totalRows) * 100 : 100;
 
   return (
-    <>
-      <Box sx={{ mb: 2 }}>
-        <Box
-          display="flex"
-          justifyContent="space-between"
-          alignItems="flex-end"
-          flexWrap="wrap"
-          gap={2}
-        >
-          <Typography variant="h6" className={classes.sectionTitle}>
-            Reviewing {currentIndex + 1} of {totalRows}
+    <Box display="flex" gap={2} alignItems="flex-start" flexWrap="wrap">
+      <ReviewQueueSidebar
+        rows={rowSummaries}
+        rowStates={rowStates}
+        activeIndex={currentIndex}
+        onSelect={jumpToRow}
+      />
+
+      <Box flex={1} minWidth={280}>
+        <Box sx={{ mb: 2 }}>
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="flex-start"
+            flexWrap="wrap"
+            gap={2}
+          >
+            <Box display="flex" alignItems="center" gap={1}>
+              <CreditCardIcon sx={{ color: "var(--maincolor)" }} />
+              <Box>
+                <Typography variant="subtitle1" className={classes.sectionTitle} sx={{ fontWeight: 700 }}>
+                  {account || "Unlabeled account"}
+                </Typography>
+                <Typography variant="caption" className={classes.mutedText}>
+                  Statement: {fileName}
+                </Typography>
+              </Box>
+            </Box>
+            <TextField
+              label="Account"
+              placeholder="e.g. Santander Credit Card"
+              size="small"
+              className={classes.themedTextField}
+              value={account}
+              onChange={(e) => setAccount(e.target.value)}
+              onBlur={handleAccountBlur}
+              title="Fixing this updates every transaction already saved in this import too"
+              sx={{ minWidth: 220 }}
+            />
+          </Box>
+          <Typography variant="h6" className={classes.sectionTitle} sx={{ mt: 1.5 }}>
+            Reviewing {currentIndex + 1} of {totalRows} · {progress.toFixed(1)}%
             {fileSignature.label !== "Unlabeled import" && ` — ${fileSignature.label}`}
           </Typography>
-          <TextField
-            label="Account"
-            placeholder="e.g. Santander Credit Card"
-            size="small"
-            className={classes.themedTextField}
-            value={account}
-            onChange={(e) => setAccount(e.target.value)}
-            onBlur={handleAccountBlur}
-            title="Fixing this updates every transaction already saved in this import too"
-            sx={{ minWidth: 220 }}
-          />
+          <LinearProgress variant="determinate" value={progress} sx={{ mt: 1 }} />
         </Box>
-        <LinearProgress variant="determinate" value={progress} sx={{ mt: 1 }} />
-      </Box>
 
-      <TransactionRowItem
-        transaction={currentItem.proccessedRow as Transaction}
-        actions
-        rowForm={rowForm}
-        onTagsChange={(tags) => updateRowForm({ tags })}
-        onNotesChange={(notes) => updateRowForm({ notes })}
-        onSkipChange={(skip) => updateRowForm({ skip })}
-      />
+        <TransactionRowItem
+          transaction={currentItem.proccessedRow as Transaction}
+          actions
+          rowForm={rowForm}
+          onTagsChange={(tags) => updateRowForm({ tags })}
+          onNotesChange={(notes) => updateRowForm({ notes })}
+          onSkipChange={(skip) => updateRowForm({ skip })}
+        />
 
-      {currentItem.transactions.length > 0 && (
-        <Accordion className={classes.accordion}>
-          <AccordionSummary className={classes.accordionSummary} expandIcon={<ExpandMoreIcon />}>
-            <Typography className={classes.sectionTitle}>
-              Possible Matches ({currentItem.transactions.length})
-            </Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            {currentItem.transactions.map(
-              (transaction: Transaction, tIdx: number) => (
-                <Box key={tIdx} sx={{ mb: 1 }}>
-                  <TransactionRowItem transaction={transaction} />
-                </Box>
-              )
-            )}
-          </AccordionDetails>
-        </Accordion>
-      )}
+        {currentItem.transactions.length > 0 && (
+          <Accordion className={classes.accordion}>
+            <AccordionSummary className={classes.accordionSummary} expandIcon={<ExpandMoreIcon />}>
+              <Typography className={classes.sectionTitle}>
+                Possible Matches ({currentItem.transactions.length})
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              {currentItem.transactions.map(
+                (transaction: Transaction, tIdx: number) => (
+                  <Box key={tIdx} sx={{ mb: 1 }}>
+                    <TransactionRowItem transaction={transaction} />
+                  </Box>
+                )
+              )}
+            </AccordionDetails>
+          </Accordion>
+        )}
 
-      <Divider sx={{ my: 2 }} />
+        <Divider sx={{ my: 2 }} />
 
-      <Box display="flex" justifyContent="space-between" gap={1}>
-        <Button onClick={cancelImport} color="inherit">
-          Cancel import
-        </Button>
-        <Box display="flex" gap={1}>
-          <Button onClick={goPrevious} disabled={currentIndex === 0}>
-            Previous
+        <Box display="flex" justifyContent="space-between" gap={1} className={classes.footerBar}>
+          <Button onClick={cancelImport} color="inherit">
+            Cancel import
           </Button>
-          <Button variant="contained" onClick={saveCurrentAndAdvance}>
-            {currentIndex + 1 >= totalRows ? "Save & Finish" : "Save & Next"}
-          </Button>
+          <Box display="flex" gap={1}>
+            <Button onClick={goPrevious} disabled={currentIndex === 0}>
+              Previous
+            </Button>
+            <Button variant="contained" onClick={saveCurrentAndAdvance}>
+              {currentIndex + 1 >= totalRows ? "Save & Finish" : "Save & Next"}
+            </Button>
+          </Box>
         </Box>
-      </Box>
 
-      <Snackbar
-        open={snackState.state}
-        autoHideDuration={6000}
-        onClose={() => setSnackState({ state: false, message: "" })}
-        message={snackState.message}
-      />
-    </>
+        <Snackbar
+          open={snackState.state}
+          autoHideDuration={6000}
+          onClose={() => setSnackState({ state: false, message: "" })}
+          message={snackState.message}
+        />
+      </Box>
+    </Box>
   );
 }
 
