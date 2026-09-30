@@ -16,7 +16,7 @@ import {
 } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import UploadFileConfigForm from "./components/UploadFileConfigForm";
-import { UploadFileConfigFormState } from "./model/UploadFile";
+import { UploadFileConfigFormState, isFromIndex } from "./model/UploadFile";
 import { extractFileSignature, FileSignature } from "./model/fileSignature";
 import {
   UploadDraft,
@@ -75,7 +75,24 @@ export default function UploadPage() {
   }
 
   function _formIsValid() {
-    return formState.isValid;
+    const values = formState.values;
+    return (
+      formState.isValid &&
+      !!values &&
+      isFromIndex(values.date) &&
+      isFromIndex(values.description) &&
+      isFromIndex(values.amount)
+    );
+  }
+
+  function _missingColumnMapping() {
+    const values = formState.values;
+    if (!values || values.selectedRow === "") return false;
+    return (
+      !isFromIndex(values.date) ||
+      !isFromIndex(values.description) ||
+      !isFromIndex(values.amount)
+    );
   }
 
   function handleFormChange(formState: UploadFileConfigFormState) {
@@ -230,6 +247,13 @@ export default function UploadPage() {
             </Button>
           </Box>
         </div>
+      )}
+      {step === 1 && _missingColumnMapping() && (
+        <Box sx={{ textAlign: "center", mb: 1 }}>
+          <Typography variant="body2" sx={{ color: "var(--errorColor)" }}>
+            Select a column for Date, Description, and Amount before continuing.
+          </Typography>
+        </Box>
       )}
       {step === 1 && (
         <div className={classes.stepContainer}>

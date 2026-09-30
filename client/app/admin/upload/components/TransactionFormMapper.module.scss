@@ -131,3 +131,38 @@
   color: #b3aea5;
   font-weight: bold;
 }
+
+// MUI's default palette (text.secondary, placeholder opacity, etc.) is calibrated for
+// MUI's own light theme - this app has no ThemeProvider, so anywhere that relies on a
+// MUI default color instead of these CSS variables is nearly invisible in dark mode.
+.mutedText {
+  color: var(--inputLabel) !important;
+}
+
+.parseError {
+  color: var(--errorColor) !important;
+  font-style: italic;
+}
+
+.themedTextField {
+  :global(.MuiOutlinedInput-notchedOutline) {
+    border-color: var(--border);
+  }
+
+  :global(.MuiInputBase-input) {
+    color: var(--foreground);
+  }
+
+  :global(.MuiInputBase-input::placeholder) {
+    color: var(--inputLabel);
+    opacity: 1;
+  }
+
+  :global(.MuiFormLabel-root) {
+    color: var(--inputLabel);
+
+    &:global(.Mui-focused) {
+      color: var(--inputLabel);
+    }
+  }
+}

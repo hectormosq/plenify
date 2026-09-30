@@ -261,7 +261,7 @@ export default function TransactionFormMapper(
           {/* Header: TransactionType | Account | Skip */}
           <div className={classes.cardHeader}>
             <Box display="flex" alignItems="center" gap={1}>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" className={classes.mutedText}>
                 {transaction?.account}
               </Typography>
             </Box>
@@ -292,6 +292,7 @@ export default function TransactionFormMapper(
                 <Collapse in={!isSkipped}>
                   <TextField
                     fullWidth
+                    className={classes.themedTextField}
                     placeholder="Add notes..."
                     variant="outlined"
                     size="small"
@@ -329,7 +330,7 @@ export default function TransactionFormMapper(
                       />
                     ))
                   ) : (
-                    <Typography variant="body2" color="text.secondary">-</Typography>
+                    <Typography variant="body2" className={classes.mutedText}>-</Typography>
                   )}
                 </Box>
               )}
@@ -340,11 +341,19 @@ export default function TransactionFormMapper(
               <Typography variant="caption" className={classes.columnTitle}>
                 Date
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {transaction.date
-                  ? dayjs(transaction.date).format("DD/MM/YYYY")
-                  : "No Date"}
-              </Typography>
+              {transaction.date && dayjs(transaction.date).isValid() ? (
+                <Typography variant="body2" className={classes.mutedText}>
+                  {dayjs(transaction.date).format("DD/MM/YYYY")}
+                </Typography>
+              ) : (
+                <Typography
+                  variant="body2"
+                  className={classes.parseError}
+                  title="No Date column was selected in Step 1, or this row's date value couldn't be read"
+                >
+                  Invalid date
+                </Typography>
+              )}
             </Grid>
 
             {/* Col 4: Amount */}
@@ -360,16 +369,27 @@ export default function TransactionFormMapper(
                 variant="outlined"
                 sx={{ mb: 1 }}
               />
-              <Typography
-                variant="h5"
-                component="div"
-                className={transaction.transactionType === TransactionType.EXPENSE ? classes['amount--expense'] : classes['amount--income']}
-              >
-                {transaction?.amount?.toLocaleString("es-ES", {
-                  style: "currency",
-                  currency: "EUR",
-                })}
-              </Typography>
+              {transaction?.amount != null && !Number.isNaN(transaction.amount) ? (
+                <Typography
+                  variant="h5"
+                  component="div"
+                  className={transaction.transactionType === TransactionType.EXPENSE ? classes['amount--expense'] : classes['amount--income']}
+                >
+                  {transaction.amount.toLocaleString("es-ES", {
+                    style: "currency",
+                    currency: "EUR",
+                  })}
+                </Typography>
+              ) : (
+                <Typography
+                  variant="h5"
+                  component="div"
+                  className={classes.parseError}
+                  title="No Amount column was selected in Step 1, or this row's amount value couldn't be read"
+                >
+                  Invalid amount
+                </Typography>
+              )}
             </Grid>
           </Grid>
         </CardContent>
@@ -393,7 +413,7 @@ export default function TransactionFormMapper(
           flexWrap="wrap"
           gap={2}
         >
-          <Typography variant="h6">
+          <Typography variant="h6" className={classes.sectionTitle}>
             Reviewing {currentIndex + 1} of {totalRows}
             {fileSignature.label !== "Unlabeled import" && ` — ${fileSignature.label}`}
           </Typography>
@@ -401,6 +421,7 @@ export default function TransactionFormMapper(
             label="Account"
             placeholder="e.g. Santander Credit Card"
             size="small"
+            className={classes.themedTextField}
             value={account}
             onChange={(e) => setAccount(e.target.value)}
             onBlur={handleAccountBlur}
@@ -469,7 +490,11 @@ function _proccessRow(
   row: string[],
   formValues: UploadFileConfigFormValues
 ): Transaction {
-  const originalAmount = _getValue(formValues.amount, row) as number;
+  const rawAmount = _getValue(formValues.amount, row);
+  // parseFloat("") is NaN, unlike Number("") which is 0 - an empty/unmapped amount
+  // must stay clearly invalid rather than silently becoming a real zero-amount value.
+  const originalAmount =
+    typeof rawAmount === "number" ? rawAmount : parseFloat(String(rawAmount));
   // TODO Read format date in form and use it here
 
   const datejs = _getDateValue(_getValue(formValues.date, row) as string, formValues.dateFormat || "DDMMYYYY");
