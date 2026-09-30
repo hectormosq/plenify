@@ -62,7 +62,16 @@ export default function TransactionFormMapper(
   const [currentIndex, setCurrentIndex] = useState(0);
   const [rowStates, setRowStates] = useState<Record<number, RowState>>({});
   const [rowForm, setRowForm] = useState<RowState>(emptyRowState);
+  const [account, setAccount] = useState(formValues.account);
   const draftCreatedAtRef = useRef<number>(Date.now());
+  const appliedAccountRef = useRef(formValues.account);
+
+  // The account name can be fixed here if it was left blank (or wrong) back in step 1,
+  // without losing review progress.
+  const effectiveFormValues = useMemo(
+    () => ({ ...formValues, account }),
+    [formValues, account]
+  );
 
   // Load a previously paused review for this exact file, or start a fresh one.
   useEffect(() => {
@@ -99,10 +108,10 @@ export default function TransactionFormMapper(
     const fileRowIndex = (formValues.selectedRow as number) + currentIndex;
     const row = fileRows[fileRowIndex];
     if (!row) return null;
-    const proccessedRow = _proccessRow(row, formValues);
+    const proccessedRow = _proccessRow(row, effectiveFormValues);
     const transactions = plenifyService.getTransactionByProps(proccessedRow).ALL;
     return { fileRowIndex, proccessedRow, transactions };
-  }, [fileRows, formValues, currentIndex]);
+  }, [fileRows, formValues, effectiveFormValues, currentIndex]);
 
   // Seed the on-screen form when the current row changes: restore a previous decision,
   // or default to skipping when possible duplicates already exist.
@@ -167,7 +176,7 @@ export default function TransactionFormMapper(
         fileName,
         rows: fileRows,
         maxLength,
-        formValues,
+        formValues: effectiveFormValues,
         currentIndex: currentIndex + 1,
         rowStates: nextRowStates,
       });
@@ -182,6 +191,48 @@ export default function TransactionFormMapper(
   function cancelImport() {
     clearDraft(draftKey);
     router.push("/overview");
+  }
+
+  // Fixes an account name that was left blank/wrong back in step 1: applies the
+  // corrected value to every transaction already saved in this review session.
+  function handleAccountBlur() {
+    if (account === appliedAccountRef.current) return;
+    appliedAccountRef.current = account;
+
+    let updatedCount = 0;
+    Object.entries(rowStates).forEach(([indexStr, state]) => {
+      if (!state.transactionId) return;
+      const fileRowIndex = (formValues.selectedRow as number) + Number(indexStr);
+      const row = fileRows[fileRowIndex];
+      if (!row) return;
+      const proccessedRow = _proccessRow(row, effectiveFormValues);
+      plenifyService.updateTransaction({
+        ...proccessedRow,
+        tags: state.tags,
+        notes: state.notes,
+        id: state.transactionId,
+      });
+      updatedCount += 1;
+    });
+
+    saveDraft({
+      draftKey,
+      label: fileSignature.label,
+      createdAt: draftCreatedAtRef.current,
+      fileName,
+      rows: fileRows,
+      maxLength,
+      formValues: effectiveFormValues,
+      currentIndex,
+      rowStates,
+    });
+
+    if (updatedCount > 0) {
+      setSnackState({
+        state: true,
+        message: `Updated account for ${updatedCount} already-saved transaction${updatedCount === 1 ? "" : "s"}`,
+      });
+    }
   }
 
   function TransactionRowItem({
@@ -335,10 +386,28 @@ export default function TransactionFormMapper(
   return (
     <>
       <Box sx={{ mb: 2 }}>
-        <Typography variant="h6">
-          Reviewing {currentIndex + 1} of {totalRows}
-          {fileSignature.label !== "Unlabeled import" && ` — ${fileSignature.label}`}
-        </Typography>
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="flex-end"
+          flexWrap="wrap"
+          gap={2}
+        >
+          <Typography variant="h6">
+            Reviewing {currentIndex + 1} of {totalRows}
+            {fileSignature.label !== "Unlabeled import" && ` — ${fileSignature.label}`}
+          </Typography>
+          <TextField
+            label="Account"
+            placeholder="e.g. Santander Credit Card"
+            size="small"
+            value={account}
+            onChange={(e) => setAccount(e.target.value)}
+            onBlur={handleAccountBlur}
+            title="Fixing this updates every transaction already saved in this import too"
+            sx={{ minWidth: 220 }}
+          />
+        </Box>
         <LinearProgress variant="determinate" value={progress} sx={{ mt: 1 }} />
       </Box>
 
