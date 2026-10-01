@@ -10,6 +10,7 @@ import ReviewQueueSidebar, { RowSummary } from "./ReviewQueueSidebar";
 import {
   Accordion,
   AccordionDetails,
+  Alert,
   AccordionSummary,
   Box,
   Button,
@@ -129,16 +130,26 @@ export default function TransactionFormMapper(
     return plenifyService.getTransactionByProps(_proccessRow(row, formValues)).ALL;
   }, [fileRows, formValues, currentIndex]);
 
+  // The transaction this import already created for the current row, if any (as opposed
+  // to a pre-existing one linked via "This is the same transaction").
+  const createdId = rowStates[currentIndex]?.linked
+    ? undefined
+    : rowStates[currentIndex]?.transactionId;
+
+  // A row saved earlier in this import would otherwise list its own record as a
+  // "possible match" (same amount/date), showing the categories it was saved with.
   const currentItem = useMemo(
     () =>
       proccessedRow
         ? {
             fileRowIndex: proccessedRow.fileRowIndex,
             proccessedRow: proccessedRow.row,
-            transactions: possibleMatches,
+            transactions: createdId
+              ? possibleMatches.filter((t) => t.id !== createdId)
+              : possibleMatches,
           }
         : null,
-    [proccessedRow, possibleMatches]
+    [proccessedRow, possibleMatches, createdId]
   );
 
   // Seed the on-screen form when the current row changes: restore a previous decision,
@@ -163,36 +174,55 @@ export default function TransactionFormMapper(
   // notes into the current row and links its id, so Save & Next updates it (with the
   // freshly-parsed date/amount) instead of creating a duplicate. Lets a wrong/outdated
   // category or note on the old entry get corrected in the same step as confirming it.
+  // Clicking it again on the confirmed match unlinks it, so the row goes back to its own
+  // record (or a new one) and keeps the edited categories/notes.
   function confirmMatch(match: Transaction) {
+    if (rowForm.linked && rowForm.transactionId === match.id) {
+      updateRowForm({ linked: false, transactionId: createdId });
+      return;
+    }
     updateRowForm({
       skip: false,
       tags: match.tags ?? [],
       notes: match.notes ?? "",
       transactionId: match.id,
+      linked: true,
     });
   }
 
   function saveCurrentAndAdvance() {
     if (!currentItem) return;
 
-    const existingId = rowForm.transactionId ?? rowStates[currentIndex]?.transactionId;
-    let transactionId = existingId;
+    const linkedId = rowForm.linked ? rowForm.transactionId : undefined;
+    let transactionId: string | undefined;
 
     try {
-      if (!rowForm.skip) {
+      if (rowForm.skip) {
+        // Only remove what this import created - a linked transaction existed before
+        // the import, so skipping just leaves it untouched.
+        if (createdId) plenifyService.deleteTransaction(createdId);
+      } else if (linkedId) {
+        plenifyService.updateTransaction({
+          ...currentItem.proccessedRow,
+          tags: rowForm.tags,
+          notes: rowForm.notes,
+          id: linkedId,
+        });
+        // The row was saved as a new transaction before being linked to an existing
+        // one - drop that copy, or the import leaves a duplicate behind.
+        if (createdId && createdId !== linkedId) plenifyService.deleteTransaction(createdId);
+        transactionId = linkedId;
+      } else {
         const payload: Transaction = {
           ...currentItem.proccessedRow,
           tags: rowForm.tags,
           notes: rowForm.notes,
-          ...(existingId ? { id: existingId } : {}),
+          ...(createdId ? { id: createdId } : {}),
         };
-        const result = existingId
+        const result = createdId
           ? plenifyService.updateTransaction(payload)
           : plenifyService.addTransaction(payload);
-        transactionId = existingId ?? Object.keys(result)[0];
-      } else if (existingId) {
-        plenifyService.deleteTransaction(existingId);
-        transactionId = undefined;
+        transactionId = createdId ?? Object.keys(result)[0];
       }
     } catch (e) {
       console.error(e);
@@ -202,7 +232,7 @@ export default function TransactionFormMapper(
 
     const nextRowStates = {
       ...rowStates,
-      [currentIndex]: { ...rowForm, transactionId },
+      [currentIndex]: { ...rowForm, transactionId, linked: !!linkedId && !rowForm.skip },
     };
     setRowStates(nextRowStates);
 
@@ -365,7 +395,7 @@ export default function TransactionFormMapper(
                 color="warning"
                 onClick={onConfirmMatch}
               >
-                {isLinkedMatch ? "Match confirmed" : "This is the same transaction"}
+                {isLinkedMatch ? "Linked (click to unlink)" : "This is the same transaction"}
               </Button>
             )}
 
@@ -575,8 +605,18 @@ export default function TransactionFormMapper(
           onSkipChange: (skip) => updateRowForm({ skip }),
         })}
 
+        {currentItem.transactions.length > 0 && !rowForm.skip && !rowForm.linked && (
+          <Alert severity="warning" variant="outlined" sx={{ mt: 2 }}>
+            Saving will add a new transaction. If one of the possible matches below is
+            this same transaction, click &quot;This is the same transaction&quot; to update
+            it instead (e.g. to fix its categories).
+          </Alert>
+        )}
+
         {currentItem.transactions.length > 0 && (
-          <Accordion className={classes.accordion}>
+          // Keyed by row so it re-opens on each row - the link button is easy to miss
+          // when the panel starts collapsed.
+          <Accordion key={currentIndex} defaultExpanded className={classes.accordion}>
             <AccordionSummary className={classes.accordionSummary} expandIcon={<ExpandMoreIcon />}>
               <Typography className={classes.sectionTitle}>
                 Possible Matches ({currentItem.transactions.length})
@@ -590,7 +630,9 @@ export default function TransactionFormMapper(
                       transaction,
                       onConfirmMatch: () => confirmMatch(transaction),
                       isLinkedMatch:
-                        !!transaction.id && rowForm.transactionId === transaction.id,
+                        !!rowForm.linked &&
+                        !!transaction.id &&
+                        rowForm.transactionId === transaction.id,
                     })}
                   </Box>
                 )

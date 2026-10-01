@@ -6,6 +6,10 @@ export type RowState = {
   tags: string[];
   notes: string;
   transactionId?: string;
+  // true when transactionId points to a transaction that existed before this import
+  // (confirmed via "This is the same transaction"), false/absent when this import created
+  // it. Linked records are updated but never deleted by the review.
+  linked?: boolean;
 };
 
 export type UploadDraft = {
