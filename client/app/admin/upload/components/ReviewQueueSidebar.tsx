@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import {
   Box,
   InputAdornment,
@@ -40,7 +40,7 @@ type ReviewQueueSidebarProps = {
   onSelect: (index: number) => void;
 };
 
-export default function ReviewQueueSidebar({
+function ReviewQueueSidebar({
   rows,
   rowStates,
   activeIndex,
@@ -182,3 +182,5 @@ export default function ReviewQueueSidebar({
     </Box>
   );
 }
+
+export default memo(ReviewQueueSidebar);

@@ -20,6 +20,7 @@ import {
   Collapse,
   Divider,
   Grid,
+  IconButton,
   LinearProgress,
   Snackbar,
   TextField,
@@ -27,7 +28,8 @@ import {
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import CreditCardIcon from "@mui/icons-material/CreditCard";
-import { useEffect, useMemo, useRef, useState } from "react";
+import EditIcon from "@mui/icons-material/Edit";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePlenifyState } from "@/app/hooks/usePlenifyState";
 
@@ -65,6 +67,7 @@ export default function TransactionFormMapper(
   const [rowStates, setRowStates] = useState<Record<number, RowState>>({});
   const [rowForm, setRowForm] = useState<RowState>(emptyRowState);
   const [account, setAccount] = useState(formValues.account);
+  const [isEditingAccount, setIsEditingAccount] = useState(false);
   const draftCreatedAtRef = useRef<number>(Date.now());
   const appliedAccountRef = useRef(formValues.account);
 
@@ -106,14 +109,37 @@ export default function TransactionFormMapper(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftKey]);
 
-  const currentItem = useMemo(() => {
+  // Cheap - pure parsing, safe to recompute on every keystroke (e.g. editing Account).
+  const proccessedRow = useMemo(() => {
     const fileRowIndex = (formValues.selectedRow as number) + currentIndex;
     const row = fileRows[fileRowIndex];
     if (!row) return null;
-    const proccessedRow = _proccessRow(row, effectiveFormValues);
-    const transactions = plenifyService.getTransactionByProps(proccessedRow).ALL;
-    return { fileRowIndex, proccessedRow, transactions };
+    return { fileRowIndex, row: _proccessRow(row, effectiveFormValues) };
   }, [fileRows, formValues, effectiveFormValues, currentIndex]);
+
+  // Expensive (a TinyBase query scanning the transactions table) - account is never part
+  // of the match criteria (getTransactionByProps only matches on amount/transactionType/
+  // date, see plenify.ts's _executeWhere), so this must depend on formValues, NOT
+  // effectiveFormValues/account, or every keystroke while editing Account would re-run a
+  // duplicate-detection scan for no reason - this was the account-typing freeze.
+  const possibleMatches = useMemo(() => {
+    const fileRowIndex = (formValues.selectedRow as number) + currentIndex;
+    const row = fileRows[fileRowIndex];
+    if (!row) return [];
+    return plenifyService.getTransactionByProps(_proccessRow(row, formValues)).ALL;
+  }, [fileRows, formValues, currentIndex]);
+
+  const currentItem = useMemo(
+    () =>
+      proccessedRow
+        ? {
+            fileRowIndex: proccessedRow.fileRowIndex,
+            proccessedRow: proccessedRow.row,
+            transactions: possibleMatches,
+          }
+        : null,
+    [proccessedRow, possibleMatches]
+  );
 
   // Seed the on-screen form when the current row changes: restore a previous decision,
   // or default to skipping when possible duplicates already exist.
@@ -133,10 +159,23 @@ export default function TransactionFormMapper(
     setRowForm((prev) => ({ ...prev, ...patch }));
   }
 
+  // "This is the same transaction" on a possible match: loads that record's category/
+  // notes into the current row and links its id, so Save & Next updates it (with the
+  // freshly-parsed date/amount) instead of creating a duplicate. Lets a wrong/outdated
+  // category or note on the old entry get corrected in the same step as confirming it.
+  function confirmMatch(match: Transaction) {
+    updateRowForm({
+      skip: false,
+      tags: match.tags ?? [],
+      notes: match.notes ?? "",
+      transactionId: match.id,
+    });
+  }
+
   function saveCurrentAndAdvance() {
     if (!currentItem) return;
 
-    const existingId = rowStates[currentIndex]?.transactionId;
+    const existingId = rowForm.transactionId ?? rowStates[currentIndex]?.transactionId;
     let transactionId = existingId;
 
     try {
@@ -190,21 +229,29 @@ export default function TransactionFormMapper(
     if (currentIndex > 0) setCurrentIndex(currentIndex - 1);
   }
 
-  function jumpToRow(index: number) {
-    if (index >= 0 && index < totalRows) setCurrentIndex(index);
-  }
+  // Stable identity so ReviewQueueSidebar (memoized) doesn't re-render on every
+  // keystroke elsewhere in this component (e.g. editing the Account field).
+  const jumpToRow = useCallback(
+    (index: number) => {
+      if (index >= 0 && index < totalRows) setCurrentIndex(index);
+    },
+    [totalRows]
+  );
 
   // Cheap summary for every row, for the sidebar list - only _proccessRow (pure parsing,
   // no I/O). Deliberately does NOT call getTransactionByProps here: that TinyBase query
   // is what made the old all-rows-at-once review freeze the tab, and it stays scoped to
   // only the single currently-open row (see currentItem below), same as before.
+  // Uses formValues (stable), NOT effectiveFormValues (re-identified on every keystroke
+  // in the Account field) - RowSummary never shows the account, so re-parsing all rows
+  // on every character typed would just be wasted work that froze the page.
   const rowSummaries: RowSummary[] = useMemo(() => {
     const selectedRow = formValues.selectedRow as number;
     const summaries: RowSummary[] = [];
     for (let fileRowIndex = selectedRow; fileRowIndex < fileRows.length; fileRowIndex++) {
       const row = fileRows[fileRowIndex];
       if (!row) continue;
-      const processed = _proccessRow(row, effectiveFormValues);
+      const processed = _proccessRow(row, formValues);
       const index = fileRowIndex - selectedRow;
       summaries.push({
         index,
@@ -216,7 +263,7 @@ export default function TransactionFormMapper(
       });
     }
     return summaries;
-  }, [fileRows, formValues, effectiveFormValues, rowStates]);
+  }, [fileRows, formValues, rowStates]);
 
   function cancelImport() {
     clearDraft(draftKey);
@@ -265,13 +312,18 @@ export default function TransactionFormMapper(
     }
   }
 
-  function TransactionRowItem({
+  // Called as a plain function (not mounted as <TransactionRowItem />): defining a
+  // component inside the parent gives it a new identity every render, which remounts
+  // the card and steals focus from the notes input on each keystroke.
+  function renderTransactionRow({
     transaction,
     actions = false,
     rowForm,
     onTagsChange,
     onNotesChange,
     onSkipChange,
+    onConfirmMatch,
+    isLinkedMatch,
   }: {
     transaction: Transaction;
     actions?: boolean;
@@ -279,6 +331,8 @@ export default function TransactionFormMapper(
     onTagsChange?: (tags: string[]) => void;
     onNotesChange?: (notes: string) => void;
     onSkipChange?: (skip: boolean) => void;
+    onConfirmMatch?: () => void;
+    isLinkedMatch?: boolean;
   }) {
     const isSkipped = !!rowForm?.skip;
 
@@ -294,7 +348,26 @@ export default function TransactionFormMapper(
               <Typography variant="body2" className={classes.mutedText}>
                 {transaction?.account}
               </Typography>
+              {onConfirmMatch && (
+                <Chip
+                  size="small"
+                  label="Possible Match"
+                  color="warning"
+                  variant="outlined"
+                />
+              )}
             </Box>
+
+            {onConfirmMatch && (
+              <Button
+                size="small"
+                variant={isLinkedMatch ? "contained" : "outlined"}
+                color="warning"
+                onClick={onConfirmMatch}
+              >
+                {isLinkedMatch ? "Match confirmed" : "This is the same transaction"}
+              </Button>
+            )}
 
             {actions && (
               <div className={classes.skipContainer}>
@@ -447,35 +520,44 @@ export default function TransactionFormMapper(
 
       <Box flex={1} minWidth={280}>
         <Box sx={{ mb: 2 }}>
-          <Box
-            display="flex"
-            justifyContent="space-between"
-            alignItems="flex-start"
-            flexWrap="wrap"
-            gap={2}
-          >
-            <Box display="flex" alignItems="center" gap={1}>
-              <CreditCardIcon sx={{ color: "var(--maincolor)" }} />
-              <Box>
-                <Typography variant="subtitle1" className={classes.sectionTitle} sx={{ fontWeight: 700 }}>
-                  {account || "Unlabeled account"}
-                </Typography>
-                <Typography variant="caption" className={classes.mutedText}>
-                  Statement: {fileName}
-                </Typography>
-              </Box>
+          <Box display="flex" alignItems="center" gap={1}>
+            <CreditCardIcon sx={{ color: "var(--maincolor)" }} />
+            <Box>
+              {isEditingAccount ? (
+                <TextField
+                  autoFocus
+                  placeholder="e.g. Santander Credit Card"
+                  size="small"
+                  className={classes.themedTextField}
+                  value={account}
+                  onChange={(e) => setAccount(e.target.value)}
+                  onBlur={() => {
+                    handleAccountBlur();
+                    setIsEditingAccount(false);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                  }}
+                  title="Fixing this updates every transaction already saved in this import too"
+                />
+              ) : (
+                <Box display="flex" alignItems="center" gap={0.5}>
+                  <Typography variant="subtitle1" className={classes.sectionTitle} sx={{ fontWeight: 700 }}>
+                    {account || "Unlabeled account"}
+                  </Typography>
+                  <IconButton
+                    size="small"
+                    aria-label="Edit account"
+                    onClick={() => setIsEditingAccount(true)}
+                  >
+                    <EditIcon fontSize="inherit" sx={{ color: "var(--inputLabel)" }} />
+                  </IconButton>
+                </Box>
+              )}
+              <Typography variant="caption" className={classes.mutedText}>
+                Statement: {fileName}
+              </Typography>
             </Box>
-            <TextField
-              label="Account"
-              placeholder="e.g. Santander Credit Card"
-              size="small"
-              className={classes.themedTextField}
-              value={account}
-              onChange={(e) => setAccount(e.target.value)}
-              onBlur={handleAccountBlur}
-              title="Fixing this updates every transaction already saved in this import too"
-              sx={{ minWidth: 220 }}
-            />
           </Box>
           <Typography variant="h6" className={classes.sectionTitle} sx={{ mt: 1.5 }}>
             Reviewing {currentIndex + 1} of {totalRows} · {progress.toFixed(1)}%
@@ -484,14 +566,14 @@ export default function TransactionFormMapper(
           <LinearProgress variant="determinate" value={progress} sx={{ mt: 1 }} />
         </Box>
 
-        <TransactionRowItem
-          transaction={currentItem.proccessedRow as Transaction}
-          actions
-          rowForm={rowForm}
-          onTagsChange={(tags) => updateRowForm({ tags })}
-          onNotesChange={(notes) => updateRowForm({ notes })}
-          onSkipChange={(skip) => updateRowForm({ skip })}
-        />
+        {renderTransactionRow({
+          transaction: currentItem.proccessedRow as Transaction,
+          actions: true,
+          rowForm,
+          onTagsChange: (tags) => updateRowForm({ tags }),
+          onNotesChange: (notes) => updateRowForm({ notes }),
+          onSkipChange: (skip) => updateRowForm({ skip }),
+        })}
 
         {currentItem.transactions.length > 0 && (
           <Accordion className={classes.accordion}>
@@ -504,7 +586,12 @@ export default function TransactionFormMapper(
               {currentItem.transactions.map(
                 (transaction: Transaction, tIdx: number) => (
                   <Box key={tIdx} sx={{ mb: 1 }}>
-                    <TransactionRowItem transaction={transaction} />
+                    {renderTransactionRow({
+                      transaction,
+                      onConfirmMatch: () => confirmMatch(transaction),
+                      isLinkedMatch:
+                        !!transaction.id && rowForm.transactionId === transaction.id,
+                    })}
                   </Box>
                 )
               )}
