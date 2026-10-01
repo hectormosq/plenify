@@ -134,3 +134,7 @@ artifacts/
 
 # Playwright MCP output (console logs, page snapshots, screenshots)
 .playwright-mcp/
+
+# Claude Code local preferences
+.claude/settings.local.json
+CLAUDE.local.md
