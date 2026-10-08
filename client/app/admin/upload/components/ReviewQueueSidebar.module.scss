@@ -31,8 +31,15 @@
   }
 }
 
-.sortSelect {
+.sortRow {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
   margin: 0 0.75rem 0.75rem;
+}
+
+.sortSelect {
+  flex: 1;
 
   :global(.MuiOutlinedInput-notchedOutline) {
     border-color: var(--border);

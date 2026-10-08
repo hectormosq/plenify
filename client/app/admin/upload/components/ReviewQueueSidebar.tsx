@@ -1,8 +1,9 @@
 "use client";
 
-import { memo, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import {
   Box,
+  IconButton,
   InputAdornment,
   List,
   MenuItem,
@@ -13,6 +14,7 @@ import {
   Typography,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
+import MyLocationIcon from "@mui/icons-material/MyLocation";
 import { TabsContainer } from "@/app/components/Tabs/Tabs";
 import { TransactionType } from "@/app/models/transaction";
 import { computeRowStatus } from "../model/reviewQueue";
@@ -50,6 +52,7 @@ function ReviewQueueSidebar({
   const [filter, setFilter] = useState("");
   const [sort, setSort] = useState<SortOption>("file");
   const [page, setPage] = useState(1);
+  const [locateRequest, setLocateRequest] = useState(0);
 
   // "decision" ignores which row is currently open - it's the underlying saved/skipped/
   // pending state used for tab counts and filtering. The "active" row still needs to
@@ -108,6 +111,24 @@ function ReviewQueueSidebar({
       });
   }, [rows, decisions, tab, filter, sort]);
 
+  // Show the page holding the open row: on resume, after Save & Next / Skip, and when
+  // "go to current" is pressed. Not on every change to the list, or paging and
+  // filtering by hand would keep snapping back.
+  useEffect(() => {
+    const position = filtered.findIndex(({ row }) => row.index === activeIndex);
+    if (position >= 0) setPage(Math.floor(position / PAGE_SIZE) + 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIndex, locateRequest]);
+
+  // Clears whatever is hiding the open row, then lets the effect above page to it.
+  function goToCurrent() {
+    if (!filtered.some(({ row }) => row.index === activeIndex)) {
+      setTab(0);
+      setFilter("");
+    }
+    setLocateRequest((request) => request + 1);
+  }
+
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
   const pageItems = filtered.slice(
@@ -152,18 +173,28 @@ function ReviewQueueSidebar({
           },
         }}
       />
-      <Select
-        className={classes.sortSelect}
-        size="small"
-        value={sort}
-        onChange={(e: SelectChangeEvent) => setSort(e.target.value as SortOption)}
-      >
-        <MenuItem value="file">File order</MenuItem>
-        <MenuItem value="date-desc">Date (Newest)</MenuItem>
-        <MenuItem value="date-asc">Date (Oldest)</MenuItem>
-        <MenuItem value="amount-desc">Amount (Highest)</MenuItem>
-        <MenuItem value="amount-asc">Amount (Lowest)</MenuItem>
-      </Select>
+      <Box className={classes.sortRow}>
+        <Select
+          className={classes.sortSelect}
+          size="small"
+          value={sort}
+          onChange={(e: SelectChangeEvent) => setSort(e.target.value as SortOption)}
+        >
+          <MenuItem value="file">File order</MenuItem>
+          <MenuItem value="date-desc">Date (Newest)</MenuItem>
+          <MenuItem value="date-asc">Date (Oldest)</MenuItem>
+          <MenuItem value="amount-desc">Amount (Highest)</MenuItem>
+          <MenuItem value="amount-asc">Amount (Lowest)</MenuItem>
+        </Select>
+        <IconButton
+          size="small"
+          aria-label="Go to current transaction"
+          title="Go to current transaction"
+          onClick={goToCurrent}
+        >
+          <MyLocationIcon fontSize="small" sx={{ color: "var(--foreground)" }} />
+        </IconButton>
+      </Box>
       <List className={classes.list}>
         {pageItems.length === 0 ? (
           <Typography variant="body2" className={classes.emptyState}>
