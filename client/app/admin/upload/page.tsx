@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { read, utils } from "xlsx";
 import classes from "./page.module.scss";
 import {
   Box,
@@ -18,6 +17,7 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import UploadFileConfigForm from "./components/UploadFileConfigForm";
 import { UploadFileConfigFormState, isFromIndex } from "./model/UploadFile";
 import { extractFileSignature, FileSignature } from "./model/fileSignature";
+import { parseStatementFile } from "./model/parseFile";
 import {
   UploadDraft,
   clearDraft,
@@ -30,10 +30,10 @@ import TransactionFormMapper from "./components/TransactionFormMapper";
 export default function UploadPage() {
   const [rows, setRows] = useState<string[][]>([]);
   const [maxLength, setMaxLength] = useState(0);
-  const [files, setFiles] = useState<File[]>([]);
   const [fileName, setFileName] = useState("");
   const [fileSignature, setFileSignature] = useState<FileSignature>({ label: "" });
   const [isParsingFile, setIsParsingFile] = useState(false);
+  const [fileError, setFileError] = useState("");
   const [drafts, setDrafts] = useState<UploadDraft[]>([]);
   const [matchedDraft, setMatchedDraft] = useState<UploadDraft | null>(null);
 
@@ -58,7 +58,10 @@ export default function UploadPage() {
   function _validateNextState() {
     const stepValidation: Record<number, () => boolean> = {
       0: () => true,
-      1: () => !_formIsValid(),
+      // While the "matches an unfinished import" panel is showing, the mapping form isn't
+      // rendered, so formState can still hold a previous file's mapping - the only ways
+      // forward are Resume and Start over.
+      1: () => isParsingFile || !!matchedDraft || !_formIsValid(),
     };
 
     return stepValidation[step] ? stepValidation[step]() : true; // Default to true if no validation is defined for the step
@@ -119,50 +122,40 @@ export default function UploadPage() {
 
   // Initialization of each step
   useEffect(() => {
-    const stepInit: Record<number, () => void> = {
-      0: () => {
-        setRows([]);
-        setDrafts(listDrafts());
-      },
-      1: async () => {
-        // TODO Handle multiple files
-        if (!(await handleFile(files[0]))) {
-          console.error("Failed to handle file");
-          setStep(0);
-        }
-      },
-    };
-    stepInit[step]?.();
+    if (step === 0) {
+      setRows([]);
+      setMatchedDraft(null);
+      setDrafts(listDrafts());
+    }
   }, [step]);
 
-  const handleFile = async (file?: File) => {
-    if (!file) return false;
-
+  // Reads the picked file and moves to the parser set-up. Goes back to the file step,
+  // with the reason, if the file can't be read or has no data.
+  const handleFile = async (file: File) => {
+    setFileName(file.name);
+    setFileError("");
+    // The previous file's column mapping must not carry over to this one.
+    setFormState({ isValid: false } as UploadFileConfigFormState);
     setIsParsingFile(true);
+    setStep(1);
     try {
-      return file
-        .arrayBuffer()
-        .then((buffer) => {
-          const workbook = read(buffer, { raw: true, cellDates: true });
-          workbook.SheetNames.forEach((sheetName) => {
-            const worksheet = workbook.Sheets[sheetName];
-            const raw_data: string[][] = utils.sheet_to_json(worksheet, {
-              header: 1,
-            });
-            const clearData = raw_data.filter((arr) => arr.length > 0);
-            const signature = extractFileSignature(clearData);
-            setRows(clearData);
-            setMaxLength(Math.max(...clearData.map((arr) => arr.length)));
-            setFileSignature(signature);
-            setMatchedDraft(loadDraft(computeDraftKey(signature, clearData)));
-          });
-          return true;
-        })
-        .finally(() => setIsParsingFile(false));
+      const parsed = parseStatementFile(await file.arrayBuffer());
+      if (!parsed) {
+        setFileError(`${file.name} has no rows to import.`);
+        setStep(0);
+        return;
+      }
+      const signature = extractFileSignature(parsed.rows);
+      setRows(parsed.rows);
+      setMaxLength(parsed.maxLength);
+      setFileSignature(signature);
+      setMatchedDraft(loadDraft(computeDraftKey(signature, parsed.rows)));
     } catch (error) {
       console.error("Error reading file:", error);
+      setFileError(`${file.name} could not be read: ${error instanceof Error ? error.message : String(error)}`);
+      setStep(0);
+    } finally {
       setIsParsingFile(false);
-      return false;
     }
   };
 
@@ -238,17 +231,21 @@ export default function UploadPage() {
                 hidden
                 type="file"
                 onChange={(event) => {
-                  const selected = event.target.files ? Array.from(event.target.files) : [];
-                  setFiles(selected);
-                  setFileName(selected[0]?.name ?? "");
-                  nextStep();
+                  // TODO Handle multiple files
+                  const file = event.target.files?.[0];
+                  if (file) handleFile(file);
                 }}
               />
             </Button>
+            {fileError && (
+              <Typography variant="body2" sx={{ color: "var(--errorColor)" }}>
+                {fileError}
+              </Typography>
+            )}
           </Box>
         </div>
       )}
-      {step === 1 && _missingColumnMapping() && (
+      {step === 1 && !isParsingFile && !matchedDraft && _missingColumnMapping() && (
         <Box sx={{ textAlign: "center", mb: 1 }}>
           <Typography variant="body2" sx={{ color: "var(--errorColor)" }}>
             Select a column for Date, Description, and Amount before continuing.
