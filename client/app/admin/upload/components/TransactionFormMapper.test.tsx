@@ -275,6 +275,31 @@ describe("TransactionFormMapper", () => {
     expect(loadDraft(draftKey)?.formValues.account).toBe("My Bank");
   });
 
+  it("keeps unsaved notes and categories while the account is edited", () => {
+    renderMapper();
+    fireEvent.change(screen.getByPlaceholderText("Add notes..."), {
+      target: { value: "unsaved note" },
+    });
+    click("add category");
+
+    click("Edit account");
+    const input = screen.getByPlaceholderText("e.g. Santander Credit Card");
+    fireEvent.change(input, { target: { value: "My Bank" } });
+    fireEvent.blur(input);
+
+    expect(
+      (screen.getByPlaceholderText("Add notes...") as HTMLInputElement).value
+    ).toBe("unsaved note");
+    click("Save & Next");
+    expect(mockService.addTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        account: "My Bank",
+        notes: "unsaved note",
+        tags: ["cat-added"],
+      })
+    );
+  });
+
   it("resumes a saved draft at its row with its decisions", () => {
     saveDraft({
       draftKey,

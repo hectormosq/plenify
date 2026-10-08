@@ -140,7 +140,7 @@ export function useUploadReview(params: UploadReviewParams) {
   // Seed the on-screen form when the current row changes: restore a previous decision,
   // or default to skipping when possible duplicates already exist.
   useEffect(() => {
-    if (!currentItem) return;
+    if (!initialized || !currentItem) return;
     const existing = rowStates[currentIndex];
     setRowForm(
       existing ?? {
@@ -149,7 +149,11 @@ export function useUploadReview(params: UploadReviewParams) {
         notes: "",
       }
     );
-  }, [currentIndex, currentItem, rowStates]);
+    // Only when a different row opens (or the draft has just loaded). currentItem is
+    // rebuilt on every keystroke in the Account field, and re-seeding then would wipe
+    // the notes/categories typed on the open row.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialized, currentIndex]);
 
   function updateRowForm(patch: Partial<RowState>) {
     setRowForm((prev) => ({ ...prev, ...patch }));
