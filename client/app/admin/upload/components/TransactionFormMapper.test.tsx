@@ -495,6 +495,21 @@ describe("TransactionFormMapper", () => {
     expect(loadDraft(draftKey)).toBeNull();
   });
 
+  it("warns once when progress cannot be stored, and still saves transactions", () => {
+    const setItem = jest.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("QuotaExceededError");
+    });
+    renderMapper();
+    screen.getByText(/Progress could not be saved in this browser/);
+
+    click("Save & Next");
+    setItem.mockRestore();
+
+    expect(mockService.addTransaction).toHaveBeenCalledTimes(1);
+    screen.getByText(/Row 2 of 3/);
+    expect(loadDraft(draftKey)).toBeNull();
+  });
+
   it("stays on the row and reports when saving fails", () => {
     const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
     mockService.addTransaction.mockImplementation(() => {

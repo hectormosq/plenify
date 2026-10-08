@@ -4,11 +4,12 @@ import { plenifyService } from "@/app/services";
 import { Transaction } from "@/app/models/transaction";
 import { UploadFileConfigFormValues } from "../model/UploadFile";
 import {
+  DraftProgress,
   RowState,
-  UploadDraft,
   computeDraftKey,
   loadDraft,
   saveDraft,
+  saveDraftProgress,
   clearDraft,
 } from "../model/uploadDraft";
 import { FileSignature } from "../model/fileSignature";
@@ -74,35 +75,45 @@ export function useUploadReview(params: UploadReviewParams) {
     [formValues, account]
   );
 
-  function buildDraft(
-    progress: Pick<UploadDraft, "formValues" | "currentIndex" | "rowStates">
-  ): UploadDraft {
-    return {
-      draftKey,
-      label: fileSignature.label,
-      createdAt: draftCreatedAtRef.current,
-      fileName,
-      rows: fileRows,
-      maxLength,
-      ...progress,
-    };
+  const persistWarnedRef = useRef(false);
+
+  // The transactions themselves are in PlenifyService either way; what is lost when the
+  // draft can't be written is only the ability to resume. Said once, not on every row.
+  function warnNotPersisted() {
+    if (persistWarnedRef.current) return;
+    persistWarnedRef.current = true;
+    setSnackState({
+      state: true,
+      message:
+        "Progress could not be saved in this browser. Saved transactions are kept, but this import cannot be resumed if you leave.",
+    });
+  }
+
+  function persistProgress(progress: DraftProgress) {
+    if (!saveDraftProgress(draftKey, progress)) warnNotPersisted();
   }
 
   // Load a previously paused review for this exact file, or start a fresh one.
   useEffect(() => {
     const existing = loadDraft(draftKey);
     if (existing) {
-      if (existing.currentIndex >= totalRows) {
-        clearDraft(draftKey);
-        router.push("/overview");
-        return;
-      }
       draftCreatedAtRef.current = existing.createdAt;
-      setCurrentIndex(existing.currentIndex);
+      setCurrentIndex(Math.min(existing.currentIndex, Math.max(totalRows - 1, 0)));
       setRowStates(existing.rowStates);
     } else {
       draftCreatedAtRef.current = Date.now();
-      saveDraft(buildDraft({ formValues, currentIndex: 0, rowStates: {} }));
+      const stored = saveDraft({
+        draftKey,
+        label: fileSignature.label,
+        createdAt: draftCreatedAtRef.current,
+        fileName,
+        rows: fileRows,
+        maxLength,
+        formValues,
+        currentIndex: 0,
+        rowStates: {},
+      });
+      if (!stored) warnNotPersisted();
     }
     setInitialized(true);
     // Only re-run if we're looking at a different file/draft.
@@ -256,13 +267,11 @@ export function useUploadReview(params: UploadReviewParams) {
       }
     }
 
-    saveDraft(
-      buildDraft({
-        formValues: effectiveFormValues,
-        currentIndex: nextIndex,
-        rowStates: nextRowStates,
-      })
-    );
+    persistProgress({
+      formValues: effectiveFormValues,
+      currentIndex: nextIndex,
+      rowStates: nextRowStates,
+    });
     setCurrentIndex(nextIndex);
     return result;
   }
@@ -288,32 +297,37 @@ export function useUploadReview(params: UploadReviewParams) {
     [totalRows]
   );
 
-  // Cheap summary for every row, for the sidebar list - only processRow (pure parsing,
-  // no I/O). Deliberately does NOT call getTransactionByProps here: that TinyBase query
-  // is what made the old all-rows-at-once review freeze the tab, and it stays scoped to
-  // only the single currently-open row (see currentItem above), same as before.
+  // Every row parsed once per column mapping, for the sidebar list - only processRow
+  // (pure parsing, no I/O). Deliberately does NOT call getTransactionByProps here: that
+  // TinyBase query is what made the old all-rows-at-once review freeze the tab, and it
+  // stays scoped to only the single currently-open row (see currentItem above).
   // Uses formValues (stable), NOT effectiveFormValues (re-identified on every keystroke
   // in the Account field) - RowSummary never shows the account, so re-parsing all rows
   // on every character typed would just be wasted work that froze the page.
-  const rowSummaries: RowSummary[] = useMemo(() => {
+  const parsedRows = useMemo(() => {
     const selectedRow = formValues.selectedRow as number;
-    const summaries: RowSummary[] = [];
+    const parsed: Omit<RowSummary, "tags">[] = [];
     for (let fileRowIndex = selectedRow; fileRowIndex < fileRows.length; fileRowIndex++) {
       const row = fileRows[fileRowIndex];
       if (!row) continue;
       const processed = processRow(row, formValues);
-      const index = fileRowIndex - selectedRow;
-      summaries.push({
-        index,
+      parsed.push({
+        index: fileRowIndex - selectedRow,
         description: processed.description,
         amount: processed.amount,
         transactionType: processed.transactionType,
         date: processed.date,
-        tags: rowStates[index]?.tags ?? [],
       });
     }
-    return summaries;
-  }, [fileRows, formValues, rowStates]);
+    return parsed;
+  }, [fileRows, formValues]);
+
+  // The categories come from the decisions, which change on every save - merged here so
+  // a save doesn't re-parse the whole file.
+  const rowSummaries: RowSummary[] = useMemo(
+    () => parsedRows.map((row) => ({ ...row, tags: rowStates[row.index]?.tags ?? [] })),
+    [parsedRows, rowStates]
+  );
 
   // Declares the statement done: the draft (and the raw rows it holds) is removed.
   // Everything saved so far is already in PlenifyService.
@@ -376,9 +390,7 @@ export function useUploadReview(params: UploadReviewParams) {
     }
     appliedAccountRef.current = account;
 
-    saveDraft(
-      buildDraft({ formValues: effectiveFormValues, currentIndex, rowStates })
-    );
+    persistProgress({ formValues: effectiveFormValues, currentIndex, rowStates });
 
     if (updatedCount > 0) {
       setSnackState({

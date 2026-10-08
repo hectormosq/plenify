@@ -24,67 +24,182 @@ export type UploadDraft = {
   rowStates: Record<number, RowState>;
 };
 
-const DRAFTS_KEY = "plenify:uploadDrafts:v1";
+export type DraftProgress = Pick<UploadDraft, "formValues" | "currentIndex" | "rowStates">;
 
-function isUploadDraft(value: unknown): value is UploadDraft {
-  if (!value || typeof value !== "object") return false;
-  const draft = value as Partial<UploadDraft>;
+type DraftMeta = Omit<UploadDraft, "rows">;
+
+// A draft is stored in two parts: the statement's raw rows, written once when the import
+// starts, and everything else (the progress), rewritten on every step. Re-serialising
+// the rows on each Save & Next made a long import quadratic and ate the storage quota.
+const META_KEY = "plenify:uploadDrafts:v2";
+const ROWS_KEY_PREFIX = "plenify:uploadDraftRows:v2:";
+// Drafts from the previous layout held rows and progress together. They are not
+// migrated - just removed, so no raw statement is left behind under the old key.
+const LEGACY_KEY = "plenify:uploadDrafts:v1";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+function isRowState(value: unknown): value is RowState {
+  if (!isRecord(value)) return false;
   return (
-    typeof draft.draftKey === "string" &&
-    Array.isArray(draft.rows) &&
-    !!draft.formValues &&
-    typeof draft.currentIndex === "number" &&
-    !!draft.rowStates &&
-    typeof draft.rowStates === "object"
+    typeof value.skip === "boolean" &&
+    Array.isArray(value.tags) &&
+    value.tags.every((tag) => typeof tag === "string") &&
+    typeof value.notes === "string" &&
+    (value.transactionId === undefined || typeof value.transactionId === "string") &&
+    (value.linked === undefined || typeof value.linked === "boolean")
   );
 }
 
-function readAllDrafts(): Record<string, UploadDraft> {
+/**
+ * Builds a draft from what was read out of storage, or returns null if it can't be
+ * trusted (written by another version of the app, truncated, edited by hand). The only
+ * thing repaired rather than rejected is currentIndex, which is clamped into range.
+ */
+export function parseDraft(meta: unknown, rows: unknown): UploadDraft | null {
+  if (!isRecord(meta)) return null;
+  if (!Array.isArray(rows) || !rows.every((row) => Array.isArray(row))) return null;
+
+  const { draftKey, label, createdAt, fileName, maxLength, formValues, currentIndex, rowStates } = meta;
+  if (
+    typeof draftKey !== "string" ||
+    typeof label !== "string" ||
+    typeof createdAt !== "number" ||
+    typeof fileName !== "string" ||
+    typeof maxLength !== "number" ||
+    typeof currentIndex !== "number" ||
+    !Number.isFinite(currentIndex) ||
+    !isRecord(formValues) ||
+    !isRecord(rowStates)
+  ) {
+    return null;
+  }
+
+  const selectedRow = formValues.selectedRow;
+  if (
+    typeof selectedRow !== "number" ||
+    !Number.isInteger(selectedRow) ||
+    selectedRow < 0 ||
+    selectedRow >= rows.length
+  ) {
+    return null;
+  }
+  const totalRows = rows.length - selectedRow;
+
+  const parsedRowStates: Record<number, RowState> = {};
+  for (const [key, state] of Object.entries(rowStates)) {
+    const index = Number(key);
+    if (!Number.isInteger(index) || index < 0 || index >= totalRows) return null;
+    if (!isRowState(state)) return null;
+    parsedRowStates[index] = state;
+  }
+
+  return {
+    draftKey,
+    label,
+    createdAt,
+    fileName,
+    rows: rows as string[][],
+    maxLength,
+    formValues: formValues as UploadFileConfigFormValues,
+    currentIndex: Math.min(Math.max(Math.trunc(currentIndex), 0), totalRows - 1),
+    rowStates: parsedRowStates,
+  };
+}
+
+function readAllMeta(): Record<string, unknown> {
   try {
-    const raw = window.localStorage.getItem(DRAFTS_KEY);
+    window.localStorage.removeItem(LEGACY_KEY);
+    const raw = window.localStorage.getItem(META_KEY);
     if (!raw) return {};
     const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") return {};
-    const result: Record<string, UploadDraft> = {};
-    for (const [key, value] of Object.entries(parsed)) {
-      if (isUploadDraft(value)) {
-        result[key] = value;
-      }
-    }
-    return result;
+    return isRecord(parsed) ? parsed : {};
   } catch {
     return {};
   }
 }
 
-function writeAllDrafts(drafts: Record<string, UploadDraft>): void {
+// Returns false when the write didn't happen (private browsing, quota, etc.).
+function writeAllMeta(meta: Record<string, unknown>): boolean {
   try {
-    window.localStorage.setItem(DRAFTS_KEY, JSON.stringify(drafts));
+    window.localStorage.setItem(META_KEY, JSON.stringify(meta));
+    return true;
   } catch {
-    // localStorage unavailable (private browsing, quota, etc.) - progress just won't persist
+    return false;
   }
 }
 
-export function saveDraft(draft: UploadDraft): void {
-  const drafts = readAllDrafts();
-  drafts[draft.draftKey] = draft;
-  writeAllDrafts(drafts);
+function readRows(draftKey: string): unknown {
+  try {
+    const raw = window.localStorage.getItem(ROWS_KEY_PREFIX + draftKey);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function removeRows(draftKey: string): void {
+  try {
+    window.localStorage.removeItem(ROWS_KEY_PREFIX + draftKey);
+  } catch {
+    // nothing to clean up if storage is unavailable
+  }
+}
+
+/**
+ * Stores a whole draft, rows included. Used once, when an import starts. Returns false
+ * if it could not be stored - the review still works, it just can't be resumed.
+ */
+export function saveDraft(draft: UploadDraft): boolean {
+  const { rows, ...meta } = draft;
+  try {
+    window.localStorage.setItem(ROWS_KEY_PREFIX + draft.draftKey, JSON.stringify(rows));
+  } catch {
+    return false;
+  }
+  const all = readAllMeta();
+  all[draft.draftKey] = meta satisfies DraftMeta;
+  if (writeAllMeta(all)) return true;
+  removeRows(draft.draftKey);
+  return false;
+}
+
+/**
+ * Updates the progress of a draft that saveDraft already stored, without touching its
+ * rows. Returns false if there is no such draft or the write failed.
+ */
+export function saveDraftProgress(draftKey: string, progress: DraftProgress): boolean {
+  const all = readAllMeta();
+  const existing = all[draftKey];
+  if (!isRecord(existing)) return false;
+  all[draftKey] = { ...existing, ...progress };
+  return writeAllMeta(all);
 }
 
 export function loadDraft(draftKey: string): UploadDraft | null {
-  const drafts = readAllDrafts();
-  return drafts[draftKey] ?? null;
+  const all = readAllMeta();
+  if (!(draftKey in all)) return null;
+  const draft = parseDraft(all[draftKey], readRows(draftKey));
+  // Unreadable drafts are removed rather than left to fail again on every visit.
+  if (!draft) clearDraft(draftKey);
+  return draft;
 }
 
 export function listDrafts(): UploadDraft[] {
-  return Object.values(readAllDrafts()).sort((a, b) => b.createdAt - a.createdAt);
+  return Object.keys(readAllMeta())
+    .map((draftKey) => loadDraft(draftKey))
+    .filter((draft): draft is UploadDraft => draft !== null)
+    .sort((a, b) => b.createdAt - a.createdAt);
 }
 
 export function clearDraft(draftKey: string): void {
-  const drafts = readAllDrafts();
-  if (draftKey in drafts) {
-    delete drafts[draftKey];
-    writeAllDrafts(drafts);
+  removeRows(draftKey);
+  const all = readAllMeta();
+  if (draftKey in all) {
+    delete all[draftKey];
+    writeAllMeta(all);
   }
 }
 
