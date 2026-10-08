@@ -28,11 +28,14 @@
   background-color: var(--componentBackground) !important;
   border: 1px solid var(--border);
   width: 100%;
-  margin: 0 auto;
+}
 
-  @media screen and (min-width: 900px) {
-    width: 900px;
-  }
+// One column for the header, card, warning, matches and footer, so they all share
+// the same width.
+.reviewContent {
+  flex: 1;
+  min-width: 280px;
+  max-width: 900px;
 }
 
 .cardHeader {

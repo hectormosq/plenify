@@ -540,7 +540,7 @@ export default function TransactionFormMapper(
   const progress = totalRows > 0 ? (currentIndex / totalRows) * 100 : 100;
 
   return (
-    <Box display="flex" gap={2} alignItems="flex-start" flexWrap="wrap">
+    <Box display="flex" gap={2} alignItems="flex-start" justifyContent="center" flexWrap="wrap" width="100%">
       <ReviewQueueSidebar
         rows={rowSummaries}
         rowStates={rowStates}
@@ -548,7 +548,7 @@ export default function TransactionFormMapper(
         onSelect={jumpToRow}
       />
 
-      <Box flex={1} minWidth={280}>
+      <Box className={classes.reviewContent}>
         <Box sx={{ mb: 2 }}>
           <Box display="flex" alignItems="center" gap={1}>
             <CreditCardIcon sx={{ color: "var(--maincolor)" }} />
@@ -617,12 +617,12 @@ export default function TransactionFormMapper(
           // Keyed by row so it re-opens on each row - the link button is easy to miss
           // when the panel starts collapsed.
           <Accordion key={currentIndex} defaultExpanded className={classes.accordion}>
-            <AccordionSummary className={classes.accordionSummary} expandIcon={<ExpandMoreIcon />}>
+            <AccordionSummary className={classes.accordionSummary} expandIcon={<ExpandMoreIcon />} sx={{ px: 0 }}>
               <Typography className={classes.sectionTitle}>
                 Possible Matches ({currentItem.transactions.length})
               </Typography>
             </AccordionSummary>
-            <AccordionDetails>
+            <AccordionDetails sx={{ px: 0 }}>
               {currentItem.transactions.map(
                 (transaction: Transaction, tIdx: number) => (
                   <Box key={tIdx} sx={{ mb: 1 }}>
