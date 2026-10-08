@@ -29,7 +29,7 @@ export type RowSummary = {
   tags: string[];
 };
 
-type SortOption = "date-desc" | "date-asc" | "amount-desc" | "amount-asc";
+type SortOption = "file" | "date-desc" | "date-asc" | "amount-desc" | "amount-asc";
 
 const PAGE_SIZE = 10;
 
@@ -48,7 +48,7 @@ function ReviewQueueSidebar({
 }: ReviewQueueSidebarProps) {
   const [tab, setTab] = useState(0);
   const [filter, setFilter] = useState("");
-  const [sort, setSort] = useState<SortOption>("date-desc");
+  const [sort, setSort] = useState<SortOption>("file");
   const [page, setPage] = useState(1);
 
   // "decision" ignores which row is currently open - it's the underlying saved/skipped/
@@ -61,12 +61,14 @@ function ReviewQueueSidebar({
 
   const counts = useMemo(() => {
     let saved = 0;
+    let skipped = 0;
     let pending = 0;
     decisions.forEach((status) => {
-      if (status === "saved" || status === "skipped") saved += 1;
+      if (status === "saved") saved += 1;
+      else if (status === "skipped") skipped += 1;
       else pending += 1;
     });
-    return { all: rows.length, saved, pending };
+    return { all: rows.length, saved, skipped, pending };
   }, [decisions, rows.length]);
 
   const filtered = useMemo(() => {
@@ -74,8 +76,9 @@ function ReviewQueueSidebar({
     return rows
       .map((row, i) => ({ row, decision: decisions[i] }))
       .filter(({ decision }) => {
-        if (tab === 1) return decision === "saved" || decision === "skipped";
-        if (tab === 2) return decision === "pending";
+        if (tab === 1) return decision === "saved";
+        if (tab === 2) return decision === "skipped";
+        if (tab === 3) return decision === "pending";
         return true;
       })
       .filter(({ row }) => {
@@ -87,6 +90,10 @@ function ReviewQueueSidebar({
       })
       .sort((a, b) => {
         switch (sort) {
+          // Same order as the statement, so the list matches "Row N of M" and
+          // Save & Next moves down it.
+          case "file":
+            return a.row.index - b.row.index;
           case "date-asc":
             return a.row.date.getTime() - b.row.date.getTime();
           case "amount-desc":
@@ -94,8 +101,9 @@ function ReviewQueueSidebar({
           case "amount-asc":
             return a.row.amount - b.row.amount;
           case "date-desc":
-          default:
             return b.row.date.getTime() - a.row.date.getTime();
+          default:
+            return a.row.index - b.row.index;
         }
       });
   }, [rows, decisions, tab, filter, sort]);
@@ -110,13 +118,20 @@ function ReviewQueueSidebar({
   return (
     <Box className={classes.sidebar}>
       <TabsContainer
-        tabs={[`All ${counts.all}`, `Saved ${counts.saved}`, `Pending ${counts.pending}`]}
+        tabs={[
+          `All ${counts.all}`,
+          `Saved ${counts.saved}`,
+          `Skipped ${counts.skipped}`,
+          `Pending ${counts.pending}`,
+        ]}
         value={tab}
         onChange={(_, value: number) => {
           setTab(value);
           setPage(1);
         }}
         variant="fullWidth"
+        // Four labels with counts don't fit the sidebar at MUI's default tab size.
+        sx={{ "& .MuiTab-root": { minWidth: 0, px: 0.5, fontSize: "0.75rem" } }}
       />
       <TextField
         className={classes.filterInput}
@@ -143,6 +158,7 @@ function ReviewQueueSidebar({
         value={sort}
         onChange={(e: SelectChangeEvent) => setSort(e.target.value as SortOption)}
       >
+        <MenuItem value="file">File order</MenuItem>
         <MenuItem value="date-desc">Date (Newest)</MenuItem>
         <MenuItem value="date-asc">Date (Oldest)</MenuItem>
         <MenuItem value="amount-desc">Amount (Highest)</MenuItem>

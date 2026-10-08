@@ -25,6 +25,16 @@ export type UploadReviewParams = {
 
 const emptyRowState: RowState = { skip: false, tags: [], notes: "" };
 
+export type CommitResult = "advanced" | "all-reviewed" | "failed";
+
+function pendingIndexes(rowStates: Record<number, RowState>, totalRows: number) {
+  const pending: number[] = [];
+  for (let index = 0; index < totalRows; index++) {
+    if (!rowStates[index]) pending.push(index);
+  }
+  return pending;
+}
+
 function errorMessage(e: unknown) {
   return e instanceof Error ? e.message : String(e);
 }
@@ -142,17 +152,11 @@ export function useUploadReview(params: UploadReviewParams) {
   );
 
   // Seed the on-screen form when the current row changes: restore a previous decision,
-  // or default to skipping when possible duplicates already exist.
+  // or start empty.
   useEffect(() => {
     if (!initialized || !currentItem) return;
     const existing = rowStates[currentIndex];
-    setRowForm(
-      existing ?? {
-        skip: currentItem.transactions.length > 0,
-        tags: [],
-        notes: "",
-      }
-    );
+    setRowForm(existing ?? emptyRowState);
     // Only when a different row opens (or the draft has just loaded). currentItem is
     // rebuilt on every keystroke in the Account field, and re-seeding then would wipe
     // the notes/categories typed on the open row.
@@ -183,14 +187,17 @@ export function useUploadReview(params: UploadReviewParams) {
     });
   }
 
-  function saveCurrentAndAdvance() {
-    if (!currentItem) return;
+  // Records the decision for the open row (save or skip), writes it to PlenifyService and
+  // moves on. Returns "all-reviewed" when it was the last row and nothing is pending, so
+  // the caller can offer to finish; the import never ends on its own.
+  function commitRow(skip: boolean): CommitResult {
+    if (!currentItem) return "failed";
 
-    const linkedId = rowForm.linked ? rowForm.transactionId : undefined;
+    const linkedId = !skip && rowForm.linked ? rowForm.transactionId : undefined;
     let transactionId: string | undefined;
 
     try {
-      if (rowForm.skip) {
+      if (skip) {
         // Only remove what this import created - a linked transaction existed before
         // the import, so skipping just leaves it untouched.
         if (createdId) plenifyService.deleteTransaction(createdId);
@@ -223,28 +230,49 @@ export function useUploadReview(params: UploadReviewParams) {
         state: true,
         message: `Could not save this transaction: ${errorMessage(e)}`,
       });
-      return;
+      return "failed";
     }
 
     const nextRowStates = {
       ...rowStates,
-      [currentIndex]: { ...rowForm, transactionId, linked: !!linkedId && !rowForm.skip },
+      [currentIndex]: { ...rowForm, skip, transactionId, linked: !!linkedId },
     };
     setRowStates(nextRowStates);
 
-    if (currentIndex + 1 >= totalRows) {
-      clearDraft(draftKey);
-      router.push("/overview");
-    } else {
-      saveDraft(
-        buildDraft({
-          formValues: effectiveFormValues,
-          currentIndex: currentIndex + 1,
-          rowStates: nextRowStates,
-        })
-      );
-      setCurrentIndex(currentIndex + 1);
+    let nextIndex = currentIndex + 1;
+    let result: CommitResult = "advanced";
+    if (nextIndex >= totalRows) {
+      // Last row of the file: go back to whatever was jumped over, if anything.
+      const pending = pendingIndexes(nextRowStates, totalRows);
+      if (pending.length === 0) {
+        nextIndex = currentIndex;
+        result = "all-reviewed";
+      } else {
+        nextIndex = pending[0];
+        setSnackState({
+          state: true,
+          message: `${pending.length} transaction${pending.length === 1 ? "" : "s"} still pending`,
+        });
+      }
     }
+
+    saveDraft(
+      buildDraft({
+        formValues: effectiveFormValues,
+        currentIndex: nextIndex,
+        rowStates: nextRowStates,
+      })
+    );
+    setCurrentIndex(nextIndex);
+    return result;
+  }
+
+  function saveAndNext() {
+    return commitRow(false);
+  }
+
+  function skipAndNext() {
+    return commitRow(true);
   }
 
   function goPrevious() {
@@ -287,7 +315,37 @@ export function useUploadReview(params: UploadReviewParams) {
     return summaries;
   }, [fileRows, formValues, rowStates]);
 
-  function cancelImport() {
+  // Declares the statement done: the draft (and the raw rows it holds) is removed.
+  // Everything saved so far is already in PlenifyService.
+  function finishImport() {
+    clearDraft(draftKey);
+    router.push("/overview");
+  }
+
+  // Leaves the review with the draft intact, to be resumed from the upload page.
+  function leaveForLater() {
+    router.push("/overview");
+  }
+
+  // Throws the draft away. Optionally also removes the transactions this import
+  // created; linked ones existed before the import and are never deleted.
+  function discardImport(removeCreated: boolean) {
+    if (removeCreated) {
+      try {
+        Object.values(rowStates).forEach((state) => {
+          if (state.transactionId && !state.linked) {
+            plenifyService.deleteTransaction(state.transactionId);
+          }
+        });
+      } catch (e) {
+        console.error(e);
+        setSnackState({
+          state: true,
+          message: `Could not remove the imported transactions: ${errorMessage(e)}`,
+        });
+        return;
+      }
+    }
     clearDraft(draftKey);
     router.push("/overview");
   }
@@ -330,6 +388,19 @@ export function useUploadReview(params: UploadReviewParams) {
     }
   }
 
+  const reviewedCount = totalRows - pendingIndexes(rowStates, totalRows).length;
+  const createdCount = Object.values(rowStates).filter(
+    (state) => state.transactionId && !state.linked
+  ).length;
+
+  // Whether the open row has edits that Save & Next has not written yet.
+  const baseline = rowStates[currentIndex] ?? emptyRowState;
+  const isDirty =
+    rowForm.notes !== baseline.notes ||
+    rowForm.tags.join("|") !== baseline.tags.join("|") ||
+    !!rowForm.linked !== !!baseline.linked ||
+    (!!rowForm.linked && rowForm.transactionId !== baseline.transactionId);
+
   function closeSnack() {
     setSnackState({ state: false, message: "" });
   }
@@ -347,10 +418,17 @@ export function useUploadReview(params: UploadReviewParams) {
     applyAccount,
     updateRowForm,
     confirmMatch,
-    saveCurrentAndAdvance,
+    saveAndNext,
+    skipAndNext,
     goPrevious,
     jumpToRow,
-    cancelImport,
+    finishImport,
+    leaveForLater,
+    discardImport,
+    reviewedCount,
+    createdCount,
+    createdId,
+    isDirty,
     snackState,
     closeSnack,
   };

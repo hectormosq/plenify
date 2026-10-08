@@ -56,11 +56,6 @@
   display: block; // Typography component defaults to span or p, ensure display block if needed
 }
 
-.skipContainer {
-  display: flex;
-  align-items: center;
-}
-
 .amount {
   &--expense {
     color: var(--expensescolor);

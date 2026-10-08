@@ -113,7 +113,7 @@ describe("TransactionFormMapper", () => {
 
   it("saves a new transaction and advances to the next row", () => {
     renderMapper();
-    screen.getByText(/Reviewing 1 of 3/);
+    screen.getByText(/Row 1 of 3/);
 
     fireEvent.change(screen.getByPlaceholderText("Add notes..."), {
       target: { value: "my note" },
@@ -131,7 +131,7 @@ describe("TransactionFormMapper", () => {
         tags: ["cat-added"],
       })
     );
-    screen.getByText(/Reviewing 2 of 3/);
+    screen.getByText(/Row 2 of 3/);
 
     const draft = loadDraft(draftKey);
     expect(draft?.currentIndex).toBe(1);
@@ -148,7 +148,7 @@ describe("TransactionFormMapper", () => {
     renderMapper();
     click("Save & Next");
     click("Previous");
-    screen.getByText(/Reviewing 1 of 3/);
+    screen.getByText(/Row 1 of 3/);
 
     fireEvent.change(screen.getByPlaceholderText("Add notes..."), {
       target: { value: "edited" },
@@ -166,26 +166,51 @@ describe("TransactionFormMapper", () => {
     click("Save & Next");
     click("Previous");
 
-    fireEvent.click(screen.getByRole("checkbox"));
-    click("Save & Next");
+    click("Remove & skip");
 
     expect(mockService.deleteTransaction).toHaveBeenCalledWith("new-1");
     const state = loadDraft(draftKey)?.rowStates[0];
     expect(state?.skip).toBe(true);
     expect(state?.transactionId).toBeUndefined();
+    screen.getByText(/Row 2 of 3/);
   });
 
-  it("defaults to skip when possible matches exist, and saves nothing", () => {
+  it("saves a skipped row when it is reopened and saved", () => {
+    renderMapper();
+    click("Skip");
+    expect(mockService.addTransaction).not.toHaveBeenCalled();
+
+    click("Previous");
+    screen.getByText("Skipped");
+    click("Save & Next");
+
+    expect(mockService.addTransaction).toHaveBeenCalledTimes(1);
+    expect(loadDraft(draftKey)?.rowStates[0]).toEqual(
+      expect.objectContaining({ skip: false, transactionId: "new-1" })
+    );
+  });
+
+  it("saves nothing when a row with possible matches is skipped", () => {
     withMatches();
     renderMapper();
 
-    expect((screen.getByRole("checkbox") as HTMLInputElement).checked).toBe(true);
-    click("Save & Next");
+    click("Skip");
 
     expect(mockService.addTransaction).not.toHaveBeenCalled();
     expect(mockService.updateTransaction).not.toHaveBeenCalled();
     expect(mockService.deleteTransaction).not.toHaveBeenCalled();
     expect(loadDraft(draftKey)?.rowStates[0]?.skip).toBe(true);
+  });
+
+  it("adds a new transaction when a row with possible matches is saved as new", () => {
+    withMatches();
+    renderMapper();
+
+    click("Save as new & Next");
+
+    expect(mockService.addTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ description: "Shop A" })
+    );
   });
 
   it("links to an existing transaction and updates it instead of adding", () => {
@@ -214,8 +239,7 @@ describe("TransactionFormMapper", () => {
     withMatches();
     renderMapper();
 
-    fireEvent.click(screen.getByRole("checkbox"));
-    click("Save & Next");
+    click("Save as new & Next");
     expect(mockService.addTransaction).toHaveBeenCalledTimes(1);
 
     click("Previous");
@@ -235,7 +259,7 @@ describe("TransactionFormMapper", () => {
 
     click("This is the same transaction");
     click("Linked (click to unlink)");
-    click("Save & Next");
+    click("Save as new & Next");
 
     expect(mockService.updateTransaction).not.toHaveBeenCalled();
     expect(mockService.addTransaction).toHaveBeenCalledWith(
@@ -251,8 +275,7 @@ describe("TransactionFormMapper", () => {
     renderMapper();
 
     click("This is the same transaction");
-    fireEvent.click(screen.getByRole("checkbox"));
-    click("Save & Next");
+    click("Skip");
 
     expect(mockService.addTransaction).not.toHaveBeenCalled();
     expect(mockService.updateTransaction).not.toHaveBeenCalled();
@@ -354,7 +377,7 @@ describe("TransactionFormMapper", () => {
       },
     });
     renderMapper();
-    screen.getByText(/Reviewing 2 of 3/);
+    screen.getByText(/Row 2 of 3/);
 
     click("Previous");
     expect(
@@ -371,28 +394,105 @@ describe("TransactionFormMapper", () => {
   it("jumps to a row picked in the sidebar", () => {
     renderMapper();
     click("jump to 2");
-    screen.getByText(/Reviewing 3 of 3/);
+    screen.getByText(/Row 3 of 3/);
   });
 
-  it("clears the draft and leaves after saving the last row", () => {
+  it("offers to finish after the last row when nothing is pending", () => {
     renderMapper();
     click("Save & Next");
     click("Save & Next");
-    click("Save & Finish");
+    click("Save & Next");
 
+    screen.getByText("All 3 transactions are reviewed.");
     expect(mockService.addTransaction).toHaveBeenCalledTimes(3);
+    expect(loadDraft(draftKey)).not.toBeNull();
+    expect(mockPush).not.toHaveBeenCalled();
+
+    click("Finish");
     expect(loadDraft(draftKey)).toBeNull();
     expect(mockPush).toHaveBeenCalledWith("/overview");
   });
 
-  it("cancel import clears the draft but keeps saved transactions", () => {
+  it("goes to the first pending row instead of finishing when rows were jumped over", () => {
+    renderMapper();
+    click("jump to 2");
+    click("Save & Next");
+
+    screen.getByText(/Row 1 of 3/);
+    screen.getByText("2 transactions still pending");
+    screen.getByText(/1 of 3 reviewed/);
+    expect(loadDraft(draftKey)?.currentIndex).toBe(0);
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it("warns about pending rows before finishing from the menu", () => {
     renderMapper();
     click("Save & Next");
-    click("Cancel import");
+    click("Import actions");
+    fireEvent.click(screen.getByRole("menuitem", { name: "Finish import" }));
+
+    screen.getByText(
+      "2 transactions of 3 have not been reviewed. If you finish now, they will not be imported."
+    );
+    click("Finish");
+
+    expect(loadDraft(draftKey)).toBeNull();
+    expect(mockPush).toHaveBeenCalledWith("/overview");
+  });
+
+  it("can leave with pending rows and keep the draft for later", () => {
+    renderMapper();
+    click("Save & Next");
+    click("Import actions");
+    fireEvent.click(screen.getByRole("menuitem", { name: "Finish import" }));
+    click("Leave and resume later");
+
+    expect(loadDraft(draftKey)?.currentIndex).toBe(1);
+    expect(mockPush).toHaveBeenCalledWith("/overview");
+  });
+
+  it("mentions unsaved edits on the open row in the finish dialog", () => {
+    renderMapper();
+    fireEvent.change(screen.getByPlaceholderText("Add notes..."), {
+      target: { value: "not saved" },
+    });
+    click("Import actions");
+    fireEvent.click(screen.getByRole("menuitem", { name: "Finish import" }));
+
+    screen.getByText("The open transaction has changes that are not saved yet.");
+  });
+
+  it("discard clears the draft and keeps saved transactions by default", () => {
+    renderMapper();
+    click("Save & Next");
+    click("Import actions");
+    fireEvent.click(screen.getByRole("menuitem", { name: "Discard import…" }));
+    click("Discard");
 
     expect(loadDraft(draftKey)).toBeNull();
     expect(mockService.deleteTransaction).not.toHaveBeenCalled();
     expect(mockPush).toHaveBeenCalledWith("/overview");
+  });
+
+  it("discard can also remove what the import created, but never linked transactions", () => {
+    mockService.getTransactionByProps
+      .mockReturnValueOnce({ ALL: [existingMatch] })
+      .mockReturnValue({ ALL: [] });
+    renderMapper();
+    click("This is the same transaction");
+    click("Save & Next");
+    click("Save & Next");
+
+    click("Import actions");
+    fireEvent.click(screen.getByRole("menuitem", { name: "Discard import…" }));
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Also remove the 1 transaction this import created" })
+    );
+    click("Discard");
+
+    expect(mockService.deleteTransaction).toHaveBeenCalledTimes(1);
+    expect(mockService.deleteTransaction).toHaveBeenCalledWith("new-1");
+    expect(loadDraft(draftKey)).toBeNull();
   });
 
   it("stays on the row and reports when saving fails", () => {
@@ -403,7 +503,7 @@ describe("TransactionFormMapper", () => {
     renderMapper();
     click("Save & Next");
 
-    screen.getByText(/Reviewing 1 of 3/);
+    screen.getByText(/Row 1 of 3/);
     screen.getByText("Could not save this transaction: boom");
     expect(loadDraft(draftKey)?.rowStates[0]).toBeUndefined();
     consoleError.mockRestore();

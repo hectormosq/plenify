@@ -4,9 +4,7 @@ import {
   Button,
   Card,
   CardContent,
-  Checkbox,
   Chip,
-  Collapse,
   Grid,
   TextField,
   Typography,
@@ -23,7 +21,8 @@ type TransactionRowCardProps = {
   rowForm?: RowState;
   onTagsChange?: (tags: string[]) => void;
   onNotesChange?: (notes: string) => void;
-  onSkipChange?: (skip: boolean) => void;
+  // The row's recorded decision is "skipped"; saving it again reverses that.
+  skipped?: boolean;
   onConfirmMatch?: () => void;
   isLinkedMatch?: boolean;
 };
@@ -34,12 +33,11 @@ export default function TransactionRowCard({
   rowForm,
   onTagsChange,
   onNotesChange,
-  onSkipChange,
+  skipped,
   onConfirmMatch,
   isLinkedMatch,
 }: TransactionRowCardProps) {
   const { categories } = usePlenifyState();
-  const isSkipped = !!rowForm?.skip;
 
   return (
     <Card
@@ -47,7 +45,7 @@ export default function TransactionRowCard({
       className={classes.transactionCard}
     >
       <CardContent>
-        {/* Header: TransactionType | Account | Skip */}
+        {/* Header: Account | match / skipped markers */}
         <div className={classes.cardHeader}>
           <Box display="flex" alignItems="center" gap={1}>
             <Typography variant="body2" className={classes.mutedText}>
@@ -74,16 +72,8 @@ export default function TransactionRowCard({
             </Button>
           )}
 
-          {actions && (
-            <div className={classes.skipContainer}>
-              <Typography variant="body2" sx={{ mr: 1, color: 'var(--foreground)' }}>
-                Skip?
-              </Typography>
-              <Checkbox
-                checked={isSkipped}
-                onChange={(e) => onSkipChange?.(e.target.checked)}
-              />
-            </div>
+          {skipped && (
+            <Chip size="small" label="Skipped" variant="outlined" className={classes.dateChip} />
           )}
         </div>
 
@@ -97,17 +87,15 @@ export default function TransactionRowCard({
               </Typography>
             </Box>
             {actions && (
-              <Collapse in={!isSkipped}>
-                <TextField
-                  fullWidth
-                  className={classes.themedTextField}
-                  placeholder="Add notes..."
-                  variant="outlined"
-                  size="small"
-                  value={rowForm?.notes ?? ""}
-                  onChange={(e) => onNotesChange?.(e.target.value)}
-                />
-              </Collapse>
+              <TextField
+                fullWidth
+                className={classes.themedTextField}
+                placeholder="Add notes..."
+                variant="outlined"
+                size="small"
+                value={rowForm?.notes ?? ""}
+                onChange={(e) => onNotesChange?.(e.target.value)}
+              />
             )}
           </Grid>
 
@@ -117,12 +105,10 @@ export default function TransactionRowCard({
               Categories
             </Typography>
             {actions ? (
-              <Collapse in={!isSkipped}>
-                <CategorySelector
-                  value={rowForm?.tags ?? []}
-                  onChange={(tags) => onTagsChange?.(tags)}
-                />
-              </Collapse>
+              <CategorySelector
+                value={rowForm?.tags ?? []}
+                onChange={(tags) => onTagsChange?.(tags)}
+              />
             ) : (
               <Box display="flex" gap={0.5} flexWrap="wrap">
                 {transaction.tags && transaction.tags.length > 0 ? (
