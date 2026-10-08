@@ -25,6 +25,10 @@ export type UploadReviewParams = {
 
 const emptyRowState: RowState = { skip: false, tags: [], notes: "" };
 
+function errorMessage(e: unknown) {
+  return e instanceof Error ? e.message : String(e);
+}
+
 /**
  * State and persistence for the one-row-at-a-time upload review: which row is open, the
  * decision recorded for each row, the saved draft, and the writes to PlenifyService.
@@ -215,7 +219,10 @@ export function useUploadReview(params: UploadReviewParams) {
       }
     } catch (e) {
       console.error(e);
-      setSnackState({ state: true, message: "Error saving transaction" });
+      setSnackState({
+        state: true,
+        message: `Could not save this transaction: ${errorMessage(e)}`,
+      });
       return;
     }
 
@@ -286,25 +293,30 @@ export function useUploadReview(params: UploadReviewParams) {
   }
 
   // Fixes an account name that was left blank/wrong back in step 1: applies the
-  // corrected value to every transaction already saved in this review session.
+  // corrected value to every transaction already saved in this review session. Only
+  // the account is written - a linked transaction may have been edited elsewhere since
+  // it was reviewed, and the draft's copy of its categories/notes must not overwrite it.
   function applyAccount() {
     if (account === appliedAccountRef.current) return;
-    appliedAccountRef.current = account;
 
     let updatedCount = 0;
-    Object.entries(rowStates).forEach(([indexStr, state]) => {
-      if (!state.transactionId) return;
-      const fileRowIndex = (formValues.selectedRow as number) + Number(indexStr);
-      const row = fileRows[fileRowIndex];
-      if (!row) return;
-      plenifyService.updateTransaction({
-        ...processRow(row, effectiveFormValues),
-        tags: state.tags,
-        notes: state.notes,
-        id: state.transactionId,
+    try {
+      Object.values(rowStates).forEach((state) => {
+        if (!state.transactionId) return;
+        if (plenifyService.updateTransactionAccount(state.transactionId, account)) {
+          updatedCount += 1;
+        }
       });
-      updatedCount += 1;
-    });
+    } catch (e) {
+      console.error(e);
+      // appliedAccountRef is left as it was, so the next blur retries.
+      setSnackState({
+        state: true,
+        message: `Could not update the account on saved transactions: ${errorMessage(e)}`,
+      });
+      return;
+    }
+    appliedAccountRef.current = account;
 
     saveDraft(
       buildDraft({ formValues: effectiveFormValues, currentIndex, rowStates })

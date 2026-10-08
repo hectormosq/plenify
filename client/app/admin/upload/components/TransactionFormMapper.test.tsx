@@ -9,6 +9,7 @@ const mockService = {
   getTransactionByProps: jest.fn(),
   addTransaction: jest.fn(),
   updateTransaction: jest.fn(),
+  updateTransactionAccount: jest.fn(),
   deleteTransaction: jest.fn(),
 };
 
@@ -103,6 +104,7 @@ describe("TransactionFormMapper", () => {
     jest.clearAllMocks();
     let created = 0;
     mockService.getTransactionByProps.mockReturnValue({ ALL: [] });
+    mockService.updateTransactionAccount.mockReturnValue(true);
     mockService.addTransaction.mockImplementation(() => {
       created += 1;
       return { [`new-${created}`]: {} };
@@ -258,21 +260,58 @@ describe("TransactionFormMapper", () => {
     expect(loadDraft(draftKey)?.rowStates[0]?.linked).toBe(false);
   });
 
-  it("applies an account rename to transactions already saved", () => {
+  function renameAccount(value: string) {
+    click("Edit account");
+    const input = screen.getByPlaceholderText("e.g. Santander Credit Card");
+    fireEvent.change(input, { target: { value } });
+    fireEvent.blur(input);
+  }
+
+  it("applies an account rename to transactions already saved, changing only the account", () => {
     renderMapper();
     click("Save & Next");
 
-    click("Edit account");
-    const input = screen.getByPlaceholderText("e.g. Santander Credit Card");
-    fireEvent.change(input, { target: { value: "My Bank" } });
-    fireEvent.blur(input);
+    renameAccount("My Bank");
 
-    expect(mockService.updateTransaction).toHaveBeenCalledTimes(1);
-    expect(mockService.updateTransaction).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "new-1", account: "My Bank", description: "Shop A" })
-    );
+    expect(mockService.updateTransactionAccount).toHaveBeenCalledTimes(1);
+    expect(mockService.updateTransactionAccount).toHaveBeenCalledWith("new-1", "My Bank");
+    expect(mockService.updateTransaction).not.toHaveBeenCalled();
     screen.getByText("Updated account for 1 already-saved transaction");
     expect(loadDraft(draftKey)?.formValues.account).toBe("My Bank");
+  });
+
+  it("applies an account rename to a linked transaction without rewriting it", () => {
+    withMatches();
+    renderMapper();
+    click("This is the same transaction");
+    click("Save & Next");
+    mockService.updateTransaction.mockClear();
+
+    renameAccount("My Bank");
+
+    expect(mockService.updateTransactionAccount).toHaveBeenCalledWith("existing-1", "My Bank");
+    expect(mockService.updateTransaction).not.toHaveBeenCalled();
+  });
+
+  it("shows the error and retries on the next blur when the account rename fails", () => {
+    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+    renderMapper();
+    click("Save & Next");
+    mockService.updateTransactionAccount.mockImplementationOnce(() => {
+      throw new Error("store unavailable");
+    });
+
+    renameAccount("My Bank");
+    screen.getByText(
+      "Could not update the account on saved transactions: store unavailable"
+    );
+    expect(loadDraft(draftKey)?.formValues.account).toBe("");
+
+    click("Edit account");
+    fireEvent.blur(screen.getByPlaceholderText("e.g. Santander Credit Card"));
+    expect(mockService.updateTransactionAccount).toHaveBeenCalledTimes(2);
+    expect(loadDraft(draftKey)?.formValues.account).toBe("My Bank");
+    consoleError.mockRestore();
   });
 
   it("keeps unsaved notes and categories while the account is edited", () => {
@@ -365,7 +404,7 @@ describe("TransactionFormMapper", () => {
     click("Save & Next");
 
     screen.getByText(/Reviewing 1 of 3/);
-    screen.getByText("Error saving transaction");
+    screen.getByText("Could not save this transaction: boom");
     expect(loadDraft(draftKey)?.rowStates[0]).toBeUndefined();
     consoleError.mockRestore();
   });
