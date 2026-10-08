@@ -28,11 +28,14 @@
   background-color: var(--componentBackground) !important;
   border: 1px solid var(--border);
   width: 100%;
-  margin: 0 auto;
+}
 
-  @media screen and (min-width: 900px) {
-    width: 900px;
-  }
+// One column for the header, card, warning, matches and footer, so they all share
+// the same width.
+.reviewContent {
+  flex: 1;
+  min-width: 280px;
+  max-width: 900px;
 }
 
 .cardHeader {
@@ -51,11 +54,6 @@
   color: var(--foreground);
   margin-bottom: 0px;
   display: block; // Typography component defaults to span or p, ensure display block if needed
-}
-
-.skipContainer {
-  display: flex;
-  align-items: center;
 }
 
 .amount {
@@ -130,4 +128,58 @@
   text-transform: uppercase;
   color: #b3aea5;
   font-weight: bold;
+}
+
+// MUI's default palette (text.secondary, placeholder opacity, etc.) is calibrated for
+// MUI's own light theme - this app has no ThemeProvider, so anywhere that relies on a
+// MUI default color instead of these CSS variables is nearly invisible in dark mode.
+.mutedText {
+  color: var(--inputLabel) !important;
+}
+
+.parseError {
+  color: var(--errorColor) !important;
+  font-style: italic;
+}
+
+.dateChip {
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+}
+
+.footerBar {
+  position: sticky;
+  bottom: 0;
+  background-color: var(--background);
+  padding: 0.75rem 0;
+  z-index: 2;
+
+  // MUI's disabled-button text color (rgba(0,0,0,0.26)) is calibrated for a light
+  // background too - same root cause as the rest of this file's contrast fixes.
+  :global(.MuiButton-root.Mui-disabled) {
+    color: var(--inputLabel) !important;
+  }
+}
+
+.themedTextField {
+  :global(.MuiOutlinedInput-notchedOutline) {
+    border-color: var(--border);
+  }
+
+  :global(.MuiInputBase-input) {
+    color: var(--foreground);
+  }
+
+  :global(.MuiInputBase-input::placeholder) {
+    color: var(--inputLabel);
+    opacity: 1;
+  }
+
+  :global(.MuiFormLabel-root) {
+    color: var(--inputLabel);
+
+    &:global(.Mui-focused) {
+      color: var(--inputLabel);
+    }
+  }
 }

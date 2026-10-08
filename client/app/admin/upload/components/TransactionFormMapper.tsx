@@ -1,395 +1,317 @@
-import { plenifyService } from "@/app/services";
-import { DateParseFormat, isFromIndex, TransactionFormValues, UploadFileConfigFormValues } from "../model/UploadFile";
-import { Transaction, TransactionType } from "@/app/models/transaction";
-import dayjs from "dayjs";
+import { UploadFileConfigFormValues } from "../model/UploadFile";
+import { FileSignature } from "../model/fileSignature";
+import { Transaction } from "@/app/models/transaction";
 import classes from "./TransactionFormMapper.module.scss";
-import { Control, Controller, UseFormRegister, useForm, useWatch } from "react-hook-form";
-import CategorySelector from "@/app/components/categories/CategorySelector";
+import ReviewQueueSidebar from "./ReviewQueueSidebar";
+import TransactionRowCard from "./TransactionRowCard";
+import { CommitResult, useUploadReview } from "../hooks/useUploadReview";
 import {
   Accordion,
   AccordionDetails,
+  Alert,
   AccordionSummary,
-  Card,
-  CardContent,
+  Box,
+  Button,
   Checkbox,
-  Chip,
-  Grid,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Divider,
+  FormControlLabel,
+  IconButton,
+  LinearProgress,
+  Menu,
+  MenuItem,
   Snackbar,
   TextField,
   Typography,
-  Box,
-  Divider,
-  Collapse,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { useEffect, useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import { usePlenifyState } from "@/app/hooks/usePlenifyState";
+import CreditCardIcon from "@mui/icons-material/CreditCard";
+import EditIcon from "@mui/icons-material/Edit";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import { useState } from "react";
 
 type TransactionFormMapperProps = {
   fileRows: string[][];
   formValues: UploadFileConfigFormValues;
-  onValidityChange?: (isValid: boolean) => void;
-  submitTrigger: boolean;
-  onSubmissionComplete?: () => void;
+  maxLength: number;
+  fileName: string;
+  fileSignature: FileSignature;
 };
+
+function plural(count: number, noun: string) {
+  return `${count} ${noun}${count === 1 ? "" : "s"}`;
+}
 
 export default function TransactionFormMapper(
   props: TransactionFormMapperProps
 ) {
-  const router = useRouter();
-  const { categories } = usePlenifyState();
-  const [snackState, setSnackState] = useState({
-    state: false,
-    message: "",
-  });
+  const { fileName, fileSignature } = props;
+  const {
+    initialized,
+    currentIndex,
+    totalRows,
+    rowStates,
+    rowForm,
+    currentItem,
+    rowSummaries,
+    account,
+    setAccount,
+    applyAccount,
+    updateRowForm,
+    confirmMatch,
+    saveAndNext,
+    skipAndNext,
+    goPrevious,
+    jumpToRow,
+    finishImport,
+    leaveForLater,
+    discardImport,
+    reviewedCount,
+    createdCount,
+    createdId,
+    isDirty,
+    snackState,
+    closeSnack,
+  } = useUploadReview(props);
+  const [isEditingAccount, setIsEditingAccount] = useState(false);
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  const [dialog, setDialog] = useState<"finish" | "discard" | null>(null);
+  const [removeCreated, setRemoveCreated] = useState(false);
 
-  const { fileRows, formValues } = props;
-  const dataset = useMemo(() => {
-    const data = [];
-    for (let i = formValues.selectedRow as number; i < fileRows.length; i++) {
-      const row = fileRows[i];
-      const proccessedRow = _proccessRow(row, formValues);
-      const transactionsByType =
-        plenifyService.getTransactionByProps(proccessedRow);
-      data.push({
-        fileRow: i,
-        rawRow: row,
-        proccessedRow: proccessedRow,
-        transactions: transactionsByType.ALL,
-        formDefault: {
-          tags: [] as string[],
-          skip: transactionsByType.ALL.length ? true : false,
-          account: proccessedRow.account,
-          amount: proccessedRow.amount,
-          transactionType: proccessedRow.transactionType,
-          date: proccessedRow.date,
-          description: proccessedRow.description,
-          notes: proccessedRow.notes,
-        },
-      });
-    }
-    return data;
-  }, [fileRows, formValues]);
-
-
-  const { control, handleSubmit, register, formState } = useForm<TransactionFormValues>({
-    defaultValues: {
-      transactionRow: dataset.map((item) => item.formDefault),
-    },
-    mode: "onBlur",
-  });
-
-  /*
-   * Watch for submit trigger from parent
-   */
-  useEffect(() => {
-    if (props.submitTrigger) {
-      handleSubmit(async (data) => {
-        try {
-          await onSubmit(data);
-        } finally {
-          props.onSubmissionComplete?.();
-        }
-      })();
-    }
-  }, [props.submitTrigger]);
-
-  useEffect(() => {
-    props.onValidityChange?.(formState.isValid);
-  }, [formState.isValid, props.onValidityChange]);
-
-  function TransactionRowItem({
-    transaction,
-    index,
-    actions = false,
-    control,
-    register,
-  }: {
-    transaction: Transaction;
-    index: number;
-    actions?: boolean;
-    control: Control<TransactionFormValues>;
-    register: UseFormRegister<TransactionFormValues>;
-  }) {
-    const isSkipped = useWatch({
-      control,
-      name: `transactionRow.${index}.skip`,
-    });
-
-    return (
-      <Card
-        variant="outlined"
-        className={classes.transactionCard}
-      >
-        <CardContent>
-          {/* Header: TransactionType | Account | Skip */}
-          <div className={classes.cardHeader}>
-            <Box display="flex" alignItems="center" gap={1}>
-              <Typography variant="body2" color="text.secondary">
-                {transaction?.account}
-              </Typography>
-            </Box>
-
-            {actions && (
-              <div className={classes.skipContainer}>
-                <Typography variant="body2" sx={{ mr: 1, color: 'var(--foreground)' }}>
-                  Skip?
-                </Typography>
-                <Controller
-                  name={`transactionRow.${index}.skip`}
-                  control={control}
-                  render={({ field }) => (
-                    <Checkbox {...field} checked={field.value} />
-                  )}
-                />
-                {/* Hidden inputs to keep form state */}
-                <input hidden {...register(`transactionRow.${index}.account`)} />
-                <input hidden {...register(`transactionRow.${index}.amount`)} />
-                <input
-                  hidden
-                  {...register(`transactionRow.${index}.transactionType`)}
-                />
-                <input hidden {...register(`transactionRow.${index}.date`)} />
-                <input
-                  hidden
-                  {...register(`transactionRow.${index}.description`)}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Body: Description/Notes | Categories | Date | Amount */}
-          <Grid container spacing={1} alignItems="flex-start">
-            {/* Col 1: Description & Notes */}
-            <Grid size={{ xs: 8, md: 4 }}>
-              <Box sx={{ mb: 1 }}>
-                <Typography className={classes.sectionTitle} variant="body1">
-                  {transaction.description}
-                </Typography>
-              </Box>
-              {actions && (
-                <Collapse in={!isSkipped}>
-                  <Controller
-                    name={`transactionRow.${index}.notes`}
-                    control={control}
-                    render={({ field }) => (
-                      <TextField
-                        fullWidth
-                        placeholder="Add notes..."
-                        variant="outlined"
-                        size="small"
-                        {...field}
-                        onChange={(e) => {
-                          field.onChange(e.target.value);
-                        }}
-                      />
-                    )}
-                  />
-                </Collapse>
-              )}
-            </Grid>
-
-            {/* Col 2: Categories */}
-            <Grid size={{ xs: 8, md: 4 }}>
-              <Typography variant="caption" className={classes.columnTitle}>
-                Categories
-              </Typography>
-              {actions ? (
-                <Collapse in={!isSkipped}>
-                  <Controller
-                    name={`transactionRow.${index}.tags`}
-                    control={control}
-                    render={({ field }) => (
-                      <CategorySelector {...field} />
-                    )}
-                  />
-                </Collapse>
-              ) : (
-                <Box display="flex" gap={0.5} flexWrap="wrap">
-                  {transaction.tags && transaction.tags.length > 0 ? (
-                    transaction.tags.map((tag, i) => (
-                      <Chip
-                        key={i}
-                        label={categories[tag]?.name || tag}
-                        size="small"
-                        sx={{
-                          backgroundColor: categories[tag]?.color,
-                          color: "#fff",
-                        }}
-                      />
-                    ))
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">-</Typography>
-                  )}
-                </Box>
-              )}
-            </Grid>
-
-            {/* Col 3: Date */}
-            <Grid size={{ xs: 6, md: 2 }}>
-              <Typography variant="caption" className={classes.columnTitle}>
-                Date
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {transaction.date
-                  ? dayjs(transaction.date).format("DD/MM/YYYY")
-                  : "No Date"}
-              </Typography>
-            </Grid>
-
-            {/* Col 4: Amount */}
-            <Grid size={{ xs: 6, md: 2 }} display="flex" flexDirection="column" alignItems="flex-end">
-              <Chip
-                label={transaction?.transactionType}
-                color={
-                  transaction?.transactionType === TransactionType.INCOME
-                    ? "success"
-                    : "error"
-                }
-                size="small"
-                variant="outlined"
-                sx={{ mb: 1 }}
-              />
-              <Typography
-                variant="h5"
-                component="div"
-                className={transaction.transactionType === TransactionType.EXPENSE ? classes['amount--expense'] : classes['amount--income']}
-              >
-                {transaction?.amount?.toLocaleString("es-ES", {
-                  style: "currency",
-                  currency: "EUR",
-                })}
-              </Typography>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
-    );
+  if (!initialized || !currentItem) {
+    return null;
   }
 
-  async function onSubmit(data: {
-    transactionRow: (Transaction & { skip: boolean })[];
-  }) {
-    const summary = {};
-    try {
-      await Promise.all(
-        data.transactionRow.map(async (transaction) => {
-          if (!transaction.skip) {
-            const result = await plenifyService.addTransaction(transaction);
-            Object.assign(summary, result);
-          }
-        })
-      );
-      const totalAdded = Object.entries(summary).length + 1;
-      setSnackState({ state: true, message: `Added ${totalAdded}` });
-      // Use Next.js router for navigation
+  const pendingCount = totalRows - reviewedCount;
+  const progress = totalRows > 0 ? (reviewedCount / totalRows) * 100 : 100;
+  const hasUnlinkedMatches = currentItem.transactions.length > 0 && !rowForm.linked;
 
-      router.push("/overview");
-    } catch (e) {
-      console.error(e);
-      setSnackState({ state: true, message: `Error While Adding ` });
-    }
+  // The import never ends by itself: once the last row is decided and nothing is
+  // pending, offer to finish.
+  function afterCommit(result: CommitResult) {
+    if (result === "all-reviewed") setDialog("finish");
+  }
+
+  function openDialog(which: "finish" | "discard") {
+    setMenuAnchor(null);
+    setRemoveCreated(false);
+    setDialog(which);
   }
 
   return (
-    <>
-      <form className={classes.form} onSubmit={handleSubmit(onSubmit)}>
-        <Box sx={{ mb: 1 }}>
-          <Typography variant="h6">
-            Total Transactions: {dataset.length}
+    <Box display="flex" gap={2} alignItems="flex-start" justifyContent="center" flexWrap="wrap" width="100%">
+      <ReviewQueueSidebar
+        rows={rowSummaries}
+        rowStates={rowStates}
+        activeIndex={currentIndex}
+        onSelect={jumpToRow}
+      />
+
+      <Box className={classes.reviewContent}>
+        <Box sx={{ mb: 2 }}>
+          <Box display="flex" alignItems="center" justifyContent="space-between" gap={1}>
+            <Box display="flex" alignItems="center" gap={1}>
+              <CreditCardIcon sx={{ color: "var(--maincolor)" }} />
+              <Box>
+                {isEditingAccount ? (
+                  <TextField
+                    autoFocus
+                    placeholder="e.g. Santander Credit Card"
+                    size="small"
+                    className={classes.themedTextField}
+                    value={account}
+                    onChange={(e) => setAccount(e.target.value)}
+                    onBlur={() => {
+                      applyAccount();
+                      setIsEditingAccount(false);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                    }}
+                    title="Fixing this updates every transaction already saved in this import too"
+                  />
+                ) : (
+                  <Box display="flex" alignItems="center" gap={0.5}>
+                    <Typography variant="subtitle1" className={classes.sectionTitle} sx={{ fontWeight: 700 }}>
+                      {account || "Unlabeled account"}
+                    </Typography>
+                    <IconButton
+                      size="small"
+                      aria-label="Edit account"
+                      onClick={() => setIsEditingAccount(true)}
+                    >
+                      <EditIcon fontSize="inherit" sx={{ color: "var(--inputLabel)" }} />
+                    </IconButton>
+                  </Box>
+                )}
+                <Typography variant="caption" className={classes.mutedText}>
+                  Statement: {fileName}
+                  {fileSignature.label !== "Unlabeled import" && ` — ${fileSignature.label}`}
+                </Typography>
+              </Box>
+            </Box>
+            <IconButton
+              aria-label="Import actions"
+              onClick={(e) => setMenuAnchor(e.currentTarget)}
+            >
+              <MoreVertIcon sx={{ color: "var(--foreground)" }} />
+            </IconButton>
+            <Menu
+              anchorEl={menuAnchor}
+              open={!!menuAnchor}
+              onClose={() => setMenuAnchor(null)}
+            >
+              <MenuItem onClick={() => openDialog("finish")}>Finish import</MenuItem>
+              <MenuItem onClick={() => openDialog("discard")} sx={{ color: "error.main" }}>
+                Discard import…
+              </MenuItem>
+            </Menu>
+          </Box>
+          <Typography variant="h6" className={classes.sectionTitle} sx={{ mt: 1.5 }}>
+            {reviewedCount} of {totalRows} reviewed · {progress.toFixed(1)}%
+          </Typography>
+          <LinearProgress variant="determinate" value={progress} sx={{ mt: 1 }} />
+          <Typography variant="caption" className={classes.mutedText}>
+            Row {currentIndex + 1} of {totalRows}
           </Typography>
         </Box>
-        <Grid container spacing={0.5} direction="column" >
-          {dataset.map((item, idx) => (
-            <Grid key={idx}>
-              <TransactionRowItem
-                transaction={item.proccessedRow as Transaction}
-                index={idx}
-                actions={true}
-                control={control}
-                register={register}
-              />
-              {item.transactions.length > 0 && (
-                <Accordion className={classes.accordion}>
-                  <AccordionSummary className={classes.accordionSummary} expandIcon={<ExpandMoreIcon />}>
-                    <Typography className={classes.sectionTitle}>
-                      Possible Matches ({item.transactions.length})
-                    </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    {item.transactions.map(
-                      (transaction: Transaction, tIdx: number) => (
-                        <Box key={tIdx} sx={{ mb: 1 }}>
-                          <TransactionRowItem
-                            transaction={transaction as Transaction}
-                            index={idx}
-                            control={control}
-                            register={register}
-                          />
-                        </Box>
-                      )
-                    )}
-                  </AccordionDetails>
-                </Accordion>
+
+        <TransactionRowCard
+          transaction={currentItem.processedRow as Transaction}
+          actions
+          rowForm={rowForm}
+          skipped={!!rowStates[currentIndex]?.skip}
+          onTagsChange={(tags) => updateRowForm({ tags })}
+          onNotesChange={(notes) => updateRowForm({ notes })}
+        />
+
+        {hasUnlinkedMatches && (
+          <Alert severity="warning" variant="outlined" sx={{ mt: 2 }}>
+            Saving will add a new transaction. If one of the possible matches below is
+            this same transaction, click &quot;This is the same transaction&quot; to update
+            it instead (e.g. to fix its categories), or skip this row.
+          </Alert>
+        )}
+
+        {currentItem.transactions.length > 0 && (
+          // Keyed by row so it re-opens on each row - the link button is easy to miss
+          // when the panel starts collapsed.
+          <Accordion key={currentIndex} defaultExpanded className={classes.accordion}>
+            <AccordionSummary className={classes.accordionSummary} expandIcon={<ExpandMoreIcon />} sx={{ px: 0 }}>
+              <Typography className={classes.sectionTitle}>
+                Possible Matches ({currentItem.transactions.length})
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails sx={{ px: 0 }}>
+              {currentItem.transactions.map(
+                (transaction: Transaction, tIdx: number) => (
+                  <Box key={tIdx} sx={{ mb: 1 }}>
+                    <TransactionRowCard
+                      transaction={transaction}
+                      onConfirmMatch={() => confirmMatch(transaction)}
+                      isLinkedMatch={
+                        !!rowForm.linked &&
+                        !!transaction.id &&
+                        rowForm.transactionId === transaction.id
+                      }
+                    />
+                  </Box>
+                )
               )}
-              <Divider sx={{ my: 1 }} />
-            </Grid>
-          ))}
-        </Grid>
-      </form>
-      <Snackbar
-        open={snackState.state}
-        autoHideDuration={6000}
-        onClose={() => setSnackState({ state: false, message: "" })}
-        message={snackState.message}
-      />
-    </>
+            </AccordionDetails>
+          </Accordion>
+        )}
+
+        <Divider sx={{ my: 2 }} />
+
+        <Box display="flex" justifyContent="flex-end" gap={1} className={classes.footerBar}>
+          <Button onClick={goPrevious} disabled={currentIndex === 0}>
+            Previous
+          </Button>
+          {/* Skipping a row this import already saved removes that transaction. */}
+          <Button variant="outlined" onClick={() => afterCommit(skipAndNext())}>
+            {createdId ? "Remove & skip" : "Skip"}
+          </Button>
+          <Button variant="contained" onClick={() => afterCommit(saveAndNext())}>
+            {hasUnlinkedMatches && !createdId ? "Save as new & Next" : "Save & Next"}
+          </Button>
+        </Box>
+
+        <Dialog open={dialog === "finish"} onClose={() => setDialog(null)}>
+          <DialogTitle>Finish import?</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              {pendingCount > 0
+                ? `${plural(pendingCount, "transaction")} of ${totalRows} ${pendingCount === 1 ? "has" : "have"} not been reviewed. If you finish now, ${pendingCount === 1 ? "it" : "they"} will not be imported.`
+                : `All ${plural(totalRows, "transaction")} are reviewed.`}
+            </DialogContentText>
+            {isDirty && (
+              <DialogContentText sx={{ mt: 1 }}>
+                The open transaction has changes that are not saved yet.
+              </DialogContentText>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDialog(null)}>Keep reviewing</Button>
+            {pendingCount > 0 && (
+              <Button onClick={leaveForLater}>Leave and resume later</Button>
+            )}
+            <Button variant="contained" onClick={finishImport}>
+              Finish
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog open={dialog === "discard"} onClose={() => setDialog(null)}>
+          <DialogTitle>Discard import?</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              The saved progress for this statement will be removed.
+              {createdCount > 0 &&
+                ` ${plural(createdCount, "transaction")} already saved by this import ${createdCount === 1 ? "stays" : "stay"} in your data unless you remove ${createdCount === 1 ? "it" : "them"} below.`}
+            </DialogContentText>
+            {createdCount > 0 && (
+              <FormControlLabel
+                sx={{ mt: 1 }}
+                control={
+                  <Checkbox
+                    checked={removeCreated}
+                    onChange={(e) => setRemoveCreated(e.target.checked)}
+                  />
+                }
+                label={`Also remove the ${plural(createdCount, "transaction")} this import created`}
+              />
+            )}
+            <DialogContentText variant="body2" sx={{ mt: 1 }}>
+              Transactions that existed before and were linked are never removed.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDialog(null)}>Keep reviewing</Button>
+            <Button
+              variant="contained"
+              color="error"
+              onClick={() => {
+                setDialog(null);
+                discardImport(removeCreated);
+              }}
+            >
+              Discard
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Snackbar
+          open={snackState.state}
+          autoHideDuration={6000}
+          onClose={closeSnack}
+          message={snackState.message}
+        />
+      </Box>
+    </Box>
   );
-}
-
-function _proccessRow(
-  row: string[],
-  formValues: UploadFileConfigFormValues
-): Transaction {
-  const originalAmount = _getValue(formValues.amount, row) as number;
-  // TODO Read format date in form and use it here
-
-  const datejs = _getDateValue(_getValue(formValues.date, row) as string, formValues.dateFormat || "DDMMYYYY");
-  const normalizedProps = {
-    account: _getValue(formValues.account, row) as string,
-    amount: Math.abs(originalAmount),
-    transactionType: _getTransactionType(
-      formValues.calculatedTransactionType,
-      originalAmount
-    ),
-    // Use dayjs's toDate() but strip time zone by constructing a new Date from formatted string
-    date: dayjs(datejs.format()).toDate(),
-    description: _getValue(formValues.description, row) as string,
-    tags: [],
-  };
-  return normalizedProps;
-}
-
-function _getValue(prop: unknown, row: string[]) {
-  if (isFromIndex(prop)) {
-    return row[prop.fromIndex];
-  } else {
-    return prop;
-  }
-}
-
-function _getDateValue(value: string, dateFormat: DateParseFormat) {
-
-  return dayjs(value, dateFormat);
-}
-
-function _getTransactionType(
-  isCalculated: boolean,
-  amount: number
-): TransactionType {
-  if (isCalculated) {
-    return amount < 0 ? TransactionType.EXPENSE : TransactionType.INCOME;
-  }
-  throw new Error("Unknown transaction type");
 }

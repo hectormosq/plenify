@@ -118,6 +118,16 @@ export default class PlenifyService {
     return this.addTransaction(transaction);
   }
 
+  // Changes only the account, leaving every other field and the categories as stored.
+  // Returns false when the transaction no longer exists.
+  updateTransactionAccount(transactionId: string, account: string) {
+    const store = this.persister.getStore();
+    if (!store.hasRow(Tables.transactions, transactionId)) return false;
+    store.setCell(Tables.transactions, transactionId, "account", account);
+    this.updateLastUpdated();
+    return true;
+  }
+
   deleteTransaction(transactionId: string) {
     this.persister.getStore().delRow(Tables.transactions, transactionId);
     this.deleteTransactionCategories(transactionId);
@@ -222,6 +232,7 @@ export default class PlenifyService {
         select("date");
         select("account");
         select("description");
+        select("notes");
         select("amount");
         select("currency");
         select("transactionType");
@@ -426,6 +437,7 @@ export default class PlenifyService {
       account: transaction.account?.toString() || "",
       date: new Date(transaction.date.valueOf() as number),
       description: transaction.description.toString(),
+      notes: transaction.notes?.toString() || "",
       amount: transaction.amount.valueOf() as number,
       currency: transaction.currency.toString() as currency,
       tags: transactionCategoriesGrouped[id],
